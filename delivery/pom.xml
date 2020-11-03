@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.github.alex1304</groupId>
+        <artifactId>botrino</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>botrino-delivery</artifactId>
+    <packaging>jlink</packaging>
+
+    <name>Botrino Delivery</name>
+    <description>Module that handles the packaging of the Botrino launcher.</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jlink-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>antrun-archive</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <copy todir="${project.build.directory}/maven-jlink/runtime">
+                                    <fileset dir="${project.basedir}/../runtime/target/dependency" />
+                                </copy>
+                                <copy file="${project.basedir}/../runtime/target/botrino-runtime-${project.version}.jar"
+                                      todir="${project.build.directory}/maven-jlink/runtime" />
+                                <mkdir dir="${project.build.directory}/maven-jlink/bots" />
+                                <zip basedir="${project.build.directory}/maven-jlink"
+                                     destfile="${project.build.directory}/delivery.zip" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>botrino-launcher</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>
