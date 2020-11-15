@@ -25,9 +25,6 @@ module botrino.api {
     requires transitive discord4j.rest;
     requires transitive discord4j.voice;
     requires transitive java.logging;
-    requires transitive java.sql;
-    requires transitive org.jdbi.v3.core;
-    requires transitive org.jdbi.v3.sqlobject;
     requires transitive org.reactivestreams;
     requires transitive rdi;
     requires transitive reactor.core;

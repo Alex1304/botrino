@@ -32,6 +32,11 @@ import reactor.core.publisher.Mono;
 public interface CommandErrorHandler {
 
     /**
+     * A {@link CommandErrorHandler} that rethrows all errors without doing anything.
+     */
+    CommandErrorHandler NO_OP = new CommandErrorHandler() {};
+
+    /**
      * Recover from a {@link CommandFailedException}, for example by sending an informative message back to the user.
      *
      * @param e   the exception
@@ -39,7 +44,9 @@ public interface CommandErrorHandler {
      * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
      * level.
      */
-    Mono<Void> handleCommandFailed(CommandFailedException e, CommandContext ctx);
+    default Mono<Void> handleCommandFailed(CommandFailedException e, CommandContext ctx) {
+        return Mono.error(e);
+    }
 
     /**
      * Recover from a {@link PrivilegeException}, for example by sending a message back to the user saying they don't
@@ -50,7 +57,9 @@ public interface CommandErrorHandler {
      * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
      * level.
      */
-    Mono<Void> handlePrivilege(PrivilegeException e, CommandContext ctx);
+    default Mono<Void> handlePrivilege(PrivilegeException e, CommandContext ctx) {
+        return Mono.error(e);
+    }
 
     /**
      * Recover from a {@link BadSubcommandException}, typically occurring when a user attempts to use a subcommand that
@@ -61,16 +70,20 @@ public interface CommandErrorHandler {
      * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
      * level.
      */
-    Mono<Void> handleBadSubcommand(BadSubcommandException e, CommandContext ctx);
+    default Mono<Void> handleBadSubcommand(BadSubcommandException e, CommandContext ctx) {
+        return Mono.error(e);
+    }
 
     /**
      * Recover from any {@link Throwable} that are not handled by other handlers, indicating that something went wrong
      * when executing the command.
      *
-     * @param e   the exception
+     * @param t   the throwable
      * @param ctx the context of the command that failed
      * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
      * level.
      */
-    Mono<Void> handleDefault(Throwable e, CommandContext ctx);
+    default Mono<Void> handleDefault(Throwable t, CommandContext ctx) {
+        return Mono.error(t);
+    }
 }

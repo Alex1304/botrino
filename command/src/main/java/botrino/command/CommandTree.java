@@ -26,17 +26,18 @@ package botrino.command;
 import reactor.util.annotation.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
 class CommandTree {
 
-    private final Map<String, Node> rootCommands = new HashMap<>();
+    private final Map<String, Node> rootCommands = new ConcurrentHashMap<>();
 
     void addCommand(Command command) {
-        if (command.getSubcommands().isEmpty()) {
-            rootCommands.putAll(Node.leaf(command).explode());
+        if (command.subcommands().isEmpty()) {
+            putAllCheckDuplicates(rootCommands, Node.leaf(command).explode());
             return;
         }
         var parentLifo = Collections.asLifoQueue(new ArrayDeque<Command>());
@@ -44,12 +45,12 @@ class CommandTree {
         var nodeAssembly = new HashMap<Integer, List<Node>>(); // key = depth, value = children of current node
         parentLifo.add(command);
         childrenLifo.add(command);
-        childrenLifo.addAll(command.getSubcommands());
+        childrenLifo.addAll(command.subcommands());
         while (!parentLifo.isEmpty()) {
             Command head;
             while ((head = childrenLifo.element()) != parentLifo.element()) {
                 parentLifo.add(head);
-                childrenLifo.addAll(head.getSubcommands());
+                childrenLifo.addAll(head.subcommands());
             }
             parentLifo.remove();
             childrenLifo.remove();
@@ -57,19 +58,30 @@ class CommandTree {
             var children = nodeAssembly.remove(depth + 1);
             nodeAssembly.computeIfAbsent(depth, k -> new ArrayList<>()).add(Node.of(head, children));
         }
-        rootCommands.putAll(nodeAssembly.get(0).get(0).explode());
+        putAllCheckDuplicates(rootCommands, nodeAssembly.get(0).get(0).explode());
     }
 
     @Nullable
-    Command findForInput(CommandInput input) {
+    Command findForInput(TokenizedInput input) {
         Node found = null;
         Map<String, Node> map = rootCommands;
         var args = input.getMutableArgs();
-        while (!args.isEmpty() && (found = map.get(args.element())) != null) {
+        while (!args.isEmpty() && map.containsKey(args.element())) {
+            found = map.get(args.remove());
             map = found.subcommands;
-            args.remove();
         }
         return found == null ? null : found.command;
+    }
+
+    private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> src, Map<String, Node> dest) {
+        dest.forEach((k, v) -> {
+            Node old;
+            if ((old = src.putIfAbsent(k, v)) != null) {
+                throw new IllegalStateException("Alias conflict: the command " + old.command + " and " + v.command +
+                        " both define the same alias '" + k + "'.");
+            }
+        });
+        return src;
     }
 
     private static class Node {
@@ -88,18 +100,15 @@ class CommandTree {
             }
             return new Node(command, children.stream()
                     .map(Node::explode)
-                    .reduce(new HashMap<>(), (a, b) -> {
-                        a.putAll(b);
-                        return a;
-                    }));
+                    .reduce(new HashMap<>(), CommandTree::putAllCheckDuplicates));
         }
 
         private static Node leaf(Command command) {
-            return new Node(command, Map.of());
+            return new Node(command, new HashMap<>());
         }
 
         private Map<String, Node> explode() {
-            return command.getAliases().stream().collect(toMap(Function.identity(), v -> this));
+            return new HashMap<>(command.aliases().stream().collect(toMap(Function.identity(), v -> this)));
         }
     }
 }

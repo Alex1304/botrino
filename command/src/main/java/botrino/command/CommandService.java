@@ -26,6 +26,7 @@ package botrino.command;
 import botrino.api.config.ConfigContainer;
 import botrino.api.config.i18n.I18nConfig;
 import botrino.command.config.CommandConfig;
+import botrino.command.menu.InteractiveMenuFactory;
 import botrino.command.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -38,11 +39,11 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 @RdiService
 public final class CommandService {
@@ -52,6 +53,7 @@ public final class CommandService {
     private final CommandConfig commandConfig;
     private final I18nConfig i18nConfig;
     private final GatewayDiscordClient gateway;
+    private final InteractiveMenuFactory interactiveMenuFactory;
 
     private final ConcurrentHashMap<Long, String> prefixByGuild = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, Locale> localeByGuild = new ConcurrentHashMap<>();
@@ -64,67 +66,17 @@ public final class CommandService {
         this.commandConfig = configContainer.get(CommandConfig.class);
         this.i18nConfig = configContainer.get(I18nConfig.class);
         this.gateway = gateway;
+        this.interactiveMenuFactory = InteractiveMenuFactory.of(commandConfig.getPaginationControls(),
+                commandConfig.getMenuTimeout());
     }
 
-    private Mono<Void> processEvent(MessageCreateEvent event) {
-        var guildId = event.getGuildId();
-        var prefixOfGuild = guildId.map(Snowflake::asLong)
-                .map(prefixByGuild::get)
-                .orElse(commandConfig.getCommandPrefix());
-        var botId = event.getClient().getSelfId().asLong();
-        var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefixOfGuild);
-        var input = tokenize(prefixes, event.getMessage().getContent());
-        if (input == null || input.getArguments().isEmpty()) {
-            return Mono.empty();
-        }
-        return event.getMessage().getChannel()
-                .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
-                        "for message create event " + event, e)))
-                .flatMap(channel -> Mono.justOrEmpty(commandTree.findForInput(input))
-                        .filter(command -> {
-                            var isByBot = event.getMessage().getAuthor().map(User::isBot).orElse(true);
-                            var authorId = event.getMessage().getAuthor().map(User::getId);
-                            var channelId = event.getMessage().getChannelId();
-                            if (isByBot && !command.allowUseByBots()) {
-                                LOGGER.debug("Ignoring command due to author being a bot account: {}", command);
-                                return false;
-                            }
-                            if (authorId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
-                                LOGGER.debug("Ignoring command due to AUTHOR being blacklisted: {}", command);
-                                return false;
-                            }
-                            if (guildId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
-                                LOGGER.debug("Ignoring command due to GUILD being blacklisted: {}", command);
-                                return false;
-                            }
-                            if (blacklist.contains(channelId.asLong())) {
-                                LOGGER.debug("Ignoring command due to CHANNEL being blacklisted: {}", command);
-                                return false;
-                            }
-                            return command.getScope().isInScope(channel);
-                        })
-                        .flatMap(command -> {
-                            var locale = guildId.map(Snowflake::asLong)
-                                    .map(localeByGuild::get)
-                                    .orElse(i18nConfig.getDefaultLocale());
-                            var ctx = new CommandContext(event, input, locale, channel);
-                            return command.getPrivilege().isGranted(ctx)
-                                    .then(Mono.defer(() -> command.run(ctx)))
-                                    .onErrorResume(e -> {
-                                        if (e instanceof CommandFailedException) {
-                                            return errorHandler.handleCommandFailed((CommandFailedException) e, ctx);
-                                        }
-                                        if (e instanceof PrivilegeException) {
-                                            return errorHandler.handlePrivilege((PrivilegeException) e, ctx);
-                                        }
-                                        if (e instanceof BadSubcommandException) {
-                                            return errorHandler.handleBadSubcommand((BadSubcommandException) e, ctx);
-                                        }
-                                        return errorHandler.handleDefault(e, ctx);
-                                    })
-                                    .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
-                                            "occurred when executing a command. Context: " + ctx, e)));
-                        }));
+    /**
+     * Obtain an {@link InteractiveMenuFactory} instance based on the configuration of this command service.
+     *
+     * @return an {@link InteractiveMenuFactory}
+     */
+    public InteractiveMenuFactory interactiveMenuFactory() {
+        return interactiveMenuFactory;
     }
 
     /**
@@ -159,12 +111,24 @@ public final class CommandService {
         LOGGER.debug("Changed locale for guild {}: {}", guildId, locale);
     }
 
-    void addCommand(Command command) {
+    /**
+     * Adds a command to this command service. The subcommand tree is resolved and the root is registered in the service
+     * so that it can be invoked via message create events. It is generally not necessary to use this method as classes
+     * within bot modules implementing {@link Command} are automatically added, but it can be useful when adding
+     * commands built with {@link Command#of(Set, Function)} or {@link Command#builder(Set, Function)}.
+     *
+     * @param command the command to add
+     * @throws IllegalStateException if one of the aliases defined by the command conflicts with a command already
+     *                               added, or if there is an alias conflict within the nested subcommands.
+     */
+    public void addCommand(Command command) {
+        Objects.requireNonNull(command);
         commandTree.addCommand(command);
         LOGGER.debug("Added command {}", command);
     }
 
     void setErrorHandler(CommandErrorHandler errorHandler) {
+        LOGGER.debug("Using error handler {}", errorHandler);
         this.errorHandler = errorHandler;
     }
 
@@ -173,70 +137,81 @@ public final class CommandService {
                 .then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed")));
     }
 
-    @Nullable
-    private CommandInput tokenize(Set<String> prefixes, String input) {
+    private Mono<Void> processEvent(MessageCreateEvent event) {
+        var guildId = event.getGuildId();
+        var prefixOfGuild = guildId.map(Snowflake::asLong)
+                .map(prefixByGuild::get)
+                .orElse(commandConfig.getPrefix());
+        var botId = event.getClient().getSelfId().asLong();
+        var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefixOfGuild);
+        var messageContent = event.getMessage().getContent();
         // Extracting prefix
         String prefixUsed = null;
         for (var p : prefixes) {
-            if (input.toLowerCase().startsWith(p.toLowerCase())) {
-                input = input.substring(p.length());
+            if (messageContent.toLowerCase().startsWith(p.toLowerCase())) {
+                messageContent = messageContent.substring(p.length());
                 prefixUsed = p;
                 break;
             }
         }
         if (prefixUsed == null) {
-            return null;
+            return Mono.empty();
         }
-        // Extracting the tokens
-        var tokens = new ArrayDeque<String>();
-        var buffer = new StringBuilder();
-        var inQuotes = false;
-        var escaping = false;
-        for (var c : input.strip().toCharArray()) {
-            if (!escaping) {
-                if (c == '\\') {
-                    escaping = true;
-                    continue;
-                } else if (c == '"') {
-                    inQuotes = !inQuotes;
-                    continue;
-                }
-            }
-            if (!inQuotes) {
-                if (Character.isWhitespace(c)) {
-                    if (buffer.length() > 0) {
-                        tokens.add(buffer.toString());
-                        buffer.delete(0, buffer.length());
-                    }
-                } else {
-                    buffer.append(c);
-                }
-            } else {
-                buffer.append(c);
-            }
-            escaping = false;
+        final var f_prefixUsed = prefixUsed;
+        var input = TokenizedInput.tokenize(messageContent);
+        if (input.getArguments().isEmpty()) {
+            return Mono.empty();
         }
-        if (buffer.length() != 0) {
-            tokens.add(buffer.toString());
-        }
-        // Separating tokens into flags and args
-        var flags = new HashMap<String, String>();
-        var args = new ArrayDeque<String>();
-        var flagPrefix = commandConfig.getFlagPrefix();
-        while (!tokens.isEmpty()) {
-            var token = tokens.remove();
-            if (token.startsWith(flagPrefix) && token.length() > flagPrefix.length()) {
-                var split = token.substring(flagPrefix.length()).split("=", 2);
-                if (split.length == 1) {
-                    flags.put(split[0], "");
-                } else {
-                    flags.put(split[0], split[1]);
-                }
-            } else {
-                args.add(token);
-            }
-        }
-        return new CommandInput(input, prefixUsed, args, flags);
+        return event.getMessage().getChannel()
+                .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
+                        "for message create event " + event, e)))
+                .flatMap(channel -> Mono.justOrEmpty(commandTree.findForInput(input))
+                        .filter(command -> {
+                            var isByBot = event.getMessage().getAuthor().map(User::isBot).orElse(true);
+                            var authorId = event.getMessage().getAuthor().map(User::getId);
+                            var channelId = event.getMessage().getChannelId();
+                            if (isByBot && command.ignoreBots()) {
+                                LOGGER.debug("Ignoring command due to author being a bot account: {}", command);
+                                return false;
+                            }
+                            if (authorId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
+                                LOGGER.debug("Ignoring command due to AUTHOR being blacklisted: {}", command);
+                                return false;
+                            }
+                            if (guildId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
+                                LOGGER.debug("Ignoring command due to GUILD being blacklisted: {}", command);
+                                return false;
+                            }
+                            if (blacklist.contains(channelId.asLong())) {
+                                LOGGER.debug("Ignoring command due to CHANNEL being blacklisted: {}", command);
+                                return false;
+                            }
+                            return command.scope().isInScope(channel);
+                        })
+                        .flatMap(command -> {
+                            var locale = guildId.map(Snowflake::asLong)
+                                    .map(localeByGuild::get)
+                                    .orElse(i18nConfig.getDefaultLocale());
+                            var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
+                            return command.privilege().isGranted(ctx)
+                                    .then(Mono.defer(() -> command.run(ctx)))
+                                    .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
+                                    .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
+                                    .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
+                                            "occurred when executing a command. Context: " + ctx, t)));
+                        }));
     }
 
+    private Mono<Void> executeErrorHandler(Throwable t, CommandErrorHandler errorHandler, CommandContext ctx) {
+        if (t instanceof CommandFailedException) {
+            return errorHandler.handleCommandFailed((CommandFailedException) t, ctx);
+        }
+        if (t instanceof PrivilegeException) {
+            return errorHandler.handlePrivilege((PrivilegeException) t, ctx);
+        }
+        if (t instanceof BadSubcommandException) {
+            return errorHandler.handleBadSubcommand((BadSubcommandException) t, ctx);
+        }
+        return errorHandler.handleDefault(t, ctx);
+    }
 }

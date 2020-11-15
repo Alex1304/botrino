@@ -24,9 +24,9 @@
 package botrino.api.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
+
+import static java.util.stream.Collectors.joining;
 
 public final class Markdown {
 
@@ -40,11 +40,10 @@ public final class Markdown {
      * @return String
      */
     public static String escape(String text) {
-        List<Character> resultList = new ArrayList<>();
-        Character[] charsToEscape = {'\\', '_', '*', '~', '`', ':', '@', '#', '|', '>'};
-        List<Character> charsToEscapeList = Arrays.asList(charsToEscape);
+        var resultList = new ArrayList<Character>();
+        var charsToEscape = Set.of('\\', '_', '*', '~', '`', ':', '@', '#', '|', '<', '>', '&');
         for (char c : text.toCharArray()) {
-            if (charsToEscapeList.contains(c))
+            if (charsToEscape.contains(c))
                 resultList.add('\\');
             resultList.add(c);
         }
@@ -72,7 +71,7 @@ public final class Markdown {
      * @return the formatted text
      */
     public static String italic(String text, boolean starVariant) {
-        char italicChar = starVariant ? '*' : '_';
+        var italicChar = starVariant ? '*' : '_';
         return italicChar + text + italicChar;
     }
 
@@ -167,6 +166,6 @@ public final class Markdown {
      * @return the formatted text
      */
     public static String quote(String text) {
-        return text.lines().map(line -> "> " + line).collect(Collectors.joining("\n"));
+        return text.lines().map(line -> line.isBlank() ? line : "> " + line).collect(joining("\n"));
     }
 }

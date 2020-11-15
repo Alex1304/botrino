@@ -28,18 +28,70 @@ import java.util.*;
 /**
  * Represents the tokenized input of a command sent in chat.
  */
-public final class CommandInput {
+public final class TokenizedInput {
 
     private final String raw;
-    private final String prefix;
     private final ArrayDeque<String> args;
     private final Map<String, String> flagMap;
 
-    CommandInput(String raw, String prefix, ArrayDeque<String> args, Map<String, String> flagMap) {
+    private TokenizedInput(String raw, ArrayDeque<String> args, Map<String, String> flagMap) {
         this.raw = raw;
-        this.prefix = prefix;
         this.args = args;
         this.flagMap = flagMap;
+    }
+
+    public static TokenizedInput tokenize(String raw) {
+        Objects.requireNonNull(raw);
+        // Extracting the tokens
+        var tokens = new ArrayDeque<String>();
+        var buffer = new StringBuilder();
+        var inQuotes = false;
+        var escaping = false;
+        for (var c : raw.strip().toCharArray()) {
+            if (!escaping) {
+                if (c == '\\') {
+                    escaping = true;
+                    continue;
+                } else if (c == '"') {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+            }
+            if (!inQuotes) {
+                if (Character.isWhitespace(c)) {
+                    if (buffer.length() > 0) {
+                        tokens.add(buffer.toString());
+                        buffer.delete(0, buffer.length());
+                    }
+                } else {
+                    buffer.append(c);
+                }
+            } else {
+                buffer.append(c);
+            }
+            escaping = false;
+        }
+        if (buffer.length() != 0) {
+            tokens.add(buffer.toString());
+        }
+        // Separating tokens into flags and args
+        var flags = new HashMap<String, String>();
+        var args = new ArrayDeque<String>();
+        final var flagPrefix = "-";
+        while (!tokens.isEmpty()) {
+            var token = tokens.remove();
+            if (token.startsWith(flagPrefix) && token.length() > flagPrefix.length()) {
+                var split = token.substring(flagPrefix.length()).split("=", 2);
+                if (split.length == 1) {
+                    flags.put(split[0], "");
+                } else {
+                    flags.put(split[0], split[1]);
+                }
+            } else {
+                args.add(token);
+            }
+        }
+        return new TokenizedInput(raw, args, flags);
     }
 
     /**
@@ -49,15 +101,6 @@ public final class CommandInput {
      */
     public String getRaw() {
         return raw;
-    }
-
-    /**
-     * Gets the prefix used in the original input.
-     *
-     * @return the prefix
-     */
-    public String getPrefix() {
-        return prefix;
     }
 
     /**
@@ -119,9 +162,8 @@ public final class CommandInput {
 
     @Override
     public String toString() {
-        return "CommandInput{" +
+        return "TokenizedInput{" +
                 "raw='" + raw + '\'' +
-                ", prefix='" + prefix + '\'' +
                 ", args=" + args +
                 ", flagMap=" + flagMap +
                 '}';

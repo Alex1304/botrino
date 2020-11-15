@@ -34,12 +34,14 @@ import java.util.NoSuchElementException;
 public final class CommandContext implements Translator {
 
     private final MessageCreateEvent event;
-    private final CommandInput input;
+    private final String prefixUsed;
+    private final TokenizedInput input;
     private final Locale locale;
     private final MessageChannel channel;
 
-    CommandContext(MessageCreateEvent event, CommandInput input, Locale locale, MessageChannel channel) {
+    CommandContext(MessageCreateEvent event, String prefixUsed, TokenizedInput input, Locale locale, MessageChannel channel) {
         this.event = event;
+        this.prefixUsed = prefixUsed;
         this.input = input;
         this.locale = locale;
         this.channel = channel;
@@ -55,12 +57,21 @@ public final class CommandContext implements Translator {
     }
 
     /**
+     * Gets the prefix used in the original input.
+     *
+     * @return the prefix used
+     */
+    public String getPrefixUsed() {
+        return prefixUsed;
+    }
+
+    /**
      * Gets the tokenized input of the command in this context, allowing convenient access to command prefix, arguments
      * and flags.
      *
      * @return the command input
      */
-    public CommandInput input() {
+    public TokenizedInput input() {
         return input;
     }
 
@@ -97,6 +108,7 @@ public final class CommandContext implements Translator {
     public String toString() {
         return "CommandContext{" +
                 "event=" + event +
+                ", prefixUsed=" + prefixUsed +
                 ", input=" + input +
                 ", locale=" + locale +
                 '}';

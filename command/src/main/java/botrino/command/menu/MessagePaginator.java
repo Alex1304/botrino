@@ -21,33 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command;
+package botrino.command.menu;
 
-import botrino.command.privilege.PrivilegeException;
+import botrino.api.util.MessageTemplate;
+import botrino.command.CommandContext;
 import reactor.core.publisher.Mono;
 
 /**
- * A {@link CommandErrorHandler} that forwards all errors.
+ * Allows to make a pagination system by building a message that changes according to the page number.
  */
-public final class NoOpErrorHandler implements CommandErrorHandler {
+@FunctionalInterface
+public interface MessagePaginator {
 
-    @Override
-    public Mono<Void> handleCommandFailed(CommandFailedException e, CommandContext ctx) {
-        return Mono.error(e);
-    }
-
-    @Override
-    public Mono<Void> handlePrivilege(PrivilegeException e, CommandContext ctx) {
-        return Mono.error(e);
-    }
-
-    @Override
-    public Mono<Void> handleBadSubcommand(BadSubcommandException e, CommandContext ctx) {
-        return Mono.error(e);
-    }
-
-    @Override
-    public Mono<Void> handleDefault(Throwable e, CommandContext ctx) {
-        return Mono.error(e);
-    }
+    /**
+     * Generates a message template based on the current context and the current page number.
+     *
+     * @param ctx        the context of the command that created this paginator
+     * @param pageNumber the current page number
+     * @return a Mono emitting a {@link MessageTemplate} corresponding to the output at this specific page. If the page
+     * number is out of range, {@link PageNumberOutOfRangeException} is expected to be emitted.
+     */
+    Mono<MessageTemplate> renderPage(CommandContext ctx, int pageNumber);
 }

@@ -21,45 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.config;
+package botrino.command.menu;
 
-import botrino.api.config.ConfigObject;
-import botrino.api.config.ValidationFailure;
-import botrino.command.menu.PaginationControls;
+public final class PageInputException extends RuntimeException {
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
-@SuppressWarnings("unused")
-public final class CommandConfig implements ConfigObject {
-
-    private String prefix;
-    private PaginationControls paginationControls;
-    private long menuTimeoutSeconds;
-
-    public String getPrefix() {
-        return prefix;
-    }
-
-    public PaginationControls getPaginationControls() {
-        return Objects.requireNonNullElse(paginationControls, PaginationControls.getDefault());
-    }
-
-    public Duration getMenuTimeout() {
-        return Duration.ofSeconds(menuTimeoutSeconds);
-    }
-
-    @Override
-    public List<ValidationFailure> validate() {
-        var failures = new ArrayList<ValidationFailure>();
-        if (prefix == null) {
-            failures.add(ValidationFailure.missingField("prefix"));
-        }
-        if (prefix != null && prefix.isBlank()) {
-            failures.add(ValidationFailure.blankField("prefix"));
-        }
-        return failures;
-    }
 }

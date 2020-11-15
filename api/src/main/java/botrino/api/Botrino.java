@@ -87,7 +87,7 @@ public final class Botrino {
                     .collect(Collectors.toSet()));
             for (var clazz : classes) {
                 if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())
-                        || clazz.isAnnotationPresent(Exclude.class)) {
+                        || clazz.isAnonymousClass() || clazz.isAnnotationPresent(Exclude.class)) {
                     continue;
                 }
                 if (clazz.isAnnotationPresent(RdiService.class)) {
@@ -141,10 +141,10 @@ public final class Botrino {
                     .doOnNext(service -> extensions.forEach(ext -> ext.onServiceCreated(service)))
                     .then(serviceContainer.getService(gatewayRef))
                     .flatMap(gateway -> gateway.onDisconnect()
-                            .or(Mono.when(extensions.stream()
+                            .and(Mono.when(extensions.stream()
                                     .map(BotrinoExtension::finishAndJoin)
                                     .collect(Collectors.toList()))
-                                    .and(gateway.onDisconnect())))
+                                    .takeUntilOther(gateway.onDisconnect())))
                     .block();
         } catch (Exception e) {
             if (e instanceof RuntimeException) {

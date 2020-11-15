@@ -81,7 +81,7 @@ public final class CommandExtension implements BotrinoExtension {
         Objects.requireNonNull(commandService);
         commands.forEach(commandService::addCommand);
         commandService.setErrorHandler(ConfigUtils.selectImplementation(CommandErrorHandler.class, errorHandlers)
-                .orElseGet(NoOpErrorHandler::new));
+                .orElse(CommandErrorHandler.NO_OP));
         return commandService.listenToCommands();
     }
 }

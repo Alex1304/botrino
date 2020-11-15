@@ -51,5 +51,5 @@ public interface ParentCommand extends Command {
      * @return a set of subcommands
      */
     @Override
-    Set<Command> getSubcommands();
+    Set<Command> subcommands();
 }

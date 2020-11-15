@@ -32,7 +32,6 @@ import discord4j.discordjson.json.gateway.StatusUpdate;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 public final class BotConfigEntry implements ConfigEntry<BotConfig> {
 
@@ -42,34 +41,15 @@ public final class BotConfigEntry implements ConfigEntry<BotConfig> {
 
     @Override
     public String define(GsonBuilder gsonBuilder) {
-        gsonBuilder.registerTypeAdapter(StatusUpdate.class, new StatusUpdateSerializer());
         gsonBuilder.registerTypeAdapter(StatusUpdate.class, new StatusUpdateDeserializer());
         return "bot";
-    }
-
-    private static class StatusUpdateSerializer implements JsonSerializer<StatusUpdate> {
-
-        @Override
-        public JsonElement serialize(StatusUpdate src, Type typeOfSrc, JsonSerializationContext context) {
-            var o = new JsonObject();
-            var activity = src.activities()
-                    .filter(Predicate.not(List::isEmpty))
-                    .map(l -> l.get(0))
-                    .orElse(null);
-            if (activity != null) {
-                o.addProperty(ACTIVITY_TYPE, Activity.Type.of(activity.type()).toString().toLowerCase());
-                o.addProperty(ACTIVITY_TEXT, activity.name());
-            }
-            o.addProperty(STATUS, src.status());
-            return null;
-        }
     }
 
     private static class StatusUpdateDeserializer implements JsonDeserializer<StatusUpdate> {
 
         @Override
         public StatusUpdate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
-            JsonObject o = json.getAsJsonObject();
+            var o = json.getAsJsonObject();
             var builder = StatusUpdate.builder();
             if (o.has(ACTIVITY_TYPE) && o.has(ACTIVITY_TEXT)) {
                 builder.activities(List.of(ActivityUpdateRequest.builder()

@@ -5,6 +5,7 @@ module botrino.command {
     exports botrino.command;
     exports botrino.command.config;
     exports botrino.command.doc;
+    exports botrino.command.menu;
     exports botrino.command.privilege;
 
     opens botrino.command;

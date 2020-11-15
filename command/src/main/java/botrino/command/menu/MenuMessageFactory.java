@@ -21,45 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.config;
+package botrino.command.menu;
 
-import botrino.api.config.ConfigObject;
-import botrino.api.config.ValidationFailure;
-import botrino.command.menu.PaginationControls;
+import botrino.command.CommandContext;
+import discord4j.core.spec.MessageCreateSpec;
+import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.function.Consumer;
 
-@SuppressWarnings("unused")
-public final class CommandConfig implements ConfigObject {
+/**
+ * Functional interface to generate a message create spec for an interactive menu.
+ */
+@FunctionalInterface
+public interface MenuMessageFactory {
 
-    private String prefix;
-    private PaginationControls paginationControls;
-    private long menuTimeoutSeconds;
-
-    public String getPrefix() {
-        return prefix;
-    }
-
-    public PaginationControls getPaginationControls() {
-        return Objects.requireNonNullElse(paginationControls, PaginationControls.getDefault());
-    }
-
-    public Duration getMenuTimeout() {
-        return Duration.ofSeconds(menuTimeoutSeconds);
-    }
-
-    @Override
-    public List<ValidationFailure> validate() {
-        var failures = new ArrayList<ValidationFailure>();
-        if (prefix == null) {
-            failures.add(ValidationFailure.missingField("prefix"));
-        }
-        if (prefix != null && prefix.isBlank()) {
-            failures.add(ValidationFailure.blankField("prefix"));
-        }
-        return failures;
-    }
+    /**
+     * Asynchronously generate a message spec for an interactive menu according to the given context.
+     *
+     * @param ctx the context of the command that is creating the menu
+     * @return a Mono emitting the message spec for the menu message
+     */
+    Mono<? extends Consumer<MessageCreateSpec>> create(CommandContext ctx);
 }
