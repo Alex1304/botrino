@@ -24,9 +24,11 @@
 package botrino.command;
 
 import botrino.api.config.ConfigContainer;
-import botrino.api.config.i18n.I18nConfig;
+import botrino.api.config.ConfigException;
+import botrino.api.config.object.I18nConfig;
 import botrino.command.config.CommandConfig;
 import botrino.command.menu.InteractiveMenuFactory;
+import botrino.command.menu.PaginationControls;
 import botrino.command.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -34,11 +36,13 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.User;
+import discord4j.core.object.reaction.ReactionEmoji;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -66,8 +70,34 @@ public final class CommandService {
         this.commandConfig = configContainer.get(CommandConfig.class);
         this.i18nConfig = configContainer.get(I18nConfig.class);
         this.gateway = gateway;
-        this.interactiveMenuFactory = InteractiveMenuFactory.of(commandConfig.getPaginationControls(),
-                commandConfig.getMenuTimeout());
+        this.interactiveMenuFactory = InteractiveMenuFactory.of(
+                commandConfig.paginationControls()
+                        .map(paginationControlsConfig -> PaginationControls.of(
+                                paginationControlsConfig.nextEmoji()
+                                        .map(CommandService::configToEmoji)
+                                        .orElse(PaginationControls.DEFAULT_NEXT_EMOJI),
+                                paginationControlsConfig.previousEmoji()
+                                        .map(CommandService::configToEmoji)
+                                        .orElse(PaginationControls.DEFAULT_PREVIOUS_EMOJI),
+                                paginationControlsConfig.closeEmoji()
+                                        .map(CommandService::configToEmoji)
+                                        .orElse(PaginationControls.DEFAULT_CLOSE_EMOJI)
+                        ))
+                        .orElse(PaginationControls.getDefault()),
+                Duration.ofSeconds(commandConfig.menuTimeoutSeconds().orElse(600L)));
+    }
+
+    private static ReactionEmoji configToEmoji(CommandConfig.EmojiConfig config) {
+        if (config.id().isPresent() && config.name().isPresent()) {
+            return ReactionEmoji.custom(
+                    Snowflake.of(config.id().getAsLong()),
+                    config.name().get(),
+                    config.animated().orElse(false));
+        }
+        if (config.unicode().isEmpty()) {
+            throw new ConfigException(config + " does not correspond to a valid emoji type (custom or unicode)");
+        }
+        return ReactionEmoji.unicode(config.unicode().get());
     }
 
     /**
@@ -141,7 +171,7 @@ public final class CommandService {
         var guildId = event.getGuildId();
         var prefixOfGuild = guildId.map(Snowflake::asLong)
                 .map(prefixByGuild::get)
-                .orElse(commandConfig.getPrefix());
+                .orElse(commandConfig.prefix());
         var botId = event.getClient().getSelfId().asLong();
         var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefixOfGuild);
         var messageContent = event.getMessage().getContent();
@@ -191,7 +221,7 @@ public final class CommandService {
                         .flatMap(command -> {
                             var locale = guildId.map(Snowflake::asLong)
                                     .map(localeByGuild::get)
-                                    .orElse(i18nConfig.getDefaultLocale());
+                                    .orElse(Locale.forLanguageTag(i18nConfig.defaultLocale()));
                             var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
                             return command.privilege().isGranted(ctx)
                                     .then(Mono.defer(() -> command.run(ctx)))

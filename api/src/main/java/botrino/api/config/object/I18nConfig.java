@@ -21,45 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.api.config.bot;
+package botrino.api.config.object;
 
-import botrino.api.config.ConfigObject;
-import botrino.api.config.ValidationFailure;
-import discord4j.core.object.presence.Presence;
-import discord4j.discordjson.json.gateway.StatusUpdate;
+import botrino.api.annotation.ConfigEntry;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
-@SuppressWarnings("unused")
-public final class BotConfig implements ConfigObject {
+@Value.Immutable
+@JsonDeserialize(as = ImmutableI18nConfig.class)
+@ConfigEntry("i18n")
+public interface I18nConfig {
 
-    private String token;
-    private StatusUpdate presence;
-    private long enabledIntents;
+    @JsonProperty("default_locale")
+    String defaultLocale();
 
-    public String getToken() {
-        return token;
-    }
-
-    public StatusUpdate getPresence() {
-        return Objects.requireNonNullElse(presence, Presence.online());
-    }
-
-    public long getEnabledIntents() {
-        return enabledIntents;
-    }
-
-    @Override
-    public List<ValidationFailure> validate() {
-        var failures = new ArrayList<ValidationFailure>();
-        if (token == null) {
-            failures.add(ValidationFailure.missingField("token"));
-        }
-        if (token != null && token.isBlank()) {
-            failures.add(ValidationFailure.blankField("token"));
-        }
-        return failures;
-    }
+    @JsonProperty("supported_locales")
+    Set<String> supportedLocales();
 }

@@ -23,14 +23,48 @@
  */
 package botrino.api.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import discord4j.core.GatewayDiscordClient;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
- * Allows to customize the way the bot connects to the Discord gateway. There must be at most one implementation of
- * {@link DiscordLoginHandler}
+ * Allows to customize the behavior of the bot when it starts up, such as the way it connects to Discord and the way it
+ * loads the configuration.
  */
-public interface DiscordLoginHandler {
+public interface StartupHandler {
+
+    /**
+     * Loads the configuration from a certain JSON source, suggested by the provided {@link Path} which corresponds to
+     * the bot's home directory. The implementation of this method is expected to be synchronous and blocking: the bot
+     * hasn't started at this point, loading the configuration is one of the very first things that are executed when
+     * the main method is launched, as a result this method will execute on the main thread of the program.
+     *
+     * <p>
+     * By default, reads a file named config.json at the root of the bot's directory.
+     *
+     * @param botDirectory the bot's home directory
+     * @return the raw JSON data of the configuration
+     */
+    default String loadConfigJson(Path botDirectory) throws IOException {
+        return Files.readString(botDirectory.resolve("config.json"));
+    }
+
+    /**
+     * Creates the object mapper instance to use to parse the configuration JSON.
+     *
+     * <p>
+     * By default, creates an empty {@link ObjectMapper} with only the {@link Jdk8Module} registered.
+     *
+     * @return a new {@link ObjectMapper}
+     */
+    default ObjectMapper createConfigObjectMapper() {
+        return new ObjectMapper().registerModule(new Jdk8Module());
+    }
 
     /**
      * Constructs a {@link GatewayDiscordClient} based on the information given by the configuration container.

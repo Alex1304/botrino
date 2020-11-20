@@ -23,8 +23,6 @@
  */
 package botrino.api.util;
 
-import discord4j.core.object.entity.Message;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,12 +69,12 @@ public final class MessageUtils {
     }
 
     /**
-     * Splits a message into several chunks. Each chunk can have a max size of {@link Message#MAX_CONTENT_LENGTH} - 10.
+     * Splits a message into several chunks. Each chunk can have a max size of 1000.
      *
      * @param superLongMessage the message to split
      * @return a List which elements are the chunks in the correct order
      */
     public static List<String> chunk(String superLongMessage) {
-        return chunk(superLongMessage, Message.MAX_CONTENT_LENGTH - 10);
+        return chunk(superLongMessage, 1000);
     }
 }

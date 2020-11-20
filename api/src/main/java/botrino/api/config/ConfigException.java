@@ -23,9 +23,16 @@
  */
 package botrino.api.config;
 
+/**
+ * Thrown when something goes wrong while configuring the bot.
+ */
 public final class ConfigException extends RuntimeException {
 
     public ConfigException(String message) {
         super(message);
+    }
+
+    public ConfigException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

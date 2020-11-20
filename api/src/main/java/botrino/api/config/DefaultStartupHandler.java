@@ -23,32 +23,34 @@
  */
 package botrino.api.config;
 
-import botrino.api.config.bot.BotConfig;
+import botrino.api.config.object.BotConfig;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
+import discord4j.core.object.presence.Presence;
 import discord4j.core.retriever.EntityRetrievalStrategy;
 import discord4j.core.shard.MemberRequestFilter;
 import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 
-public final class DefaultDiscordLoginHandler implements DiscordLoginHandler {
-
-    private static final Logger LOGGER = Loggers.getLogger(DefaultDiscordLoginHandler.class);
+public final class DefaultStartupHandler implements StartupHandler {
 
     @Override
     public Mono<GatewayDiscordClient> login(ConfigContainer configContainer) {
         var config = configContainer.get(BotConfig.class);
-        var discordClient = DiscordClient.create(config.getToken());
+        var discordClient = DiscordClient.create(config.token());
         return discordClient.gateway()
-                .setInitialStatus(shard -> config.getPresence())
+                .setInitialStatus(shard -> config.presence()
+                        .map(BotConfig.StatusConfig::toStatusUpdate)
+                        .orElseGet(Presence::online))
                 .setEventDispatcher(EventDispatcher.withLatestEvents(Queues.SMALL_BUFFER_SIZE))
                 .setEntityRetrievalStrategy(EntityRetrievalStrategy.STORE_FALLBACK_REST)
                 .setAwaitConnections(true)
-                .setEnabledIntents(IntentSet.of(config.getEnabledIntents()))
+                .setEnabledIntents(config.enabledIntents().stream().boxed()
+                        .map(IntentSet::of)
+                        .findAny()
+                        .orElse(IntentSet.nonPrivileged()))
                 .setMemberRequestFilter(MemberRequestFilter.none())
                 .login()
                 .single();

@@ -21,45 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.api.config.bot;
+package botrino.api.config.object;
 
-import botrino.api.config.ConfigEntry;
-import com.google.gson.*;
+import botrino.api.annotation.ConfigEntry;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import discord4j.core.object.presence.Activity;
 import discord4j.discordjson.json.ActivityUpdateRequest;
 import discord4j.discordjson.json.gateway.StatusUpdate;
+import org.immutables.value.Value;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
-public final class BotConfigEntry implements ConfigEntry<BotConfig> {
+@Value.Immutable
+@JsonDeserialize(as = ImmutableBotConfig.class)
+@ConfigEntry("bot")
+public interface BotConfig {
 
-    private static final String ACTIVITY_TYPE = "activity_type";
-    private static final String ACTIVITY_TEXT = "activity_text";
-    private static final String STATUS = "status";
+    String token();
 
-    @Override
-    public String define(GsonBuilder gsonBuilder) {
-        gsonBuilder.registerTypeAdapter(StatusUpdate.class, new StatusUpdateDeserializer());
-        return "bot";
-    }
+    Optional<StatusConfig> presence();
 
-    private static class StatusUpdateDeserializer implements JsonDeserializer<StatusUpdate> {
+    @JsonProperty("enabled_intents")
+    OptionalLong enabledIntents();
 
-        @Override
-        public StatusUpdate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
-            var o = json.getAsJsonObject();
-            var builder = StatusUpdate.builder();
-            if (o.has(ACTIVITY_TYPE) && o.has(ACTIVITY_TEXT)) {
+    @Value.Immutable
+    @JsonDeserialize(as = ImmutableStatusConfig.class)
+    interface StatusConfig {
+
+        @JsonProperty("activity_type")
+        Optional<String> activityType();
+
+        @JsonProperty("activity_text")
+        Optional<String> activityText();
+
+        String status();
+
+        default StatusUpdate toStatusUpdate() {
+            var builder = StatusUpdate.builder()
+                    .afk(false)
+                    .status(status());
+            if (activityType().isPresent() && activityText().isPresent()) {
                 builder.activities(List.of(ActivityUpdateRequest.builder()
-                        .type(Activity.Type.valueOf(o.get(ACTIVITY_TYPE).getAsString().toUpperCase()).getValue())
-                        .name(o.get(ACTIVITY_TEXT).getAsString())
+                        .type(Activity.Type.valueOf(activityType().orElseThrow().toUpperCase()).getValue())
+                        .name(activityText().orElseThrow())
                         .build()));
-            } else {
-                builder.activities(Optional.empty());
             }
-            builder.status(o.get(STATUS).getAsString()).afk(false);
             return builder.build();
         }
     }

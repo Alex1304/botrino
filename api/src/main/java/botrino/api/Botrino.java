@@ -24,10 +24,14 @@
 package botrino.api;
 
 import botrino.api.annotation.BotModule;
+import botrino.api.annotation.ConfigEntry;
 import botrino.api.annotation.Exclude;
-import botrino.api.config.*;
-import botrino.api.config.bot.BotConfigEntry;
-import botrino.api.config.i18n.I18nConfigEntry;
+import botrino.api.config.ConfigContainer;
+import botrino.api.config.ConfigParser;
+import botrino.api.config.DefaultStartupHandler;
+import botrino.api.config.StartupHandler;
+import botrino.api.config.object.BotConfig;
+import botrino.api.config.object.I18nConfig;
 import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import com.github.alex1304.rdi.RdiServiceContainer;
@@ -46,9 +50,7 @@ import reactor.util.Loggers;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Modifier;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +65,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 public final class Botrino {
 
     private static final Logger LOGGER = Loggers.getLogger(Botrino.class);
-    private static final String CONFIG_JSON = "config.json";
     private static final String API_VERSION_TXT = "META-INF/botrino/apiVersion.txt";
 
     public static void run() {
@@ -73,10 +74,9 @@ public final class Botrino {
     public static void run(String[] args) {
         try {
             var botDir = Path.of(args.length == 0 ? "." : args[0]);
-            var configJson = Files.readString(botDir.resolve(CONFIG_JSON));
             var classes = scanBotModules();
-            var configEntries = new HashSet<ConfigEntry<?>>();
-            var discordLoginHandlers = new ArrayList<DiscordLoginHandler>();
+            var configEntries = new HashSet<Class<?>>();
+            var startupHandlers = new ArrayList<Class<? extends StartupHandler>>();
             var serviceClasses = new HashSet<Class<?>>();
             var extensions = ServiceLoader.load(BotrinoExtension.class)
                     .stream()
@@ -86,38 +86,40 @@ public final class Botrino {
                     .flatMap(ext -> ext.provideExtraDiscoverableClasses().stream())
                     .collect(Collectors.toSet()));
             for (var clazz : classes) {
-                if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())
-                        || clazz.isAnonymousClass() || clazz.isAnnotationPresent(Exclude.class)) {
+                if (clazz.isAnonymousClass() || clazz.isAnnotationPresent(Exclude.class)) {
                     continue;
                 }
                 if (clazz.isAnnotationPresent(RdiService.class)) {
                     LOGGER.debug("Discovered service class {}", clazz.getName());
                     serviceClasses.add(clazz);
                 }
-                if (ConfigEntry.class.isAssignableFrom(clazz)) {
+                if (clazz.isAnnotationPresent(ConfigEntry.class)) {
                     LOGGER.debug("Discovered config entry {}", clazz.getName());
-                    configEntries.add(ConfigUtils.instantiateNoArg(clazz.asSubclass(ConfigEntry.class)));
+                    configEntries.add(clazz);
                 }
-                if (DiscordLoginHandler.class.isAssignableFrom(clazz)) {
+                if (StartupHandler.class.isAssignableFrom(clazz)) {
                     LOGGER.debug("Discovered discord login handler {}", clazz.getName());
-                    discordLoginHandlers.add(ConfigUtils.instantiateNoArg(clazz.asSubclass(DiscordLoginHandler.class)));
+                    startupHandlers.add(clazz.asSubclass(StartupHandler.class));
                 }
                 extensions.forEach(ext -> ext.onClassDiscovered(clazz));
             }
-            var loginHandler = ConfigUtils.selectImplementation(DiscordLoginHandler.class, discordLoginHandlers)
-                    .orElseGet(DefaultDiscordLoginHandler::new);
-            configEntries.add(new BotConfigEntry());
-            configEntries.add(new I18nConfigEntry());
+            var startupHandler = ConfigUtils.selectImplementationClass(StartupHandler.class, startupHandlers)
+                    .<StartupHandler>map(ConfigUtils::instantiate)
+                    .orElseGet(DefaultStartupHandler::new);
+            configEntries.add(BotConfig.class);
+            configEntries.add(I18nConfig.class);
 
-            var configObjects = ConfigParser.create(configEntries).parse(configJson);
+            var objectMapper = startupHandler.createConfigObjectMapper();
+            var configJson = startupHandler.loadConfigJson(botDir);
+            var configObjects = ConfigParser.create(objectMapper, configEntries).parse(configJson);
             var configContainerDescriptor = ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
                     .setFactoryMethod(staticFactory("of", ConfigContainer.class,
-                            value(configObjects, Collection.class)))
+                            value(configObjects, Map.class)))
                     .build();
             var gatewayRef = ServiceReference.ofType(GatewayDiscordClient.class);
             var loginHandlerDescriptor = ServiceDescriptor.builder(gatewayRef)
                     .setFactoryMethod(externalStaticFactory(Botrino.class, "login", Mono.class,
-                            value(loginHandler, DiscordLoginHandler.class),
+                            value(startupHandler, StartupHandler.class),
                             ref(configContainerDescriptor.getServiceReference())))
                     .build();
             var apiVersionDescriptor = ServiceDescriptor.builder(ServiceReference.of("apiVersion", String.class))
@@ -184,8 +186,8 @@ public final class Botrino {
         return classes;
     }
 
-    public static Mono<GatewayDiscordClient> login(DiscordLoginHandler loginHandler, ConfigContainer configContainer) {
-        return loginHandler.login(configContainer);
+    public static Mono<GatewayDiscordClient> login(StartupHandler startupHandler, ConfigContainer configContainer) {
+        return startupHandler.login(configContainer);
     }
 
     public static Mono<String> apiVersion() {

@@ -26,7 +26,7 @@ package botrino.command;
 import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
-import botrino.command.config.CommandConfigEntry;
+import botrino.command.config.CommandConfig;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 import reactor.core.publisher.Mono;
@@ -73,7 +73,7 @@ public final class CommandExtension implements BotrinoExtension {
 
     @Override
     public Set<Class<?>> provideExtraDiscoverableClasses() {
-        return Set.of(CommandService.class, CommandConfigEntry.class);
+        return Set.of(CommandService.class, CommandConfig.class);
     }
 
     @Override

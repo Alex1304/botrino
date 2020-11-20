@@ -79,6 +79,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
+        <immutables.version>2.8.9-SNAPSHOT</immutables.version>
+        <jackson.version>2.11.2</jackson.version>
+        <discord4j.version>3.2.0-SNAPSHOT</discord4j.version>
+        <rdi.version>1.1.0</rdi.version>
     </properties>
 
     <repositories>
@@ -99,6 +103,13 @@
                     <version>3.8.1</version>
                     <configuration>
                         <release>${java.version}</release>
+                        <annotationProcessorPaths>
+                            <annotationProcessorPath>
+                                <groupId>org.immutables</groupId>
+                                <artifactId>value</artifactId>
+                                <version>${immutables.version}</version>
+                            </annotationProcessorPath>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -211,29 +222,39 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Modules -->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>botrino-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- dependencies for api module -->
+            <!-- BOMs -->
             <dependency>
-                <groupId>org.jdbi</groupId>
-                <artifactId>jdbi3-bom</artifactId>
+                <groupId>org.immutables</groupId>
+                <artifactId>bom</artifactId>
+                <version>${immutables.version}</version>
                 <type>pom</type>
-                <version>3.13.0</version>
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- D4J, Reactor -->
+            <dependency>
                 <groupId>com.discord4j</groupId>
                 <artifactId>discord4j-core</artifactId>
-                <version>3.2.0-SNAPSHOT</version>
+                <version>${discord4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.alex1304</groupId>
                 <artifactId>rdi</artifactId>
-                <version>1.1.0</version>
+                <version>${rdi.version}</version>
                 <exclusions>
                     <!-- Use reactor version provided by discord4j -->
                     <exclusion>
@@ -242,30 +263,8 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>2.8.6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.11</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>3.0.1</version>
-                <scope>provided</scope>
-            </dependency>
 
             <!-- Test dependencies -->
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>1.4.200</version>
-                <scope>test</scope>
-            </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>

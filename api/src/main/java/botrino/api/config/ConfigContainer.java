@@ -23,47 +23,55 @@
  */
 package botrino.api.config;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
+import botrino.api.annotation.ConfigEntry;
 
-import static java.util.stream.Collectors.toMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
- * Contains the configuration for a specific bot.
+ * Contains the configuration for the bot.
  */
 public final class ConfigContainer {
 
-    private final Map<Class<?>, ConfigObject> configMap;
+    private final Map<String, ?> configMap;
 
-    private ConfigContainer(Map<Class<?>, ConfigObject> configMap) {
+    private ConfigContainer(Map<String, ?> configMap) {
         this.configMap = configMap;
     }
 
     /**
-     * Creates a new {@link ConfigContainer} with the given collection of config objects.
+     * Creates a new {@link ConfigContainer} with a {@link Map} containing the configuration objects associated by their
+     * name.
      *
      * @param configObjects the config objects held by this {@link ConfigContainer}
      * @return a new {@link ConfigContainer}
      */
-    public static ConfigContainer of(Collection<? extends ConfigObject> configObjects) {
+    public static ConfigContainer of(Map<String, ?> configObjects) {
         Objects.requireNonNull(configObjects);
-        return new ConfigContainer(configObjects.stream().collect(toMap(Object::getClass, Function.identity())));
+        return new ConfigContainer(configObjects);
     }
 
     /**
-     * Gets the configuration object of the given type.
+     * Gets the configuration object of the given type. The class given in argument is expected to have a {@link
+     * ConfigEntry} annotation, otherwise {@link IllegalArgumentException} will be thrown.
      *
      * @param type the type of configuration object to get
      * @param <C>  the actual type of the configuration object
-     * @return the configuration object
-     * @throws ConfigException if no configuration exists for the given type
+     * @return the configuration object associated to the given class
+     * @throws IllegalArgumentException if the given class does not have the {@link ConfigEntry} annotation
+     * @throws NoSuchElementException   if no configuration exists for the given type
      */
-    public <C extends ConfigObject> C get(Class<C> type) {
-        ConfigObject c = configMap.get(type);
+    public <C> C get(Class<C> type) {
+        var annotation = type.getAnnotation(ConfigEntry.class);
+        if (annotation == null) {
+            throw new IllegalArgumentException("The class " + type.getName() + " does not have the @ConfigEntry " +
+                    "annotation");
+        }
+        var c = configMap.get(annotation.value());
         if (c == null) {
-            throw new ConfigException("No configuration object found for type " + type.getName());
+            throw new NoSuchElementException("No configuration object found for '" + annotation.value() + "' " +
+                    "(of type " + type.getName() + ")");
         }
         return type.cast(c);
     }

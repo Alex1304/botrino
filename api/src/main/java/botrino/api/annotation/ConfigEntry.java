@@ -21,19 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.api.config;
+package botrino.api.annotation;
 
-import java.util.List;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-/**
- * Interface to be implemented by configuration objects
- */
-public interface ConfigObject {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    /**
-     * Validates this configuration object that has been constructed from the json data.
-     *
-     * @return the list of validation failures. If the returned list is empty, it means the object is valid.
-     */
-    List<ValidationFailure> validate();
+@Documented
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface ConfigEntry {
+
+    String value();
 }

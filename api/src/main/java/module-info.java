@@ -5,18 +5,16 @@ module botrino.api {
     exports botrino.api;
     exports botrino.api.annotation;
     exports botrino.api.config;
-    exports botrino.api.config.bot;
-    exports botrino.api.config.i18n;
+    exports botrino.api.config.object;
     exports botrino.api.extension;
     exports botrino.api.i18n;
     exports botrino.api.util;
 
-    opens botrino.api.config.bot;
-    opens botrino.api.config.i18n;
+    opens botrino.api.config.object;
 
-    requires org.apache.commons.lang3;
+    requires static org.immutables.value;
 
-    requires transitive com.google.gson;
+    requires transitive com.google.errorprone.annotations;
     requires transitive discord4j.common;
     requires transitive discord4j.core;
     requires transitive discord4j.discordjson;
@@ -24,6 +22,10 @@ module botrino.api {
     requires transitive discord4j.gateway;
     requires transitive discord4j.rest;
     requires transitive discord4j.voice;
+    requires transitive com.fasterxml.jackson.annotation;
+    requires transitive com.fasterxml.jackson.core;
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.fasterxml.jackson.datatype.jdk8;
     requires transitive java.logging;
     requires transitive org.reactivestreams;
     requires transitive rdi;

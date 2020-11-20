@@ -56,13 +56,15 @@
     </build>
 
     <dependencies>
+        <!-- Use dependencies from parent -->
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>com.github.alex1304</groupId>
             <artifactId>botrino-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
         </dependency>
     </dependencies>
 </project>

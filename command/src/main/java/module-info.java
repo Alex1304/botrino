@@ -14,4 +14,6 @@ module botrino.command {
     provides BotrinoExtension with CommandExtension;
 
     requires botrino.api;
+
+    requires static org.immutables.value;
 }

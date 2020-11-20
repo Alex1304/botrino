@@ -33,7 +33,7 @@ public final class InstanceCache {
     private final ClassValue<Object> cache = new ClassValue<>() {
         @Override
         protected Object computeValue(Class<?> type) {
-            return ConfigUtils.instantiateNoArg(type);
+            return ConfigUtils.instantiate(type);
         }
     };
 
