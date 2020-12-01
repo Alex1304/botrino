@@ -30,6 +30,8 @@ import botrino.command.config.CommandConfig;
 import botrino.command.menu.InteractiveMenuFactory;
 import botrino.command.menu.PaginationControls;
 import botrino.command.privilege.PrivilegeException;
+import botrino.command.ratelimit.CommandRateLimiter;
+import botrino.command.ratelimit.RateLimitException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 import discord4j.common.util.Snowflake;
@@ -43,6 +45,7 @@ import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -63,6 +66,7 @@ public final class CommandService {
     private final ConcurrentHashMap<Long, Locale> localeByGuild = new ConcurrentHashMap<>();
     private final Set<Long> blacklist = ConcurrentHashMap.newKeySet();
     private final CommandTree commandTree = new CommandTree();
+    private final CommandRateLimiter commandRateLimiter = new CommandRateLimiter();
     private CommandErrorHandler errorHandler;
 
     @RdiFactory
@@ -157,6 +161,39 @@ public final class CommandService {
         LOGGER.debug("Added command {}", command);
     }
 
+    /**
+     * Adds the given ID to the blacklist. It can be either a guild ID, a user ID or a channel ID. Any command used by a
+     * user or inside a guild/channel that matches the ID will be ignored.
+     *
+     * @param id the ID to add to blacklist
+     * @return whether it successfully added the ID to the blacklist. false indicates that it was already added and
+     * nothing was done
+     */
+    public boolean blacklistAdd(long id) {
+        return blacklist.add(id);
+    }
+
+    /**
+     * Removes the given ID to the blacklist. It can be either a guild ID, a user ID or a channel ID. Any command used
+     * by a user or inside a guild/channel that matches the ID will no longer be ignored.
+     *
+     * @param id the ID to remove from blacklist
+     * @return whether it successfully removed the ID from the blacklist. false indicates that it was already removed
+     * and nothing was done
+     */
+    public boolean blacklistRemove(long id) {
+        return blacklist.remove(id);
+    }
+
+    /**
+     * Returns a view of the set of IDs that are blacklisted from using commands.
+     *
+     * @return an immutable Set of IDs that are blacklisted
+     */
+    public Set<Long> blacklistedIds() {
+        return Collections.unmodifiableSet(blacklist);
+    }
+
     void setErrorHandler(CommandErrorHandler errorHandler) {
         LOGGER.debug("Using error handler {}", errorHandler);
         this.errorHandler = errorHandler;
@@ -192,19 +229,19 @@ public final class CommandService {
         if (input.getArguments().isEmpty()) {
             return Mono.empty();
         }
+        var authorId = Snowflake.asLong(event.getMessage().getUserData().id());
         return event.getMessage().getChannel()
                 .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
                         "for message create event " + event, e)))
                 .flatMap(channel -> Mono.justOrEmpty(commandTree.findForInput(input))
                         .filter(command -> {
                             var isByBot = event.getMessage().getAuthor().map(User::isBot).orElse(true);
-                            var authorId = event.getMessage().getAuthor().map(User::getId);
                             var channelId = event.getMessage().getChannelId();
                             if (isByBot && command.ignoreBots()) {
                                 LOGGER.debug("Ignoring command due to author being a bot account: {}", command);
                                 return false;
                             }
-                            if (authorId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
+                            if (blacklist.contains(authorId)) {
                                 LOGGER.debug("Ignoring command due to AUTHOR being blacklisted: {}", command);
                                 return false;
                             }
@@ -224,7 +261,10 @@ public final class CommandService {
                                     .orElse(Locale.forLanguageTag(i18nConfig.defaultLocale()));
                             var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
                             return command.privilege().isGranted(ctx)
-                                    .then(Mono.defer(() -> command.run(ctx)))
+                                    .then(Mono.defer(() -> {
+                                        commandRateLimiter.permit(authorId, command);
+                                        return command.run(ctx);
+                                    }))
                                     .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
                                     .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
                                     .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
@@ -241,6 +281,9 @@ public final class CommandService {
         }
         if (t instanceof BadSubcommandException) {
             return errorHandler.handleBadSubcommand((BadSubcommandException) t, ctx);
+        }
+        if (t instanceof RateLimitException) {
+            return errorHandler.handleRateLimit((RateLimitException) t, ctx);
         }
         return errorHandler.handleDefault(t, ctx);
     }

@@ -3,10 +3,14 @@ package botrino.command;
 import botrino.command.doc.CommandDocumentation;
 import botrino.command.privilege.Privilege;
 import botrino.command.privilege.Privileges;
+import botrino.command.ratelimit.RateLimit;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -109,6 +113,16 @@ public interface Command {
         return CommandErrorHandler.NO_OP;
     }
 
+    /**
+     * Defines the rate limit of the command on a per user basis. In other words, the number of times a user can execute
+     * this command within a certain timeframe.
+     *
+     * @return the rate limit
+     */
+    default RateLimit rateLimit() {
+        return RateLimit.unbounded();
+    }
+
     final class Builder {
 
         private final Set<String> aliases;
@@ -120,6 +134,7 @@ public interface Command {
         private boolean ignoreBots;
         private boolean ignoreBots_set;
         private CommandErrorHandler errorHandler;
+        private RateLimit rateLimit;
 
         private Builder(Set<String> aliases, Function<? super CommandContext, ? extends Mono<Void>> action) {
             this.aliases = aliases;
@@ -214,6 +229,18 @@ public interface Command {
         }
 
         /**
+         * Defines the rate limit for this command.
+         *
+         * @param rateLimit the rate limit for this command, or null to use default value ({@link
+         *                  RateLimit#unbounded()})
+         * @return this builder
+         */
+        public Builder setRateLimit(@Nullable RateLimit rateLimit) {
+            this.rateLimit = rateLimit;
+            return this;
+        }
+
+        /**
          * Creates a command based on the current state of this builder.
          *
          * @return a new {@link Command}
@@ -258,6 +285,11 @@ public interface Command {
                 @Override
                 public CommandErrorHandler errorHandler() {
                     return errorHandler == null ? Command.super.errorHandler() : errorHandler;
+                }
+
+                @Override
+                public RateLimit rateLimit() {
+                    return rateLimit == null ? Command.super.rateLimit() : rateLimit;
                 }
 
                 @Override

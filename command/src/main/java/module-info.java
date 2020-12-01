@@ -7,6 +7,7 @@ module botrino.command {
     exports botrino.command.doc;
     exports botrino.command.menu;
     exports botrino.command.privilege;
+    exports botrino.command.ratelimit;
 
     opens botrino.command;
     opens botrino.command.config;
