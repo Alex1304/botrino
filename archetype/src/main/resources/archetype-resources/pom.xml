@@ -12,7 +12,7 @@
     <properties>
         <java.version>11</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <botrino.version>1.0.0-SNAPSHOT</botrino.version>
+        <botrino.version>${botrinoVersion}</botrino.version>
         <delivery.name>${symbol_dollar}{project.parent.artifactId}-${symbol_dollar}{project.version}-${symbol_dollar}{os.name}-${symbol_dollar}{os.arch}</delivery.name>
         <delivery.directory>${symbol_dollar}{project.build.directory}/${symbol_dollar}{delivery.name}</delivery.directory>
         <app.build.directory>${symbol_dollar}{project.basedir}/../app/target</app.build.directory>

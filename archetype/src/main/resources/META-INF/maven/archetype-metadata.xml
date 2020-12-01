@@ -4,6 +4,11 @@
         name="botrino-example"
         xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <requiredProperties>
+        <requiredProperty key="botrinoVersion">
+            <defaultValue>${project.version}</defaultValue>
+        </requiredProperty>
+    </requiredProperties>
     <fileSets>
         <fileSet filtered="true" encoding="UTF-8">
             <directory>.run</directory>

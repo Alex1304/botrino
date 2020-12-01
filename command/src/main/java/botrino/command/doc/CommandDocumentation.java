@@ -31,11 +31,11 @@ import java.util.*;
 /**
  * Holds the documentation for a specific command.
  *
- * @see CommandDocumentation#builder()
+ * @see CommandDocumentation#builder(Locale)
  */
 public final class CommandDocumentation {
 
-    private static final CommandDocumentation EMPTY = builder().build();
+    private static final CommandDocumentation EMPTY = builder(null).build();
 
     private final DocumentationLocaleAdapter docLocaleAdapter;
     private final String description;
@@ -66,12 +66,13 @@ public final class CommandDocumentation {
     }
 
     /**
-     * Creates a new command documentation builder.
+     * Creates a new command documentation builder, with the locale in which the documentation should be translated.
      *
+     * @param locale the locale, or null to use default locale
      * @return a new builder
      */
-    public static Builder builder() {
-        return new Builder();
+    public static Builder builder(@Nullable Locale locale) {
+        return new Builder(locale);
     }
 
     /**
@@ -122,21 +123,14 @@ public final class CommandDocumentation {
     public static class Builder {
 
         private final List<FlagInformation> flags = new ArrayList<>();
-        private Translator translator;
+        private final Locale locale;
         private String description;
         private String syntax;
         private String body;
         private boolean unlisted;
 
-        /**
-         * Sets the translator that should translate the documentation.
-         *
-         * @param translator the translator, or null to use default locale
-         * @return this builder
-         */
-        public Builder setTranslator(@Nullable Translator translator) {
-            this.translator = translator;
-            return this;
+        private Builder(@Nullable Locale locale) {
+            this.locale = locale;
         }
 
         /**
@@ -201,7 +195,7 @@ public final class CommandDocumentation {
          * @return a new {@link CommandDocumentation}
          */
         public CommandDocumentation build() {
-            return new CommandDocumentation(translator, description, syntax, body, flags, unlisted);
+            return new CommandDocumentation(Translator.to(locale), description, syntax, body, flags, unlisted);
         }
     }
 }
