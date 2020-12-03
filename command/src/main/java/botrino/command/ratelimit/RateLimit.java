@@ -23,6 +23,8 @@
  */
 package botrino.command.ratelimit;
 
+import botrino.api.util.DurationUtils;
+
 import java.time.Duration;
 import java.util.Objects;
 
@@ -81,5 +83,26 @@ public final class RateLimit {
      */
     public Duration getResetInterval() {
         return resetInterval;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RateLimit rateLimit = (RateLimit) o;
+        return permits == rateLimit.permits && resetInterval.equals(rateLimit.resetInterval);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(permits, resetInterval);
+    }
+
+    @Override
+    public String toString() {
+        return "RateLimit{" +
+                "permits=" + permits +
+                ", resetInterval=" + DurationUtils.format(resetInterval) +
+                '}';
     }
 }

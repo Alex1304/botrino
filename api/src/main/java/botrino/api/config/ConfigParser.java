@@ -35,6 +35,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A parser that is in charge of instantiating the configuration objects according the the raw JSON input. This class
+ * should generally not be used directly as it is already managed by Botrino.
+ */
 public final class ConfigParser {
 
     private final ObjectMapper objectMapper;

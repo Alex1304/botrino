@@ -26,14 +26,16 @@ package botrino.api.config;
 import botrino.api.config.object.BotConfig;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.object.presence.Presence;
 import discord4j.core.retriever.EntityRetrievalStrategy;
 import discord4j.core.shard.MemberRequestFilter;
 import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
-import reactor.util.concurrent.Queues;
 
+/**
+ * Startup handler used by default when none is specified. It keeps all default settings of the discord client,
+ * just adding the status and the intents specified in the config.
+ */
 public final class DefaultStartupHandler implements StartupHandler {
 
     @Override
@@ -44,9 +46,7 @@ public final class DefaultStartupHandler implements StartupHandler {
                 .setInitialStatus(shard -> config.presence()
                         .map(BotConfig.StatusConfig::toStatusUpdate)
                         .orElseGet(Presence::online))
-                .setEventDispatcher(EventDispatcher.withLatestEvents(Queues.SMALL_BUFFER_SIZE))
                 .setEntityRetrievalStrategy(EntityRetrievalStrategy.STORE_FALLBACK_REST)
-                .setAwaitConnections(true)
                 .setEnabledIntents(config.enabledIntents().stream().boxed()
                         .map(IntentSet::of)
                         .findAny()

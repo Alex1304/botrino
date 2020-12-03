@@ -62,15 +62,39 @@ import static com.github.alex1304.rdi.config.Injectable.value;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
+/**
+ * Represents the entry point of an application based on Botrino.
+ */
 public final class Botrino {
 
     private static final Logger LOGGER = Loggers.getLogger(Botrino.class);
     private static final String API_VERSION_TXT = "META-INF/botrino/apiVersion.txt";
 
+    /**
+     * Same as {@link #run(String[])} but without specifying arguments. The botrino home will be considered to be the
+     * working directory.
+     */
     public static void run() {
         run(new String[0]);
     }
 
+    /**
+     * Starts the Botrino application. It forwards the arguments of the main method, the first argument is interpreted
+     * as the path to the botrino home directory in the file system, where it will find the configuration file.
+     * <p>
+     * This method will execute the following in this order:
+     * <ol>
+     *     <li>Finds all modules in the module path annotated with @{@link BotModule}</li>
+     *     <li>Reads all classes contained in these modules, and processes them according to the features brought by
+     *     these classes (configuration entries, services, commands, etc)</li>
+     *     <li>Loads the configuration file using the configuration entries found in previous step</li>
+     *     <li>Loads all services in a {@link RdiServiceContainer} and instantiates all of them, including the
+     *     {@link GatewayDiscordClient} which will trigger the login process</li>
+     *     <li>The method blocks until the bot disconnects</li>
+     * </ol>
+     *
+     * @param args the args forwarded from the main method
+     */
     public static void run(String[] args) {
         try {
             var botDir = Path.of(args.length == 0 ? "." : args[0]);
@@ -186,10 +210,25 @@ public final class Botrino {
         return classes;
     }
 
+    /**
+     * Factory method that creates a {@link GatewayDiscordClient} delegating to the given startup handler and config
+     * container. It is generally not recommended to call this method directly, and instead inject the {@link
+     * GatewayDiscordClient} as a service dependency.
+     *
+     * @param startupHandler  the startup handler
+     * @param configContainer the config container
+     * @return a Mono that performs the login to Discord upon subscription
+     */
     public static Mono<GatewayDiscordClient> login(StartupHandler startupHandler, ConfigContainer configContainer) {
         return startupHandler.login(configContainer);
     }
 
+    /**
+     * Factory method that returns the API version of Botrino. It is generally not recommended to call this method
+     * directly, and instead inject it via a service reference with name "apiVersion" and of type {@link String}.
+     *
+     * @return a Mono emitting the API version on a scheduler supporting I/O operations.
+     */
     public static Mono<String> apiVersion() {
         return Mono.fromCallable(Botrino::readApiVersion)
                 .subscribeOn(Schedulers.boundedElastic());

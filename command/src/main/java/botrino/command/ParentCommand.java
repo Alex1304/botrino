@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 import java.util.Set;
 
 /**
- * Represents a bot command that is generally only used via its subcommands.
+ * Represents a bot command that is intended for use exclusively via its subcommands.
  */
 public interface ParentCommand extends Command {
 

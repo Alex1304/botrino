@@ -23,10 +23,8 @@
  */
 package botrino.command.doc;
 
-import botrino.api.i18n.Translator;
 import reactor.util.annotation.Nullable;
 
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -34,13 +32,10 @@ import java.util.Objects;
  */
 public final class FlagInformation {
 
-    private final DocumentationLocaleAdapter docLocaleAdapter;
     private final String valueFormat;
     private final String description;
 
-    private FlagInformation(Translator translator, String valueFormat, String description) {
-        this.docLocaleAdapter = new DocumentationLocaleAdapter(
-                Objects.requireNonNullElse(translator, Locale::getDefault));
+    private FlagInformation(String valueFormat, String description) {
         this.valueFormat = Objects.requireNonNullElse(valueFormat, "");
         this.description = Objects.requireNonNullElse(description, "");
     }
@@ -60,7 +55,7 @@ public final class FlagInformation {
      * @return the value format
      */
     public String getValueFormat() {
-        return docLocaleAdapter.adapt(valueFormat);
+        return valueFormat;
     }
 
     /**
@@ -69,24 +64,15 @@ public final class FlagInformation {
      * @return the description
      */
     public String getDescription() {
-        return docLocaleAdapter.adapt(description);
+        return description;
     }
 
     public static class Builder {
 
-        private Translator translator;
         private String valueFormat;
         private String description;
 
-        /**
-         * Sets the translator that should translate the flag information.
-         *
-         * @param translator the translator, or null to use default locale
-         * @return this builder
-         */
-        public Builder setTranslator(@Nullable Translator translator) {
-            this.translator = translator;
-            return this;
+        private Builder() {
         }
 
         /**
@@ -118,7 +104,7 @@ public final class FlagInformation {
          * @return a new {@link FlagInformation}
          */
         public FlagInformation build() {
-            return new FlagInformation(translator, valueFormat, description);
+            return new FlagInformation(valueFormat, description);
         }
     }
 }

@@ -1,5 +1,6 @@
 package botrino.command;
 
+import botrino.api.i18n.Translator;
 import botrino.command.doc.CommandDocumentation;
 import botrino.command.privilege.Privilege;
 import botrino.command.privilege.Privileges;
@@ -8,7 +9,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -60,10 +60,10 @@ public interface Command {
     /**
      * Defines the documentation of the command.
      *
-     * @param locale the locale indicating the language of the documentation
+     * @param translator a translator that can be used to translate the documentation
      * @return the documentation
      */
-    default CommandDocumentation documentation(Locale locale) {
+    default CommandDocumentation documentation(Translator translator) {
         return CommandDocumentation.empty();
     }
 
@@ -128,7 +128,7 @@ public interface Command {
         private final Set<String> aliases;
         private final Function<? super CommandContext, ? extends Mono<Void>> action;
         private final Set<Command> subcommands = new HashSet<>();
-        private Function<? super Locale, CommandDocumentation> documentation;
+        private Function<? super Translator, CommandDocumentation> documentation;
         private Privilege privilege;
         private Scope scope;
         private boolean ignoreBots;
@@ -159,11 +159,11 @@ public interface Command {
         /**
          * Defines the documentation of the command.
          *
-         * @param documentation a function that provides the {@link CommandDocumentation} object adapted to the locale,
-         *                      or null to use default value (empty documentation)
+         * @param documentation a function that provides the {@link CommandDocumentation} object possibly translated, or
+         *                      null to use default value (empty documentation)
          * @return this builder
          */
-        public Builder setDocumentation(@Nullable Function<? super Locale, CommandDocumentation> documentation) {
+        public Builder setDocumentation(@Nullable Function<? super Translator, CommandDocumentation> documentation) {
             this.documentation = documentation;
             return this;
         }
@@ -258,8 +258,9 @@ public interface Command {
                 }
 
                 @Override
-                public CommandDocumentation documentation(Locale locale) {
-                    return documentation == null ? Command.super.documentation(locale) : documentation.apply(locale);
+                public CommandDocumentation documentation(Translator translator) {
+                    return documentation == null ? Command.super.documentation(translator) :
+                            documentation.apply(translator);
                 }
 
                 @Override

@@ -32,11 +32,22 @@ import java.time.Duration;
  */
 public final class RateLimitException extends RuntimeException {
 
+    private final RateLimit originalRateLimit;
     private final Duration retryAfter;
 
-    public RateLimitException(Duration retryAfter) {
-        super("Rate limit reached. Retry after: " + DurationUtils.format(retryAfter));
+    public RateLimitException(RateLimit originalRateLimit, Duration retryAfter) {
+        super("Rate limit of " + originalRateLimit + " reached. Retry after: " + DurationUtils.format(retryAfter));
+        this.originalRateLimit = originalRateLimit;
         this.retryAfter = retryAfter;
+    }
+
+    /**
+     * Gets the original rate limit that was applied to the command.
+     *
+     * @return the original rate limit
+     */
+    public RateLimit getOriginalRateLimit() {
+        return originalRateLimit;
     }
 
     /**

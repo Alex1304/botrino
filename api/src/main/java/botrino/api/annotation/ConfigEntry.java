@@ -30,6 +30,10 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Any class that is deserializable with Jackson may be annotated with this to add a new entry to the configuration json
+ * input.
+ */
 @Documented
 @Retention(RUNTIME)
 @Target(TYPE)

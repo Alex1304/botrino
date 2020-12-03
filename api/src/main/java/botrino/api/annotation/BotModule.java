@@ -30,8 +30,8 @@ import static java.lang.annotation.ElementType.MODULE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A module marked with this annotation will be scanned at startup by the Botrino Runtime in order to automatically
- * register services, commands and configuration entries.
+ * A module marked with this annotation will be scanned at startup in order to automatically register services, commands
+ * and configuration entries.
  */
 @Retention(RUNTIME)
 @Target(MODULE)

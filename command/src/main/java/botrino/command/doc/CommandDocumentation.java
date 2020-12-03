@@ -23,37 +23,32 @@
  */
 package botrino.command.doc;
 
-import botrino.api.i18n.Translator;
 import reactor.util.annotation.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Holds the documentation for a specific command.
  *
- * @see CommandDocumentation#builder(Locale)
+ * @see CommandDocumentation#builder()
  */
 public final class CommandDocumentation {
 
-    private static final CommandDocumentation EMPTY = builder(null).build();
+    private static final CommandDocumentation EMPTY = builder().build();
 
-    private final DocumentationLocaleAdapter docLocaleAdapter;
     private final String description;
     private final String syntax;
     private final String body;
     private final List<FlagInformation> flags;
-    private final boolean unlisted;
 
-    private CommandDocumentation(Translator translator, String description,
-                                 String syntax, String body,
-                                 List<FlagInformation> flags, boolean unlisted) {
-        this.docLocaleAdapter = new DocumentationLocaleAdapter(
-                Objects.requireNonNullElse(translator, Locale::getDefault));
+    private CommandDocumentation(String description, String syntax, String body, List<FlagInformation> flags) {
         this.description = Objects.requireNonNullElse(description, "");
         this.syntax = Objects.requireNonNullElse(syntax, "");
         this.body = Objects.requireNonNullElse(body, "");
         this.flags = Collections.unmodifiableList(flags);
-        this.unlisted = unlisted;
     }
 
     /**
@@ -66,13 +61,12 @@ public final class CommandDocumentation {
     }
 
     /**
-     * Creates a new command documentation builder, with the locale in which the documentation should be translated.
+     * Creates a new command documentation builder.
      *
-     * @param locale the locale, or null to use default locale
      * @return a new builder
      */
-    public static Builder builder(@Nullable Locale locale) {
-        return new Builder(locale);
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**
@@ -81,7 +75,7 @@ public final class CommandDocumentation {
      * @return the description
      */
     public String getDescription() {
-        return docLocaleAdapter.adapt(description);
+        return description;
     }
 
     /**
@@ -90,7 +84,7 @@ public final class CommandDocumentation {
      * @return the syntax
      */
     public String getSyntax() {
-        return docLocaleAdapter.adapt(syntax);
+        return syntax;
     }
 
     /**
@@ -99,7 +93,7 @@ public final class CommandDocumentation {
      * @return the description
      */
     public String getBody() {
-        return docLocaleAdapter.adapt(body);
+        return body;
     }
 
     /**
@@ -111,26 +105,14 @@ public final class CommandDocumentation {
         return flags;
     }
 
-    /**
-     * Gets whether the documentation should be unlisted.
-     *
-     * @return true if unlisted, false otherwise
-     */
-    public boolean isUnlisted() {
-        return unlisted;
-    }
-
     public static class Builder {
 
         private final List<FlagInformation> flags = new ArrayList<>();
-        private final Locale locale;
         private String description;
         private String syntax;
         private String body;
-        private boolean unlisted;
 
-        private Builder(@Nullable Locale locale) {
-            this.locale = locale;
+        private Builder() {
         }
 
         /**
@@ -179,23 +161,12 @@ public final class CommandDocumentation {
         }
 
         /**
-         * Sets whether the documentation should be unlisted for this command.
-         *
-         * @param unlisted whether the documentation should be unlisted
-         * @return this builder
-         */
-        public Builder setUnlisted(boolean unlisted) {
-            this.unlisted = unlisted;
-            return this;
-        }
-
-        /**
          * Builds a new {@link CommandDocumentation} based on the current state of this builder.
          *
          * @return a new {@link CommandDocumentation}
          */
         public CommandDocumentation build() {
-            return new CommandDocumentation(Translator.to(locale), description, syntax, body, flags, unlisted);
+            return new CommandDocumentation(description, syntax, body, flags);
         }
     }
 }

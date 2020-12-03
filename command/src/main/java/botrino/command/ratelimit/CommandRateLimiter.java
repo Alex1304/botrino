@@ -59,7 +59,8 @@ public final class CommandRateLimiter {
                     count--;
                 }
                 if (count >= rateLimit.getPermits()) {
-                    throw new RateLimitException(Duration.ofNanos(intervalNanos - now + permitHistory[tail]));
+                    throw new RateLimitException(rateLimit,
+                            Duration.ofNanos(intervalNanos - now + permitHistory[tail]));
                 }
                 permitHistory[head] = now;
                 head = (head + 1) % permitHistory.length;

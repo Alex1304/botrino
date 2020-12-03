@@ -23,13 +23,31 @@
  */
 package botrino.command.privilege;
 
+import java.util.List;
+
 public final class PrivilegeException extends RuntimeException {
 
-    public PrivilegeException() {
-        super();
+    private final List<String> reasons;
+
+    public PrivilegeException(String... reasons) {
+        this.reasons = List.of(reasons);
     }
 
-    public PrivilegeException(String message) {
-        super(message);
+    public PrivilegeException(List<String> reasons) {
+        this.reasons = List.copyOf(reasons);
+    }
+
+    /**
+     * Gets a list of strings explaining the reasons of the privilege check failure.
+     *
+     * @return the reasons
+     */
+    public List<String> getReasons() {
+        return reasons;
+    }
+
+    @Override
+    public String getMessage() {
+        return reasons.toString();
     }
 }

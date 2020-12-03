@@ -52,6 +52,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/**
+ * Service that centralizes the management of commands. It holds the command tree, the global command error handler, the
+ * prefix and locale for each guild, the rate limiter, the blacklist, and the interactive menu factory.
+ */
 @RdiService
 public final class CommandService {
 
@@ -260,7 +264,7 @@ public final class CommandService {
                                     .map(localeByGuild::get)
                                     .orElse(Locale.forLanguageTag(i18nConfig.defaultLocale()));
                             var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
-                            return command.privilege().isGranted(ctx)
+                            return command.privilege().checkGranted(ctx)
                                     .then(Mono.defer(() -> {
                                         commandRateLimiter.permit(authorId, command);
                                         return command.run(ctx);

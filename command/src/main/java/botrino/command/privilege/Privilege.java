@@ -24,7 +24,12 @@
 package botrino.command.privilege;
 
 import botrino.command.CommandContext;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+import static java.util.function.Predicate.not;
 
 /**
  * Represents a requirement to fulfill in order to execute a command.
@@ -33,11 +38,71 @@ import reactor.core.publisher.Mono;
 public interface Privilege {
 
     /**
-     * Checks if this privilege is granted according to the given context.
+     * Checks if this privilege is granted according to the given context. If the privilege is not granted, it will
+     * error with {@link PrivilegeException} possibly carrying details about the missing privilege.
      *
      * @param ctx the context to evaluate the privilege on
-     * @return a Mono which completion indicates that the check was successful. If the privilege is not granted, it will
-     * error with {@link PrivilegeException} possibly carrying details about the missing privilege.
+     * @return a {@link Mono} which completion indicates that the check was successful, or {@link PrivilegeException} if
+     * not
      */
-    Mono<Void> isGranted(CommandContext ctx);
+    Mono<Void> checkGranted(CommandContext ctx);
+
+    /**
+     * Checks if this privilege is granted according to the given context. Emits a boolean indicating whether the
+     * privilege is granted or not. Use {@link #checkGranted(CommandContext)} if you need to access the details carried
+     * by {@link PrivilegeException} about the missing privilege in case it is not granted.
+     *
+     * @param ctx the context to evaluate the privilege on
+     * @return a {@link Mono} emitting true if granted, false if not. Any error occurring during the evaluation of the
+     * privilege, except for {@link PrivilegeException}, will be forwarded as-is through the Mono.
+     */
+    default Mono<Boolean> isGranted(CommandContext ctx) {
+        return checkGranted(ctx).thenReturn(true).onErrorReturn(PrivilegeException.class, false);
+    }
+
+    /**
+     * Returns a {@link Privilege} that evaluates as granted only if both this privilege and the other one are
+     * granted. Both privileges are evaluated concurrently, so that the resulting {@link PrivilegeException} will be a
+     * concatenation of both reason lists if both evaluations fail.
+     *
+     * @param other the other privilege
+     * @return a new {@link Privilege}
+     */
+    default Privilege and(Privilege other) {
+        return ctx -> Flux.merge(evaluate(this, ctx), evaluate(other, ctx))
+                .collectList()
+                .filter(not(List::isEmpty))
+                .flatMapMany(Flux::fromIterable)
+                .flatMapIterable(PrivilegeException::getReasons)
+                .collectList()
+                .map(PrivilegeException::new)
+                .flatMap(Mono::error)
+                .then();
+    }
+
+    /**
+     * Returns a {@link Privilege} that evaluates as granted if at least one of this privilege or the other one is
+     * granted. Both privileges are evaluated concurrently, so that the resulting {@link PrivilegeException} will be a
+     * concatenation of both reason lists if both evaluations fail.
+     *
+     * @param other the other privilege
+     * @return a new {@link Privilege}
+     */
+    default Privilege or(Privilege other) {
+        return ctx -> Flux.merge(evaluate(this, ctx), evaluate(other, ctx))
+                .collectList()
+                .filter(l -> l.size() == 2)
+                .flatMapMany(Flux::fromIterable)
+                .flatMapIterable(PrivilegeException::getReasons)
+                .collectList()
+                .map(PrivilegeException::new)
+                .flatMap(Mono::error)
+                .then();
+    }
+
+    private static Mono<PrivilegeException> evaluate(Privilege p, CommandContext ctx) {
+        return p.checkGranted(ctx)
+                .cast(PrivilegeException.class)
+                .onErrorResume(PrivilegeException.class, Mono::just);
+    }
 }

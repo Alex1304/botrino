@@ -35,7 +35,9 @@ public final class DurationUtils {
     }
 
     /**
-     * Formats a Duration into a human readable String.
+     * Formats a Duration into a human readable String, in the format "_d _h _min _s _ms" where "_" is the number of
+     * days/hours/minutes/seconds/milliseconds, and zero values are omitted. For example, "2d 3h", "5min 30s", "1s
+     * 147ms". If minutes are zero but hours and seconds are not, it will show "1h 10s" and not "1h 0min 10s".
      *
      * @param time the duration to format
      * @return the formatted duration

@@ -18,6 +18,6 @@ public final class PingCommand implements Command {
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
-        return ctx.channel().createMessage("Pong! :ping_pong:").then();
+        return ctx.channel().createMessage(ctx.translate(Strings.APP, "pong")).then();
     }
 }
