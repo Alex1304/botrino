@@ -123,12 +123,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.github.alex1304</groupId>
+                <groupId>com.alex1304.botrino</groupId>
                 <artifactId>botrino-api</artifactId>
                 <version>${symbol_dollar}{botrino.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.alex1304</groupId>
+                <groupId>com.alex1304.botrino</groupId>
                 <artifactId>botrino-command</artifactId>
                 <version>${symbol_dollar}{botrino.version}</version>
             </dependency>

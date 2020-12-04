@@ -33,11 +33,11 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.alex1304</groupId>
+            <groupId>com.alex1304.botrino</groupId>
             <artifactId>botrino-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.alex1304</groupId>
+            <groupId>com.alex1304.botrino</groupId>
             <artifactId>botrino-command</artifactId>
         </dependency>
         <dependency>

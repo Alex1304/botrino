@@ -28,7 +28,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.github.alex1304</groupId>
+        <groupId>com.alex1304.botrino</groupId>
         <artifactId>botrino</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -63,7 +63,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.alex1304</groupId>
+            <groupId>com.alex1304.botrino</groupId>
             <artifactId>botrino-api</artifactId>
         </dependency>
     </dependencies>
