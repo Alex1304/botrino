@@ -22,9 +22,9 @@ const features = [
         imageUrl: 'img/d4j.svg',
         description: (
             <>
-                Discord4J is a modern Discord API wrapper for the JVM, natively
-                supporting the reactive programming paradigm for the best performances
-                and scalability.
+                <Link href="https://discord4j.com">Discord4J</Link> is a modern Discord
+                API wrapper for the JVM, natively supporting the reactive programming
+                paradigm for the best performances at scale.
             </>
         ),
     },

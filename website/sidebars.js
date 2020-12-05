@@ -8,6 +8,8 @@ module.exports = {
             'api/i18n'
         ],
         'Command module': [
+            'command-module/configuration',
+            'command-module/the-command-service',
             'command-module/creating-commands',
             'command-module/subcommands',
             'command-module/privileges',
