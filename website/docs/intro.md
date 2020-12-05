@@ -7,6 +7,8 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 <img style={{float:'right',padding:'40px'}} src={useBaseUrl('img/logo.svg')} width="20%" />
 
+🚧 The framework does not yet have a public release, and the docs are still in construction.
+
 ## What is Botrino?
 
 Botrino is a Java framework that provides guidelines and a set of tools to build Discord bots in a more convenient way. Pretty much in the same spirit as [Spring Boot](https://spring.io/projects/spring-boot), it allows to easily setup standalone bot applications that are ready to run, embedding a few third-party libraries such as [Jackson](https://github.com/FasterXML/jackson-core) for JSON-based configuration, [RDI](https://alex1304.github.io/rdi/docs/intro) for a reactive IoC container, and [Discord4J](https://discord4j.com) for the interface with the [Discord Bot API](https://discord.com/developers/docs/intro).
