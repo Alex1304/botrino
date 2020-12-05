@@ -7,6 +7,8 @@ A simple yet powerful framework to develop, configure and run Discord bots based
 ![License](https://img.shields.io/github/license/Alex1304/botrino)
 [![javadoc](https://javadoc.io/badge2/com.alex1304.botrino/botrino/javadoc.svg)](https://javadoc.io/doc/com.alex1304.botrino/botrino) 
 
+🚧 **The framework does not yet have a public release, and the docs are still in construction.**
+
 <img align="right" style="padding:40px;" src="https://botrino.alex1304.com/img/logo.svg" width="20%" />
 
 ## What is Botrino?

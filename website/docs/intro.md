@@ -5,9 +5,9 @@ slug: /
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-<img style={{float:'right',padding:'40px'}} src={useBaseUrl('img/logo.svg')} width="20%" />
+🚧 **The framework does not yet have a public release, and the docs are still in construction.**
 
-🚧 The framework does not yet have a public release, and the docs are still in construction.
+<img style={{float:'right',padding:'40px'}} src={useBaseUrl('img/logo.svg')} width="20%" />
 
 ## What is Botrino?
 
