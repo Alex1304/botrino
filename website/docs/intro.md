@@ -35,7 +35,7 @@ open module your.app {
 
 The annotation as well as the `open` modifier will allow Botrino to automatically scan through all the classes present in the module, in order to automatically register configuration entries, commands, services, etc.
 
-Inside your module, you ca create services using [RDI annotations](https://alex1304.github.io/rdi/docs/annotation-based-configuration) that are automatically loaded on startup:
+Inside your module, you can create services using [RDI annotations](https://alex1304.github.io/rdi/docs/annotation-based-configuration) that are automatically loaded on startup:
 
 ```java
 package your.app;
