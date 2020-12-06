@@ -74,6 +74,10 @@ module.exports = {
             ],
             copyright: `Copyright © ${new Date().getFullYear()} Alexandre Miranda (Alex1304). Built with Docusaurus.`,
         },
+        prism: {
+            theme: require('prism-react-renderer/themes/vsDark'),
+            additionalLanguages: ['java']
+        }
     },
     presets: [
         [

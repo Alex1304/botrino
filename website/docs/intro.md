@@ -5,9 +5,11 @@ slug: /
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-🚧 **The framework does not yet have a public release, and the docs are still in construction.**
+:::caution
+🚧 **The framework does not yet have a public release, and the docs are still in construction. It is published only for showcase and feedback purposes, a first release will happen soon&trade;**.
+:::
 
-<img style={{float:'right',padding:'40px'}} src={useBaseUrl('img/logo.svg')} width="20%" />
+<img style={{float:'right',padding:'5%'}} src={useBaseUrl('img/logo.svg')} width="20%" />
 
 ## What is Botrino?
 
@@ -68,7 +70,7 @@ public final class SampleService {
 
 ```
 
-The bot is configured via a `config.json` file in the working directory of the app with contents similar to this:
+The bot is configured via a JSON configuration file with contents similar to this:
 
 ```json
 {

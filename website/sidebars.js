@@ -2,7 +2,6 @@ module.exports = {
     someSidebar: {
         'Discover Botrino': ['intro', 'getting-started'],
         'API': [
-            'api/modules',
             'api/configuration',
             'api/extensions',
             'api/i18n'
