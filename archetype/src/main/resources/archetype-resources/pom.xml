@@ -4,18 +4,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>${groupId}</groupId>
-    <artifactId>${rootArtifactId}</artifactId>
+    <groupId>\${groupId}</groupId>
+    <artifactId>\${artifactId}</artifactId>
+    <version>\${version}</version>
     <packaging>pom</packaging>
-    <version>${version}</version>
+
+    <modules>
+        <module>app</module>
+        <module>delivery</module>
+        <module>launcher</module>
+    </modules>
 
     <properties>
         <java.version>11</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <botrino.version>${botrinoVersion}</botrino.version>
-        <delivery.name>${symbol_dollar}{project.parent.artifactId}-${symbol_dollar}{project.version}-${symbol_dollar}{os.name}-${symbol_dollar}{os.arch}</delivery.name>
-        <delivery.directory>${symbol_dollar}{project.build.directory}/${symbol_dollar}{delivery.name}</delivery.directory>
-        <app.build.directory>${symbol_dollar}{project.basedir}/../app/target</app.build.directory>
+        <botrino.version>${project.version}</botrino.version>
+        <delivery.name>\${symbol_dollar}{project.parent.artifactId}-${symbol_dollar}{project.version}-${symbol_dollar}{os.name}-${symbol_dollar}{os.arch}</delivery.name>
+        <delivery.directory>\${symbol_dollar}{project.build.directory}/${symbol_dollar}{delivery.name}</delivery.directory>
+        <app.build.directory>\${symbol_dollar}{project.basedir}/../app/target</app.build.directory>
     </properties>
 
     <build>
@@ -25,7 +31,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.8.1</version>
                     <configuration>
-                        <release>${symbol_dollar}{java.version}</release>
+                        <release>\${symbol_dollar}{java.version}</release>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -41,7 +47,7 @@
                     <version>3.0.0</version>
                     <extensions>true</extensions>
                     <configuration>
-                        <launcher>${symbol_dollar}{project.parent.artifactId}=${package}.launcher/${package}.Launcher</launcher>
+                        <launcher>\${symbol_dollar}{project.parent.artifactId}=\${package}.launcher/\${package}.Launcher</launcher>
                         <addModules>
                             <addModule>java.logging</addModule>
                             <addModule>java.sql</addModule>
@@ -64,7 +70,7 @@
                                 <goal>copy-resources</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${symbol_dollar}{project.build.directory}/resources</outputDirectory>
+                                <outputDirectory>\${symbol_dollar}{project.build.directory}/resources</outputDirectory>
                                 <propertiesEncoding>ISO-8859-1</propertiesEncoding>
                                 <resources>
                                     <resource>
@@ -101,16 +107,16 @@
                             </goals>
                             <configuration>
                                 <target>
-                                    <delete file="${symbol_dollar}{project.build.directory}/${symbol_dollar}{project.build.finalName}.zip" />
-                                    <move file="${symbol_dollar}{project.build.directory}/maven-jlink" tofile="${symbol_dollar}{delivery.directory}" force="true" />
-                                    <copy todir="${symbol_dollar}{delivery.directory}/modules">
-                                        <fileset dir="${symbol_dollar}{app.build.directory}/dependency" />
-                                        <fileset file="${symbol_dollar}{app.build.directory}/*.jar" />
+                                    <delete file="\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{project.build.finalName}.zip" />
+                                    <move file="\${symbol_dollar}{project.build.directory}/maven-jlink" tofile="\${symbol_dollar}{delivery.directory}" force="true" />
+                                    <copy todir="\${symbol_dollar}{delivery.directory}/modules">
+                                        <fileset dir="\${symbol_dollar}{app.build.directory}/dependency" />
+                                        <fileset file="\${symbol_dollar}{app.build.directory}/*.jar" />
                                     </copy>
-                                    <copy todir="${symbol_dollar}{delivery.directory}">
-                                        <fileset dir="${symbol_dollar}{app.build.directory}/resources" />
+                                    <copy todir="\${symbol_dollar}{delivery.directory}">
+                                        <fileset dir="\${symbol_dollar}{app.build.directory}/resources" />
                                     </copy>
-                                    <zip basedir="${symbol_dollar}{delivery.directory}/.." includes="${symbol_dollar}{delivery.name}/**/*" destfile="${symbol_dollar}{delivery.directory}.zip" />
+                                    <zip basedir="\${symbol_dollar}{delivery.directory}/.." includes="\${symbol_dollar}{delivery.name}/**/*" destfile="\${symbol_dollar}{delivery.directory}.zip" />
                                 </target>
                             </configuration>
                         </execution>
@@ -125,12 +131,12 @@
             <dependency>
                 <groupId>com.alex1304.botrino</groupId>
                 <artifactId>botrino-api</artifactId>
-                <version>${symbol_dollar}{botrino.version}</version>
+                <version>\${symbol_dollar}{botrino.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alex1304.botrino</groupId>
                 <artifactId>botrino-command</artifactId>
-                <version>${symbol_dollar}{botrino.version}</version>
+                <version>\${symbol_dollar}{botrino.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>

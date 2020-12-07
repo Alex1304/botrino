@@ -1,3 +1,6 @@
+#set( $symbol_pound = '#' )
+#set( $symbol_dollar = '$' )
+#set( $symbol_escape = '\' )
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -6,7 +9,7 @@
         <artifactId>${rootArtifactId}</artifactId>
         <version>${version}</version>
     </parent>
-    <artifactId>${rootArtifactId}-delivery</artifactId>
+    <artifactId>${artifactId}</artifactId>
     <packaging>jlink</packaging>
 
     <build>
@@ -34,9 +37,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>${symbol_dollar}{project.groupId}</groupId>
             <artifactId>${rootArtifactId}-launcher</artifactId>
-            <version>${version}</version>
+            <version>${symbol_dollar}{project.version}</version>
         </dependency>
     </dependencies>
 </project>

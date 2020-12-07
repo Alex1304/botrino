@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archetype-descriptor
         xsi:schemaLocation="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 http://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
-        name="botrino-example"
+        name="${project.artifactId}"
         xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <requiredProperties>
-        <requiredProperty key="botrinoVersion">
-            <defaultValue>${project.version}</defaultValue>
-        </requiredProperty>
-    </requiredProperties>
     <fileSets>
         <fileSet filtered="true" encoding="UTF-8">
             <directory>.run</directory>
@@ -18,7 +13,7 @@
         </fileSet>
     </fileSets>
     <modules>
-        <module id="${rootArtifactId}-app" dir="app" name="${rootArtifactId}-app">
+        <module id="\${rootArtifactId}-app" dir="app" name="\${rootArtifactId}-app">
             <fileSets>
                 <fileSet filtered="true" packaged="true" encoding="UTF-8">
                     <directory>src/main/java</directory>
@@ -51,7 +46,7 @@
                 </fileSet>
             </fileSets>
         </module>
-        <module id="${rootArtifactId}-launcher" dir="launcher" name="${rootArtifactId}-launcher">
+        <module id="\${rootArtifactId}-launcher" dir="launcher" name="\${rootArtifactId}-launcher">
             <fileSets>
                 <fileSet filtered="true" packaged="true" encoding="UTF-8">
                     <directory>src/main/java</directory>
@@ -70,6 +65,6 @@
                 </fileSet>
             </fileSets>
         </module>
-        <module id="${rootArtifactId}-delivery" dir="delivery" name="${rootArtifactId}-delivery"/>
+        <module id="\${rootArtifactId}-delivery" dir="delivery" name="\${rootArtifactId}-delivery"/>
     </modules>
 </archetype-descriptor>

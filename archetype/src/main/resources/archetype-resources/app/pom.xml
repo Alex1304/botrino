@@ -6,7 +6,7 @@
         <artifactId>${rootArtifactId}</artifactId>
         <version>${version}</version>
     </parent>
-    <artifactId>${rootArtifactId}-app</artifactId>
+    <artifactId>${artifactId}</artifactId>
 
     <build>
         <plugins>

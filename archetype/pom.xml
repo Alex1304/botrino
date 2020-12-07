@@ -27,6 +27,13 @@
                     <artifactId>maven-archetype-plugin</artifactId>
                     <version>3.2.0</version>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <configuration>
+                        <escapeString>\</escapeString>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -35,6 +42,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
+                    <include>archetype-resources/pom.xml</include>
                     <include>META-INF/maven/archetype-metadata.xml</include>
                 </includes>
             </resource>
@@ -42,9 +50,11 @@
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <excludes>
+                    <exclude>archetype-resources/pom.xml</exclude>
                     <exclude>META-INF/maven/archetype-metadata.xml</exclude>
                 </excludes>
             </resource>
         </resources>
+
     </build>
 </project>
