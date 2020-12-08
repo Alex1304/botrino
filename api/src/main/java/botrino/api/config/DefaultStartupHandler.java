@@ -27,7 +27,6 @@ import botrino.api.config.object.BotConfig;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.Presence;
-import discord4j.core.retriever.EntityRetrievalStrategy;
 import discord4j.core.shard.MemberRequestFilter;
 import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
@@ -46,11 +45,10 @@ public final class DefaultStartupHandler implements StartupHandler {
                 .setInitialStatus(shard -> config.presence()
                         .map(BotConfig.StatusConfig::toStatusUpdate)
                         .orElseGet(Presence::online))
-                .setEntityRetrievalStrategy(EntityRetrievalStrategy.STORE_FALLBACK_REST)
                 .setEnabledIntents(config.enabledIntents().stream().boxed()
                         .map(IntentSet::of)
                         .findAny()
-                        .orElse(IntentSet.nonPrivileged()))
+                        .orElseGet(IntentSet::nonPrivileged))
                 .setMemberRequestFilter(MemberRequestFilter.none())
                 .login()
                 .single();
