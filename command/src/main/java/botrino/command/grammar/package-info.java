@@ -21,30 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command;
-
-import reactor.util.annotation.Nullable;
-
-import java.util.Optional;
 
 /**
- * Thrown when a user attempts to use a subcommand that does not exist or is missing for a command.
+ * Contains helper classes to deal with command arguments.
  */
-public final class BadSubcommandException extends RuntimeException {
+@NonNullApi
+package botrino.command.grammar;
 
-    private final String badArgument;
-
-    public BadSubcommandException(@Nullable String badArgument) {
-        this.badArgument = badArgument;
-    }
-
-    /**
-     * Gets the argument that was deemed as invalid subcommand. Empty optional means that a subcommand was expected but
-     * not specified by the user.
-     *
-     * @return the bad argument, if present
-     */
-    public Optional<String> getBadArgument() {
-        return Optional.ofNullable(badArgument);
-    }
-}
+import reactor.util.annotation.NonNullApi;

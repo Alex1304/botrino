@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 class CommandTree {
 
@@ -64,7 +65,7 @@ class CommandTree {
     @Nullable
     Command findForInput(TokenizedInput input) {
         Node found = null;
-        Map<String, Node> map = rootCommands;
+        var map = rootCommands;
         var args = input.getMutableArgs();
         while (!args.isEmpty() && map.containsKey(args.element())) {
             found = map.get(args.remove());
@@ -73,15 +74,30 @@ class CommandTree {
         return found == null ? null : found.command;
     }
 
-    private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> src, Map<String, Node> dest) {
-        dest.forEach((k, v) -> {
+    Set<Command> listCommands(String... path) {
+        var map = rootCommands;
+        for (var p : path) {
+            Node n = map.get(p);
+            if (n == null) {
+                throw new InvalidSyntaxException(null, p, null);
+            }
+            map = n.subcommands;
+        }
+        return map.values().stream()
+                .distinct()
+                .map(n -> n.command)
+                .collect(toUnmodifiableSet());
+    }
+
+    private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> in, Map<String, Node> out) {
+        out.forEach((k, v) -> {
             Node old;
-            if ((old = src.putIfAbsent(k, v)) != null) {
+            if ((old = in.putIfAbsent(k, v)) != null) {
                 throw new IllegalStateException("Alias conflict: the command " + old.command + " and " + v.command +
                         " both define the same alias '" + k + "'.");
             }
         });
-        return src;
+        return in;
     }
 
     private static class Node {

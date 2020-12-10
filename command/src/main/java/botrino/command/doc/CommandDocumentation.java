@@ -23,6 +23,7 @@
  */
 package botrino.command.doc;
 
+import botrino.command.grammar.CommandGrammar;
 import reactor.util.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -127,7 +128,8 @@ public final class CommandDocumentation {
         }
 
         /**
-         * Sets the syntax of the command.
+         * Sets the syntax of the command. It is a common practice to set this value as the result of {@link
+         * CommandGrammar#toString()}
          *
          * @param syntax the syntax, or null if syntax is not provided
          * @return this builder

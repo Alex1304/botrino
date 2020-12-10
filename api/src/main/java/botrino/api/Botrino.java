@@ -71,14 +71,6 @@ public final class Botrino {
     private static final String API_VERSION_TXT = "META-INF/botrino/apiVersion.txt";
 
     /**
-     * Same as {@link #run(String[])} but without specifying arguments. The botrino home will be considered to be the
-     * working directory.
-     */
-    public static void run() {
-        run(new String[0]);
-    }
-
-    /**
      * Starts the Botrino application. It forwards the arguments of the main method, the first argument is interpreted
      * as the path to the botrino home directory in the file system, where it will find the configuration file.
      * <p>
@@ -122,7 +114,7 @@ public final class Botrino {
                     configEntries.add(clazz);
                 }
                 if (StartupHandler.class.isAssignableFrom(clazz)) {
-                    LOGGER.debug("Discovered discord login handler {}", clazz.getName());
+                    LOGGER.debug("Discovered startup handler {}", clazz.getName());
                     startupHandlers.add(clazz.asSubclass(StartupHandler.class));
                 }
                 extensions.forEach(ext -> ext.onClassDiscovered(clazz));

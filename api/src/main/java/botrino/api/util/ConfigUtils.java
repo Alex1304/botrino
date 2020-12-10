@@ -107,7 +107,7 @@ public final class ConfigUtils {
     }
 
     /**
-     * Allows to create an instance of type, assuming there is a public no-arg constructor.
+     * Allows to create an instance of the given type, assuming a no-arg constructor exists.
      *
      * @param type the type to instantiate
      * @param <T>  the actual type
@@ -120,7 +120,9 @@ public final class ConfigUtils {
      */
     public static <T> T instantiate(Class<T> type) {
         try {
-            return type.getConstructor().newInstance();
+            var constr = type.getDeclaredConstructor();
+            constr.setAccessible(true);
+            return constr.newInstance();
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof RuntimeException) throw (RuntimeException) cause;

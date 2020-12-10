@@ -36,12 +36,13 @@ public interface ParentCommand extends Command {
      * A {@link ParentCommand} by default throws an exception if it isn't used without a subcommand.
      *
      * @param ctx the context
-     * @return A {@link Mono} emitting {@link BadSubcommandException} if the command is used without subcommand,
+     * @return A {@link Mono} emitting {@link InvalidSyntaxException} if the command is used without subcommand,
      * although this behavior can always be overriden for specific commands.
      */
     @Override
     default Mono<Void> run(CommandContext ctx) {
-        return Mono.error(new BadSubcommandException(ctx.input().getArguments().stream().findFirst().orElse(null)));
+        return Mono.error(new InvalidSyntaxException(null,
+                ctx.input().getArguments().stream().findFirst().orElse(null), null));
     }
 
     /**

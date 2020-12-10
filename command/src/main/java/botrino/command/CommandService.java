@@ -198,6 +198,27 @@ public final class CommandService {
         return Collections.unmodifiableSet(blacklist);
     }
 
+    /**
+     * Lists the commands at the given path. A path is defined as a sequence of aliases identifying the command for
+     * which subcommands should be listed. An empty path is equivalent to listing all commands at top level.
+     * <p>
+     * For example, if a top-level command {@code foo} defines a subcommand {@code bar}, which itself defines a
+     * subcommand {@code baz}:
+     * <ul>
+     *     <li>{@code listCommands()} will list the {@code foo} command</li>
+     *     <li>{@code listCommands("foo")} will list the {@code bar} command</li>
+     *     <li>{@code listCommands("foo", "bar")} will list the {@code baz} command</li>
+     * </ul>
+     *
+     * @param path a sequence of aliases identifying the command for which subcommands should be listed, empty for
+     *             listing top-level commands
+     * @return a set of commands corresponding to the list result
+     * @throws InvalidSyntaxException if {@code path} refers to a non-existing subcommand
+     */
+    public Set<Command> listCommands(String... path) {
+        return commandTree.listCommands(path);
+    }
+
     void setErrorHandler(CommandErrorHandler errorHandler) {
         LOGGER.debug("Using error handler {}", errorHandler);
         this.errorHandler = errorHandler;
@@ -280,11 +301,11 @@ public final class CommandService {
         if (t instanceof CommandFailedException) {
             return errorHandler.handleCommandFailed((CommandFailedException) t, ctx);
         }
+        if (t instanceof InvalidSyntaxException) {
+            return errorHandler.handleInvalidSyntax((InvalidSyntaxException) t, ctx);
+        }
         if (t instanceof PrivilegeException) {
             return errorHandler.handlePrivilege((PrivilegeException) t, ctx);
-        }
-        if (t instanceof BadSubcommandException) {
-            return errorHandler.handleBadSubcommand((BadSubcommandException) t, ctx);
         }
         if (t instanceof RateLimitException) {
             return errorHandler.handleRateLimit((RateLimitException) t, ctx);

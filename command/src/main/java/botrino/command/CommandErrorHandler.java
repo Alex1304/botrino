@@ -50,6 +50,19 @@ public interface CommandErrorHandler {
     }
 
     /**
+     * Recover from a {@link InvalidSyntaxException}, typically occurring when a user makes a mistake when specifying
+     * the arguments or the subcommand for a command.
+     *
+     * @param e   the exception
+     * @param ctx the context of the command that failed
+     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
+     * level.
+     */
+    default Mono<Void> handleInvalidSyntax(InvalidSyntaxException e, CommandContext ctx) {
+        return Mono.error(e);
+    }
+
+    /**
      * Recover from a {@link PrivilegeException}, for example by sending a message back to the user saying they don't
      * have the permissions to use the command.
      *
@@ -59,19 +72,6 @@ public interface CommandErrorHandler {
      * level.
      */
     default Mono<Void> handlePrivilege(PrivilegeException e, CommandContext ctx) {
-        return Mono.error(e);
-    }
-
-    /**
-     * Recover from a {@link BadSubcommandException}, typically occurring when a user attempts to use a subcommand that
-     * does not exist or is missing for a command.
-     *
-     * @param e   the exception
-     * @param ctx the context of the command that failed
-     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
-     * level.
-     */
-    default Mono<Void> handleBadSubcommand(BadSubcommandException e, CommandContext ctx) {
         return Mono.error(e);
     }
 
