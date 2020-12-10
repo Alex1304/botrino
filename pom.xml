@@ -23,12 +23,14 @@
   ~ SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alex1304.botrino</groupId>
     <artifactId>botrino</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-alpha2-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <modules>
         <module>api</module>
@@ -61,7 +63,7 @@
         <url>https://github.com/Alex1304/botrino/tree/master</url>
         <connection>scm:git:git://github.com/Alex1304/botrino.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Alex1304/botrino.git</developerConnection>
-        <tag>v1.0.0-alpha1</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
@@ -254,12 +256,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>com.google.errorprone</groupId>
-                <artifactId>error_prone_annotations</artifactId>
-                <version>2.4.0</version>
-            </dependency>
-
 
             <!-- Test dependencies -->
             <dependency>
