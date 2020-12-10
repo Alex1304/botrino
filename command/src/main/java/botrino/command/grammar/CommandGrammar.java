@@ -116,7 +116,7 @@ public final class CommandGrammar<T> {
 
         /**
          * Appends a new argument to the sequence with the given name and mapper. The argument will be optional if
-         * {@link #beginOptional()} was invoked on this builder beforehand.
+         * {@link #beginOptionalArguments()} was invoked on this builder beforehand.
          *
          * @param argName the name of the argument, corresponding to a field in the receiver internal class
          * @param mapper  the mapper that defines the transformation of the argument to a target type
@@ -147,14 +147,14 @@ public final class CommandGrammar<T> {
          *
          * @return this builder
          */
-        public Builder beginOptional() {
+        public Builder beginOptionalArguments() {
             this.optionalFlag = true;
             return this;
         }
 
         /**
          * Sets whether the last argument of the grammar is able to be repeated multiple times. If set to {@code true},
-         * the last argument will always be optional even if {@link #beginOptional()} was never called.
+         * the last argument will always be optional even if {@link #beginOptionalArguments()} was never called.
          *
          * @param varargs whether to enable varargs support
          * @return this builder
