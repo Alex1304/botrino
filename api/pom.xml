@@ -79,6 +79,10 @@
             <groupId>com.github.alex1304</groupId>
             <artifactId>rdi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

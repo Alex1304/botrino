@@ -256,6 +256,11 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.4.0</version>
+            </dependency>
 
             <!-- Test dependencies -->
             <dependency>
