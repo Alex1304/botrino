@@ -50,7 +50,6 @@
                         <launcher>\${symbol_dollar}{project.parent.artifactId}=\${package}.launcher/\${package}.Launcher</launcher>
                         <addModules>
                             <addModule>java.logging</addModule>
-                            <addModule>java.sql</addModule>
                             <addModule>jdk.unsupported</addModule>
                             <addModule>java.xml</addModule>
                             <addModule>java.naming</addModule>

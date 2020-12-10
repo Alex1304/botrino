@@ -3,11 +3,11 @@
 A simple yet powerful framework to develop, configure and run Discord bots based on Discord4J.
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Alex1304/botrino?sort=semver)
-[![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino)](https://search.maven.org/artifact/com.alex1304.botrino/botrino)
+[![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-api)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-api)
 ![License](https://img.shields.io/github/license/Alex1304/botrino)
-[![javadoc](https://javadoc.io/badge2/com.alex1304.botrino/botrino/javadoc.svg)](https://javadoc.io/doc/com.alex1304.botrino/botrino) 
+[![javadoc](https://javadoc.io/badge2/com.alex1304.botrino/botrino-api/javadoc.svg)](https://javadoc.io/doc/com.alex1304.botrino/botrino-api) 
 
-🚧 **The framework does not yet have a public release, and the docs are still in construction. It is published only for showcase and feedback purposes, a first release will happen soon&trade;**
+🚧 **The documentation for this framework is still work in progress. It will be complete before the first stable release which should happen very soon&trade;**
 
 <img align="right" style="padding:40px;" src="https://botrino.alex1304.com/img/logo.svg" width="20%" />
 

@@ -6,7 +6,7 @@ slug: /
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
 :::caution
-🚧 **The framework does not yet have a public release, and the docs are still in construction. It is published only for showcase and feedback purposes, a first release will happen soon&trade;**.
+🚧 **The documentation for this framework is still work in progress. It will be complete before the first stable release which should happen very soon&trade;**.
 :::
 
 <img style={{float:'right',padding:'5%'}} src={useBaseUrl('img/logo.svg')} width="20%" />
