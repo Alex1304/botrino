@@ -82,7 +82,7 @@
         <java.version>11</java.version>
         <immutables.version>2.8.9-ea-1</immutables.version>
         <jackson.version>2.11.2</jackson.version>
-        <discord4j.version>3.2.0-SNAPSHOT</discord4j.version>
+        <discord4j.version>3.2.0-M1</discord4j.version>
         <rdi.version>1.1.0</rdi.version>
     </properties>
 
