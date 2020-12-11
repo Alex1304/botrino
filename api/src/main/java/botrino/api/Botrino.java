@@ -28,8 +28,8 @@ import botrino.api.annotation.ConfigEntry;
 import botrino.api.annotation.Exclude;
 import botrino.api.config.ConfigContainer;
 import botrino.api.config.ConfigParser;
-import botrino.api.config.DefaultStartupHandler;
-import botrino.api.config.StartupHandler;
+import botrino.api.config.ConfigReader;
+import botrino.api.config.LoginHandler;
 import botrino.api.config.object.BotConfig;
 import botrino.api.config.object.I18nConfig;
 import botrino.api.extension.BotrinoExtension;
@@ -43,13 +43,13 @@ import com.github.alex1304.rdi.finder.annotation.RdiService;
 import discord4j.core.GatewayDiscordClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.*;
@@ -68,7 +68,8 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 public final class Botrino {
 
     private static final Logger LOGGER = Loggers.getLogger(Botrino.class);
-    private static final String API_VERSION_TXT = "META-INF/botrino/apiVersion.txt";
+    private static final String API_VERSION_TXT = "apiVersion.txt";
+    public static final String API_VERSION = readApiVersion();
 
     /**
      * Starts the Botrino application. It forwards the arguments of the main method, the first argument is interpreted
@@ -92,7 +93,8 @@ public final class Botrino {
             var botDir = Path.of(args.length == 0 ? "." : args[0]);
             var classes = scanBotModules();
             var configEntries = new HashSet<Class<?>>();
-            var startupHandlers = new ArrayList<Class<? extends StartupHandler>>();
+            var configReaders = new ArrayList<Class<? extends ConfigReader>>();
+            var loginHandlers = new ArrayList<Class<? extends LoginHandler>>();
             var serviceClasses = new HashSet<Class<?>>();
             var extensions = ServiceLoader.load(BotrinoExtension.class)
                     .stream()
@@ -113,20 +115,27 @@ public final class Botrino {
                     LOGGER.debug("Discovered config entry {}", clazz.getName());
                     configEntries.add(clazz);
                 }
-                if (StartupHandler.class.isAssignableFrom(clazz)) {
-                    LOGGER.debug("Discovered startup handler {}", clazz.getName());
-                    startupHandlers.add(clazz.asSubclass(StartupHandler.class));
+                if (ConfigReader.class.isAssignableFrom(clazz)) {
+                    LOGGER.debug("Discovered config reader {}", clazz.getName());
+                    configReaders.add(clazz.asSubclass(ConfigReader.class));
+                }
+                if (LoginHandler.class.isAssignableFrom(clazz)) {
+                    LOGGER.debug("Discovered login handler {}", clazz.getName());
+                    loginHandlers.add(clazz.asSubclass(LoginHandler.class));
                 }
                 extensions.forEach(ext -> ext.onClassDiscovered(clazz));
             }
-            var startupHandler = ConfigUtils.selectImplementationClass(StartupHandler.class, startupHandlers)
-                    .<StartupHandler>map(ConfigUtils::instantiate)
-                    .orElseGet(DefaultStartupHandler::new);
+            var configReader = ConfigUtils.selectImplementationClass(ConfigReader.class, configReaders)
+                    .<ConfigReader>map(ConfigUtils::instantiate)
+                    .orElseGet(() -> new ConfigReader() {});
+            var loginHandler = ConfigUtils.selectImplementationClass(LoginHandler.class, loginHandlers)
+                    .<LoginHandler>map(ConfigUtils::instantiate)
+                    .orElseGet(() -> new LoginHandler() {});
             configEntries.add(BotConfig.class);
             configEntries.add(I18nConfig.class);
 
-            var objectMapper = startupHandler.createConfigObjectMapper();
-            var configJson = startupHandler.loadConfigJson(botDir);
+            var objectMapper = configReader.createConfigObjectMapper();
+            var configJson = configReader.loadConfigJson(botDir);
             var configObjects = ConfigParser.create(objectMapper, configEntries).parse(configJson);
             var configContainerDescriptor = ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
                     .setFactoryMethod(staticFactory("of", ConfigContainer.class,
@@ -134,12 +143,9 @@ public final class Botrino {
                     .build();
             var gatewayRef = ServiceReference.ofType(GatewayDiscordClient.class);
             var loginHandlerDescriptor = ServiceDescriptor.builder(gatewayRef)
-                    .setFactoryMethod(externalStaticFactory(Botrino.class, "login", Mono.class,
-                            value(startupHandler, StartupHandler.class),
+                    .setFactoryMethod(externalStaticFactory(LoginHandler.class, "login", Mono.class,
+                            value(loginHandler, LoginHandler.class),
                             ref(configContainerDescriptor.getServiceReference())))
-                    .build();
-            var apiVersionDescriptor = ServiceDescriptor.builder(ServiceReference.of("apiVersion", String.class))
-                    .setFactoryMethod(externalStaticFactory(Botrino.class, "apiVersion", Mono.class))
                     .build();
 
             // Init RDI service container
@@ -150,7 +156,6 @@ public final class Botrino {
                             .collect(Collectors.toSet()))
                     .registerService(configContainerDescriptor)
                     .registerService(loginHandlerDescriptor)
-                    .registerService(apiVersionDescriptor)
                     .build());
 
             // Initialize all services and await logout
@@ -202,31 +207,7 @@ public final class Botrino {
         return classes;
     }
 
-    /**
-     * Factory method that creates a {@link GatewayDiscordClient} delegating to the given startup handler and config
-     * container. It is generally not recommended to call this method directly, and instead inject the {@link
-     * GatewayDiscordClient} as a service dependency.
-     *
-     * @param startupHandler  the startup handler
-     * @param configContainer the config container
-     * @return a Mono that performs the login to Discord upon subscription
-     */
-    public static Mono<GatewayDiscordClient> login(StartupHandler startupHandler, ConfigContainer configContainer) {
-        return startupHandler.login(configContainer);
-    }
-
-    /**
-     * Factory method that returns the API version of Botrino. It is generally not recommended to call this method
-     * directly, and instead inject it via a service reference with name "apiVersion" and of type {@link String}.
-     *
-     * @return a Mono emitting the API version on a scheduler supporting I/O operations.
-     */
-    public static Mono<String> apiVersion() {
-        return Mono.fromCallable(Botrino::readApiVersion)
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    private static String readApiVersion() throws IOException {
+    private static String readApiVersion() {
         try (var in = Botrino.class.getResourceAsStream(API_VERSION_TXT)) {
             if (in == null) {
                 throw new RuntimeException(API_VERSION_TXT + " not present in JAR");
@@ -235,6 +216,8 @@ public final class Botrino {
                  var buffered = new BufferedReader(reader)) {
                 return buffered.lines().collect(joining(System.lineSeparator()));
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

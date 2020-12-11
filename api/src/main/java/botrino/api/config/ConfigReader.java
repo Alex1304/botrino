@@ -25,18 +25,15 @@ package botrino.api.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import discord4j.core.GatewayDiscordClient;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Allows to customize the behavior of the bot when it starts up, such as the way it connects to Discord and the way it
- * loads the configuration.
+ * Allows to customize the way Botrino reads the configuration.
  */
-public interface StartupHandler {
+public interface ConfigReader {
 
     /**
      * Loads the configuration from a certain JSON source, suggested by the provided {@link Path} which corresponds to
@@ -65,12 +62,4 @@ public interface StartupHandler {
     default ObjectMapper createConfigObjectMapper() {
         return new ObjectMapper().registerModule(new Jdk8Module());
     }
-
-    /**
-     * Constructs a {@link GatewayDiscordClient} based on the information given by the configuration container.
-     *
-     * @param configContainer the container holding all the configuration for the bot
-     * @return a Mono that connects to Discord upon subscription and emits the resulting {@link GatewayDiscordClient}
-     */
-    Mono<GatewayDiscordClient> login(ConfigContainer configContainer);
 }

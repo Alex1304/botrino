@@ -76,7 +76,7 @@ module.exports = {
         },
         prism: {
             theme: require('prism-react-renderer/themes/vsDark'),
-            additionalLanguages: ['java']
+            additionalLanguages: ['java', 'groovy']
         }
     },
     presets: [

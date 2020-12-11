@@ -1,8 +1,8 @@
 ---
-title: Configuration
+title: Configuring your bot
 ---
 
-Standardizing the way to configure a bot is one of the primary purposes of Botrino. This section will cover the configuration part more in detail, explain how to take full control on the construction of the Discord client, and how to add your own configuration entries for your application.
+Standardizing the way to configure a bot is one of the primary purposes of Botrino. This section will cover the configuration part more in detail, how to access the values of the configuration file in your code, and how to add your own configuration entries for your application.
 
 ## The configuration JSON
 
@@ -48,11 +48,11 @@ This entry is where you input the bot information (token, presence, intents, etc
 ```js
 {
     "bot": {
-        "token": "", // string: required
+        "token": "...", // string: required
         "presence": { // object: optional, default {"status": "online"}
-            "status": "", // one of "online", "idle", "dnd", "invisible": required
-            "activity_type": "", // one of "playing", "watching", "listening", "streaming": optional
-            "activity_text": "" // string: optional
+            "status": "...", // one of "online", "idle", "dnd", "invisible": required
+            "activity_type": "...", // one of "playing", "watching", "listening", "streaming": optional
+            "activity_text": "..." // string: optional
         },
         "enabled_intents": 0 // integer: optional, default 32509 (all non-privileged intents)
     }
@@ -68,7 +68,7 @@ This entry is where you specify the localization settings (default locale and su
 ```js
 {
     "i18n": {
-        "default_locale": "", // string: required, must be a valid locale code ("en", "en-GB", "fr-FR"...)
+        "default_locale": "...", // string: required, must be a valid locale code ("en", "en-GB", "fr-FR"...)
         "supported_locales": [] // array of strings: optional, values must be valid locale codes
     }
 }
@@ -176,34 +176,26 @@ When running, it should give the following output:
 00:16:42.468 [main] INFO  com.example.myproject.SampleService - My property = hello!!!, my value = 42
 ```
 
-## Overriding behavior on startup
+## Customizing the JSON source
 
-It is possible to override the behavior of Botrino during startup by implementing the `StartupHandler` interface. This interface has 3 methods:
+It is possible to override the behavior of Botrino when loading the configuration by implementing the `ConfigReader` interface. This interface has two methods, none of them are required to be implemented:
 * `String loadConfigJson(Path botDirectory) throws IOException`: Allows to customize the way the configuration file is loaded. It is useful if you want to load the configuration from a file that is located at a different path or that has a different name than "config.json". You can even ignore the `botDirectory` parameter and load the JSON from a different source, or directly return a hard-coded JSON string for testing purposes for example. Note that this method throws `IOException` and that the return type is not reactive: indeed, this method is ran by Botrino on the main thread at the very start of the program, as such it does not need to be (and shouldn't be) asynchronous. This method is not required to be implemented: it has a default implementation that will simply read the JSON string from a file named `config.json` at the root of `botDirectory`.
 * `ObjectMapper createConfigObjectMapper()`: Allows to customize the Jackson `ObjectMapper` instance used to parse the JSON string. You can for example register extra modules and deserializers. This method is not required to be implemented: by default it will create an `ObjectMapper` with only the `Jdk8Module` registered (allows to recognize types such as `java.util.Optional`).
-* `Mono<GatewayDiscordClient> login(ConfigContainer configContainer)`: This is the only method that you are required to implement. It allows you to construct yourself the `GatewayDiscordClient` based on the configuration accessible via the `configContainer` parameter, which gives you access to all the information you need to initialize a client: the bot token, the intents, etc. The return type is reactive: simply return the result of the `DiscordClient#login()` method (or `GatewayBootstrap#login()`).
 
-If no `StartupHandler` implementation is found in your module, it will use a default one which can be recreated like this:
+If no `ConfigReader` implementation is found in your module, it will use a default one which can be recreated like this:
 
 ```java
 package com.example.myproject;
 
-import botrino.api.config.object.BotConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import discord4j.core.DiscordClient;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.Presence;
-import discord4j.core.retriever.EntityRetrievalStrategy;
-import discord4j.core.shard.MemberRequestFilter;
-import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public final class DefaultStartupHandler implements StartupHandler {
+public final class DefaultConfigReader implements ConfigReader {
 
     @Override
     public String loadConfigJson(Path botDirectory) throws IOException {
@@ -214,26 +206,10 @@ public final class DefaultStartupHandler implements StartupHandler {
     public ObjectMapper createConfigObjectMapper() {
         return new ObjectMapper().registerModule(new Jdk8Module());
     }
-
-    @Override
-    public Mono<GatewayDiscordClient> login(ConfigContainer configContainer) {
-        var config = configContainer.get(BotConfig.class);
-        var discordClient = DiscordClient.create(config.token());
-        return discordClient.gateway()
-                .setInitialStatus(shard -> config.presence()
-                        .map(BotConfig.StatusConfig::toStatusUpdate)
-                        .orElseGet(Presence::online))
-                .setEnabledIntents(config.enabledIntents().stream().boxed()
-                        .map(IntentSet::of)
-                        .findAny()
-                        .orElseGet(IntentSet::nonPrivileged))
-                .setMemberRequestFilter(MemberRequestFilter.none())
-                .login()
-                .single();
-    }
 }
 ```
 
 :::caution
-If more than one implementation of `StartupHandler` are found, it will result in an error as it is impossible to determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with the `@Primary` annotation to lift the ambiguity.
+* The implementation class must have a no-arg constructor.
+* If more than one implementation of `ConfigReader` are found, it will result in an error as it is impossible to determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with the `@Primary` annotation to lift the ambiguity. You may alternatively use the `@Exclude` annotation if you don't want one implementation to be picked up by Botrino.
 :::

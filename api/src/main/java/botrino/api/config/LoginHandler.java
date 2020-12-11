@@ -32,13 +32,29 @@ import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
 
 /**
- * Startup handler used by default when none is specified. It keeps all default settings of the discord client,
- * just adding the status and the intents specified in the config.
+ * Allows to customize the Discord client and the login process.
  */
-public final class DefaultStartupHandler implements StartupHandler {
+public interface LoginHandler {
 
-    @Override
-    public Mono<GatewayDiscordClient> login(ConfigContainer configContainer) {
+    /**
+     * Static variant of {@link LoginHandler#login(ConfigContainer)} to be used internally by the RDI container. This
+     * method is not meant to be used directly in your application.
+     *
+     * @param loginHandler    the login handler
+     * @param configContainer the container holding all the configuration for the bot
+     * @return a Mono that connects to Discord upon subscription and emits the resulting {@link GatewayDiscordClient}
+     */
+    static Mono<GatewayDiscordClient> login(LoginHandler loginHandler, ConfigContainer configContainer) {
+        return loginHandler.login(configContainer);
+    }
+
+    /**
+     * Constructs a {@link GatewayDiscordClient} based on the information given by the configuration container.
+     *
+     * @param configContainer the container holding all the configuration for the bot
+     * @return a Mono that connects to Discord upon subscription and emits the resulting {@link GatewayDiscordClient}
+     */
+    default Mono<GatewayDiscordClient> login(ConfigContainer configContainer) {
         var config = configContainer.get(BotConfig.class);
         var discordClient = DiscordClient.create(config.token());
         return discordClient.gateway()

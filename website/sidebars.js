@@ -2,7 +2,9 @@ module.exports = {
     someSidebar: {
         'Discover Botrino': ['intro', 'getting-started'],
         'API': [
-            'api/configuration',
+            'api/working-with-services',
+            'api/configuring-your-bot',
+            'api/customizing-the-discord-client',
             'api/extensions',
             'api/i18n'
         ],
