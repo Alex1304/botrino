@@ -2,7 +2,7 @@
 title: Configuring your bot
 ---
 
-Standardizing the way to configure a bot is one of the primary purposes of Botrino. This section will cover the configuration part more in detail, how to access the values of the configuration file in your code, and how to add your own configuration entries for your application.
+Standardizing the way to configure a bot is one of the primary goals of Botrino. This section will cover the configuration part more in detail, how to access the values of the configuration file in your code, and how to add your own configuration entries for your application.
 
 ## The configuration JSON
 

@@ -125,14 +125,14 @@ Create a `module-info.java` annotated with `@BotModule`, with the `open` modifie
 import botrino.api.annotation.BotModule;
 
 @BotModule
-open module your.app {
+open module com.example.myproject {
 
     requires botrino.api;
-    requires botrino.command;
+    requires botrino.command; // if using command module
 }
 ```
 
-The module `botrino.api` transitively exposes all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries.
+The module `botrino.api` transitively requires all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries.
 
 :::caution
 If you get compilation errors, remember to configure your project to use JDK 11 or above.
@@ -141,7 +141,7 @@ If you get compilation errors, remember to configure your project to use JDK 11 
 Finally, add a class with a `main` method:
 
 ```java
-package your.app;
+package com.example.myproject;
 
 import botrino.api.Botrino;
 

@@ -31,7 +31,7 @@ Botrino utilizes Java modules, introduced in the JDK 9 and released in the JDK 1
 import botrino.api.annotation.BotModule;
 
 @BotModule
-open module your.app {
+open module com.example.myproject {
 
     requires botrino.api;
 }
