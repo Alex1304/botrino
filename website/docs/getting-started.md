@@ -68,7 +68,7 @@ myproject
 * The `launcher` directory contains the module used by `delivery` to create a basic launcher for the runtime image.
 * The `pom.xml` which configures the project by importing the libraries and configuring the multi-module build.
 
-Note that the archetype will automatically include the [command extension](command-extension/setting-up-the-extension.md) in your project dependencies. If you do not want to use the command extension and use your own instead, you can remove the Maven dependency to `botrino-command` in both the root `pom.xml` and `app/pom.xml`, remove the `"command"` object from `app/src/main/external-resources/config.json`, and remove the `requires botrino.command;` line from `app/module-info.java`.
+Note that the archetype will automatically include the [command extension](command-extension/overview.md) in your project dependencies. If you do not want to use the command extension and use your own instead, you can remove the Maven dependency to `botrino-command` in both the root `pom.xml` and `app/pom.xml`, remove the `"command"` object from `app/src/main/external-resources/config.json`, and remove the `requires botrino.command;` line from `app/module-info.java`.
 
 This project is ready to be opened in your favorite IDE (Eclipse, IntelliJ...), and you can directly jump to the [Running your bot](#running-your-bot) section.
 

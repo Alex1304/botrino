@@ -9,7 +9,7 @@ module.exports = {
             'api/i18n'
         ],
         'Command extension': [
-            'command-extension/setting-up-the-extension',
+            'command-extension/overview',
             'command-extension/the-command-service',
             'command-extension/creating-commands',
             'command-extension/subcommands',
