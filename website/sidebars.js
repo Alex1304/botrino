@@ -1,22 +1,22 @@
 module.exports = {
     someSidebar: {
         'Discover Botrino': ['intro', 'getting-started'],
-        'API': [
+        'API Guides': [
             'api/working-with-services',
             'api/configuring-your-bot',
             'api/customizing-the-discord-client',
             'api/extensions',
             'api/i18n'
         ],
-        'Command module': [
-            'command-module/configuration',
-            'command-module/the-command-service',
-            'command-module/creating-commands',
-            'command-module/subcommands',
-            'command-module/privileges',
-            'command-module/handling-errors',
-            'command-module/documenting-commands',
-            'command-module/interactive-menus'
+        'Command extension': [
+            'command-extension/setting-up-the-extension',
+            'command-extension/the-command-service',
+            'command-extension/creating-commands',
+            'command-extension/subcommands',
+            'command-extension/privileges',
+            'command-extension/handling-errors',
+            'command-extension/documenting-commands',
+            'command-extension/interactive-menus'
         ]
     },
 };

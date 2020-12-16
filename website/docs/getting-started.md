@@ -68,7 +68,7 @@ myproject
 * The `launcher` directory contains the module used by `delivery` to create a basic launcher for the runtime image.
 * The `pom.xml` which configures the project by importing the libraries and configuring the multi-module build.
 
-Note that the archetype will automatically include the [command module](command-module/configuration.md) in your project dependencies. If you do not want to use the command module and use your own instead, you can remove the Maven dependency to `botrino-command` in both the root `pom.xml` and `app/pom.xml`, remove the `"command"` object from `app/src/main/external-resources/config.json`, and remove the `requires botrino.command;` line from `app/module-info.java`.
+Note that the archetype will automatically include the [command extension](command-extension/setting-up-the-extension.md) in your project dependencies. If you do not want to use the command extension and use your own instead, you can remove the Maven dependency to `botrino-command` in both the root `pom.xml` and `app/pom.xml`, remove the `"command"` object from `app/src/main/external-resources/config.json`, and remove the `requires botrino.command;` line from `app/module-info.java`.
 
 This project is ready to be opened in your favorite IDE (Eclipse, IntelliJ...), and you can directly jump to the [Running your bot](#running-your-bot) section.
 
@@ -76,7 +76,7 @@ This project is ready to be opened in your favorite IDE (Eclipse, IntelliJ...), 
 
 If you don't want the JLink runtime image, or if you want to use a build tool other than Maven, you may as well start from a blank project and import Botrino yourself. Be aware that it will require a bit more effort to set up than using the archetype.
 
-Import the following dependencies (if you don't want the command module you can omit `botrino-command`):
+Import the following dependencies (if you don't want the command extension you can omit `botrino-command`):
 
 <Tabs
     groupId="build-tools"
@@ -128,7 +128,7 @@ import botrino.api.annotation.BotModule;
 open module com.example.myproject {
 
     requires botrino.api;
-    requires botrino.command; // if using command module
+    requires botrino.command; // if using command extension
 }
 ```
 
@@ -159,7 +159,7 @@ public final class Main {
 
 When you are developing your bot, you may prefer to run the bot directly in your IDE rather than package your application every time.
 
-If you used the archetype, copy the contents of `app/src/main/external-resources` in a new directory on your hard drive, **outside of the project workspace**. If you aren't using the archetype, create a directory outside of your project and add a `config.json` file with the following contents (insert your bot token in the `"token"` field, and remove the `"command"` field if you aren't using the command module):
+If you used the archetype, copy the contents of `app/src/main/external-resources` in a new directory on your hard drive, **outside of the project workspace**. If you aren't using the archetype, create a directory outside of your project and add a `config.json` file with the following contents (insert your bot token in the `"token"` field, and remove the `"command"` field if you aren't using the command extension):
 
 ```json
 {

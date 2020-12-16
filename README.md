@@ -21,7 +21,7 @@ Starting the development of a Discord bot follows most of the time the same patt
 
 This is how came the idea of this project: have something that can handle for you all the initial workflow of setting up a project with a solid structure, at the only cost of letting the framework choose some libraries for you, so that you can focus on what matters. Botrino is born.
 
-It also aims at providing a command module that integrates well with the structure of Botrino, while still letting you the choice of using your own.
+It also aims at providing a [command extension](https://botrino.alex1304.com/command-extension/setting-up-the-extension) that integrates well with the structure of Botrino, while still letting you the choice of using your own.
 
 ## Overview
 
@@ -31,7 +31,7 @@ Botrino utilizes Java modules, introduced in the JDK 9 and released in the JDK 1
 import botrino.api.annotation.BotModule;
 
 @BotModule
-open module your.app {
+open module com.example.myproject {
 
     requires botrino.api;
 }
@@ -42,7 +42,7 @@ The annotation as well as the `open` modifier will allow Botrino to automaticall
 Inside your module, you can create services using [RDI annotations](https://alex1304.github.io/rdi/docs/annotation-based-configuration) that are automatically loaded on startup:
 
 ```java
-package your.app;
+package com.example.myproject;
 
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -70,7 +70,7 @@ public final class SampleService {
 
 ```
 
-The bot is configured via a `config.json` file in the working directory of the app with contents similar to this:
+The bot is configured via a JSON configuration file with contents similar to this:
 
 ```json
 {
@@ -95,7 +95,7 @@ To go further and familiarize yourself with the framework, check out the [Gettin
 ## Useful links
 
 * [Botrino website with full documentation](https://botrino.alex1304.com)
-* [Javadoc](https://www.javadoc.io/doc/com.alex1304.botrino/botrino/latest/index.html)
+* [Javadoc](https://www.javadoc.io/doc/com.alex1304.botrino/botrino-api/latest/index.html)
 * [Discord4J website](https://discord4j.com)
 
 ## License

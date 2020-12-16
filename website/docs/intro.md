@@ -21,7 +21,7 @@ Starting the development of a Discord bot follows most of the time the same patt
 
 This is how came the idea of this project: have something that can handle for you all the initial workflow of setting up a project with a solid structure, at the only cost of letting the framework choose some libraries for you, so that you can focus on what matters. Botrino is born.
 
-It also aims at providing a command module that integrates well with the structure of Botrino, while still letting you the choice of using your own.
+It also aims at providing a [command extension](command-extension/setting-up-the-extension.md) that integrates well with the structure of Botrino, while still letting you the choice of using your own.
 
 ## Overview
 
@@ -42,7 +42,7 @@ The annotation as well as the `open` modifier will allow Botrino to automaticall
 Inside your module, you can create services using [RDI annotations](https://alex1304.github.io/rdi/docs/annotation-based-configuration) that are automatically loaded on startup:
 
 ```java
-package your.app;
+package com.example.myproject;
 
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;

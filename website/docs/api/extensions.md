@@ -103,7 +103,7 @@ If an exception is thrown or an error is emitted via the `Mono` from this method
 
 ## A concrete example: the command extension
 
-The [command module](command-module/configuration.md) of Botrino implements an extension, which is in charge of collecting the classes implementing `Command` and `CommandErrorHandler` in order to register them in the `CommandService`. It also exposes a new configuration entry that defines new properties such as the command prefix.
+The [command extension](command-extension/setting-up-the-extension.md) of Botrino provides an implementation of `BotrinoExtension`, which is in charge of collecting the classes implementing `Command` and `CommandErrorHandler` in order to register them in the `CommandService`. It also exposes a new configuration entry that defines new properties such as the command prefix.
 
 ```java
 package botrino.command;

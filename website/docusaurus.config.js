@@ -76,7 +76,7 @@ module.exports = {
         },
         prism: {
             theme: require('prism-react-renderer/themes/vsDark'),
-            additionalLanguages: ['java', 'groovy']
+            additionalLanguages: ['java', 'groovy', 'properties']
         },
         googleAnalytics: {
             trackingID: 'G-45YBPVQ8K9'
