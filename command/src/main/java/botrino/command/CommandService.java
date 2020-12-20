@@ -37,20 +37,18 @@ import com.github.alex1304.rdi.finder.annotation.RdiService;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.reaction.ReactionEmoji;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+
+import static reactor.function.TupleUtils.function;
 
 /**
  * Service that centralizes the management of commands. It holds the command tree, the global command error handler, the
@@ -62,21 +60,17 @@ public final class CommandService {
     private static final Logger LOGGER = Loggers.getLogger(CommandService.class);
 
     private final CommandConfig commandConfig;
-    private final I18nConfig i18nConfig;
     private final GatewayDiscordClient gateway;
     private final InteractiveMenuFactory interactiveMenuFactory;
-
-    private final ConcurrentHashMap<Long, String> prefixByGuild = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, Locale> localeByGuild = new ConcurrentHashMap<>();
-    private final Set<Long> blacklist = ConcurrentHashMap.newKeySet();
+    private final Locale defaultLocale;
     private final CommandTree commandTree = new CommandTree();
     private final CommandRateLimiter commandRateLimiter = new CommandRateLimiter();
     private CommandErrorHandler errorHandler;
+    private CommandEventProcessor eventProcessor;
 
     @RdiFactory
     public CommandService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
         this.commandConfig = configContainer.get(CommandConfig.class);
-        this.i18nConfig = configContainer.get(I18nConfig.class);
         this.gateway = gateway;
         this.interactiveMenuFactory = InteractiveMenuFactory.of(
                 commandConfig.paginationControls()
@@ -93,6 +87,7 @@ public final class CommandService {
                         ))
                         .orElse(PaginationControls.getDefault()),
                 Duration.ofSeconds(commandConfig.menuTimeoutSeconds().orElse(600L)));
+        this.defaultLocale = Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale());
     }
 
     private static ReactionEmoji configToEmoji(CommandConfig.EmojiConfig config) {
@@ -118,38 +113,6 @@ public final class CommandService {
     }
 
     /**
-     * Sets a prefix specific for the given guild. If one was already set for the same guild, it is overwritten.
-     *
-     * @param guildId the guild id
-     * @param prefix  the new prefix. May be null, in which case the prefix is removed.
-     */
-    public void setPrefixForGuild(long guildId, @Nullable String prefix) {
-        if (prefix == null) {
-            prefixByGuild.remove(guildId);
-            LOGGER.debug("Removed prefix for guild {}", guildId);
-            return;
-        }
-        prefixByGuild.put(guildId, prefix);
-        LOGGER.debug("Changed prefix for guild {}: {}", guildId, prefix);
-    }
-
-    /**
-     * Sets a locale specific for the given guild. If one was already set for the same guild, it is overwritten.
-     *
-     * @param guildId the guild id
-     * @param locale  the new locale. May be null, in which case the locale is removed.
-     */
-    public void setLocaleForGuild(long guildId, @Nullable Locale locale) {
-        if (locale == null) {
-            localeByGuild.remove(guildId);
-            LOGGER.debug("Removed locale for guild {}", guildId);
-            return;
-        }
-        localeByGuild.put(guildId, locale);
-        LOGGER.debug("Changed locale for guild {}: {}", guildId, locale);
-    }
-
-    /**
      * Adds a command to this command service. The subcommand tree is resolved and the root is registered in the service
      * so that it can be invoked via message create events. It is generally not necessary to use this method as classes
      * within bot modules implementing {@link Command} are automatically added, but it can be useful when adding
@@ -163,39 +126,6 @@ public final class CommandService {
         Objects.requireNonNull(command);
         commandTree.addCommand(command);
         LOGGER.debug("Added command {}", command);
-    }
-
-    /**
-     * Adds the given ID to the blacklist. It can be either a guild ID, a user ID or a channel ID. Any command used by a
-     * user or inside a guild/channel that matches the ID will be ignored.
-     *
-     * @param id the ID to add to blacklist
-     * @return whether it successfully added the ID to the blacklist. false indicates that it was already added and
-     * nothing was done
-     */
-    public boolean blacklistAdd(long id) {
-        return blacklist.add(id);
-    }
-
-    /**
-     * Removes the given ID to the blacklist. It can be either a guild ID, a user ID or a channel ID. Any command used
-     * by a user or inside a guild/channel that matches the ID will no longer be ignored.
-     *
-     * @param id the ID to remove from blacklist
-     * @return whether it successfully removed the ID from the blacklist. false indicates that it was already removed
-     * and nothing was done
-     */
-    public boolean blacklistRemove(long id) {
-        return blacklist.remove(id);
-    }
-
-    /**
-     * Returns a view of the set of IDs that are blacklisted from using commands.
-     *
-     * @return an immutable Set of IDs that are blacklisted
-     */
-    public Set<Long> blacklistedIds() {
-        return Collections.unmodifiableSet(blacklist);
     }
 
     /**
@@ -224,18 +154,25 @@ public final class CommandService {
         this.errorHandler = errorHandler;
     }
 
+    void setEventProcessor(CommandEventProcessor eventProcessor) {
+        LOGGER.debug("Using event processor {}", eventProcessor);
+        this.eventProcessor = eventProcessor;
+    }
+
     Mono<Void> listenToCommands() {
-        return gateway.on(MessageCreateEvent.class, this::processEvent)
+        return gateway.on(MessageCreateEvent.class, event ->
+                Mono.just(event)
+                        .filterWhen(eventProcessor::filter)
+                        .zipWhen(ev -> Mono.zip(
+                                eventProcessor.prefixForEvent(ev).defaultIfEmpty(commandConfig.prefix()),
+                                eventProcessor.localeForEvent(ev).defaultIfEmpty(defaultLocale)))
+                        .flatMap(function((ev, t) -> processEvent(ev, t.getT1(), t.getT2()))))
                 .then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed")));
     }
 
-    private Mono<Void> processEvent(MessageCreateEvent event) {
-        var guildId = event.getGuildId();
-        var prefixOfGuild = guildId.map(Snowflake::asLong)
-                .map(prefixByGuild::get)
-                .orElse(commandConfig.prefix());
+    private Mono<Void> processEvent(MessageCreateEvent event, String prefix, Locale locale) {
         var botId = event.getClient().getSelfId().asLong();
-        var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefixOfGuild);
+        var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefix);
         var messageContent = event.getMessage().getContent();
         // Extracting prefix
         String prefixUsed = null;
@@ -259,31 +196,8 @@ public final class CommandService {
                 .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
                         "for message create event " + event, e)))
                 .flatMap(channel -> Mono.justOrEmpty(commandTree.findForInput(input))
-                        .filter(command -> {
-                            var isByBot = event.getMessage().getAuthor().map(User::isBot).orElse(true);
-                            var channelId = event.getMessage().getChannelId();
-                            if (isByBot && command.ignoreBots()) {
-                                LOGGER.debug("Ignoring command due to author being a bot account: {}", command);
-                                return false;
-                            }
-                            if (blacklist.contains(authorId)) {
-                                LOGGER.debug("Ignoring command due to AUTHOR being blacklisted: {}", command);
-                                return false;
-                            }
-                            if (guildId.map(id -> blacklist.contains(id.asLong())).orElse(false)) {
-                                LOGGER.debug("Ignoring command due to GUILD being blacklisted: {}", command);
-                                return false;
-                            }
-                            if (blacklist.contains(channelId.asLong())) {
-                                LOGGER.debug("Ignoring command due to CHANNEL being blacklisted: {}", command);
-                                return false;
-                            }
-                            return command.scope().isInScope(channel);
-                        })
+                        .filter(command -> command.scope().isInScope(channel))
                         .flatMap(command -> {
-                            var locale = guildId.map(Snowflake::asLong)
-                                    .map(localeByGuild::get)
-                                    .orElse(Locale.forLanguageTag(i18nConfig.defaultLocale()));
                             var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
                             return command.privilege().checkGranted(ctx)
                                     .then(Mono.defer(() -> {

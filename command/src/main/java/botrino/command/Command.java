@@ -31,8 +31,8 @@ public interface Command {
 
     /**
      * Creates a command with the given aliases and action function, with default settings (empty documentation,
-     * unrestricted privilege and scope, no subcommand, ignored by other bots). Use {@link #builder(Set, Function)} to
-     * customize those settings.
+     * unrestricted privilege and scope, no subcommand, no rate limit, no error handler). Use {@link #builder(Set,
+     * Function)} to customize those settings.
      *
      * @param aliases the aliases of the command
      * @param action  the action to execute when the command is ran
@@ -95,16 +95,6 @@ public interface Command {
     }
 
     /**
-     * Whether the command should be ignored if used by other bots. In most cases this should be true, which is by
-     * default.
-     *
-     * @return whether the command should be ignored by other bots
-     */
-    default boolean ignoreBots() {
-        return true;
-    }
-
-    /**
      * Defines the error handler for this command. It overrides the global command error handler if it exists.
      *
      * @return the error handler for this command
@@ -131,8 +121,6 @@ public interface Command {
         private Function<? super Translator, CommandDocumentation> documentation;
         private Privilege privilege;
         private Scope scope;
-        private boolean ignoreBots;
-        private boolean ignoreBots_set;
         private CommandErrorHandler errorHandler;
         private RateLimit rateLimit;
 
@@ -142,8 +130,8 @@ public interface Command {
         }
 
         /**
-         * Inherit properties of the other command such as privilege, scope, ignore bots state, and error handler. It
-         * won't inherit aliases, action, documentation and subcommands.
+         * Inherit properties of the other command such as privilege, scope, and error handler. It won't inherit
+         * aliases, action, documentation and subcommands.
          *
          * @param other the other command to inherit from
          * @return this builder
@@ -152,7 +140,6 @@ public interface Command {
             Objects.requireNonNull(other);
             return setPrivilege(other.privilege())
                     .setScope(other.scope())
-                    .setIgnoreBots(other.ignoreBots())
                     .setErrorHandler(other.errorHandler());
         }
 
@@ -200,19 +187,6 @@ public interface Command {
         public Builder addSubcommand(Command command) {
             Objects.requireNonNull(command);
             subcommands.add(command);
-            return this;
-        }
-
-        /**
-         * Whether the command should be ignored if used by other bots. In most cases this should be true, which is by
-         * default.
-         *
-         * @param ignoreBots whether the command should ignore bots
-         * @return this builder
-         */
-        public Builder setIgnoreBots(boolean ignoreBots) {
-            this.ignoreBots = ignoreBots;
-            this.ignoreBots_set = true;
             return this;
         }
 
@@ -276,11 +250,6 @@ public interface Command {
                 @Override
                 public Set<Command> subcommands() {
                     return subcommands;
-                }
-
-                @Override
-                public boolean ignoreBots() {
-                    return ignoreBots_set ? ignoreBots : Command.super.ignoreBots();
                 }
 
                 @Override

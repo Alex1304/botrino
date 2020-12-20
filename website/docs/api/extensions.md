@@ -103,77 +103,10 @@ If an exception is thrown or an error is emitted via the `Mono` from this method
 
 ## A concrete example: the command extension
 
-The [command extension](command-extension/overview.md) of Botrino provides an implementation of `BotrinoExtension`, which is in charge of collecting the classes implementing `Command` and `CommandErrorHandler` in order to register them in the `CommandService`. It also exposes a new configuration entry that defines new properties such as the command prefix.
+The [command extension](command-extension/overview.md) of Botrino provides an implementation of `BotrinoExtension`, which is in charge of collecting the classes implementing `Command`, `CommandErrorHandler` and `CommandEventProcessor` in order to register them in the `CommandService`. It also exposes a new configuration entry that defines new properties such as the command prefix.
 
-```java
-package botrino.command;
-
-import botrino.api.extension.BotrinoExtension;
-import botrino.api.util.ConfigUtils;
-import botrino.api.util.InstanceCache;
-import botrino.command.config.CommandConfig;
-import com.github.alex1304.rdi.config.ServiceDescriptor;
-import com.github.alex1304.rdi.finder.annotation.RdiService;
-import reactor.core.publisher.Mono;
-
-import java.util.*;
-
-public final class CommandExtension implements BotrinoExtension {
-
-    private final InstanceCache instanceCache = InstanceCache.create();
-    private final Set<Command> commands = new HashSet<>();
-    private final List<CommandErrorHandler> errorHandlers = new ArrayList<>();
-    private CommandService commandService;
-
-    @Override
-    public void onClassDiscovered(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(RdiService.class)) {
-            return;
-        }
-        if (Command.class.isAssignableFrom(clazz)) {
-            commands.add(instanceCache.getInstance(clazz.asSubclass(Command.class)));
-        }
-        if (CommandErrorHandler.class.isAssignableFrom(clazz)) {
-            errorHandlers.add(instanceCache.getInstance(clazz.asSubclass(CommandErrorHandler.class)));
-        }
-    }
-
-    @Override
-    public void onServiceCreated(Object serviceInstance) {
-        if (serviceInstance instanceof CommandService) {
-            this.commandService = (CommandService) serviceInstance;
-        }
-        if (serviceInstance instanceof Command) {
-            commands.add((Command) serviceInstance);
-        }
-        if (serviceInstance instanceof CommandErrorHandler) {
-            errorHandlers.add((CommandErrorHandler) serviceInstance);
-        }
-    }
-
-    @Override
-    public Set<ServiceDescriptor> provideExtraServices() {
-        return Set.of();
-    }
-
-    @Override
-    public Set<Class<?>> provideExtraDiscoverableClasses() {
-        return Set.of(CommandService.class, CommandConfig.class);
-    }
-
-    @Override
-    public Mono<Void> finishAndJoin() {
-        Objects.requireNonNull(commandService);
-        commands.forEach(commandService::addCommand);
-        commandService.setErrorHandler(ConfigUtils.selectImplementation(CommandErrorHandler.class, errorHandlers)
-                .orElse(CommandErrorHandler.NO_OP));
-        return commandService.listenToCommands();
-    }
-}
-```
-
-A few things to note:
-* Classes with the `@RdiService` annotation are ignored, since we want to use the instance created by RDI in case `Command` and `CommandErrorHandler` are declared as services.
-* An `InstanceCache` is used so that the same instance can be reused in case a class implements both `Command` and `CommandErrorHandler`.
+You can check the source code of the command extension on GitHub [here](https://github.com/Alex1304/botrino/blob/main/command/src/main/java/botrino/command/CommandExtension.java). A few things to note to understand the code:
+* Classes with the `@RdiService` annotation are ignored, since we want to use the instance created by RDI in case `Command`, `CommandErrorHandler` and `CommandEventProcessor` are declared as services.
+* An `InstanceCache` is used so that the same instance can be reused in case a class implements more than one interface.
 * `CommandService` utilizes RDI annotations, so we provide it via `provideExtraDiscoverableClasses()` and not `provideExtraServices()`.
 * All implementations that were found are finally registered in the `finishAndJoin()` method, which starts the command listener at the end.

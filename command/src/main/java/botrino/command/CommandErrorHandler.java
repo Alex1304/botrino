@@ -35,7 +35,12 @@ public interface CommandErrorHandler {
     /**
      * A {@link CommandErrorHandler} that rethrows all errors without doing anything.
      */
-    CommandErrorHandler NO_OP = new CommandErrorHandler() {};
+    CommandErrorHandler NO_OP = new CommandErrorHandler() {
+        @Override
+        public String toString() {
+            return "CommandErrorHandler.NO_OP";
+        }
+    };
 
     /**
      * Recover from a {@link CommandFailedException}, for example by sending an informative message back to the user.

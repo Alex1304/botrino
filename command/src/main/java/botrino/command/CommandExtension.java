@@ -38,6 +38,7 @@ public final class CommandExtension implements BotrinoExtension {
     private final InstanceCache instanceCache = InstanceCache.create();
     private final Set<Command> commands = new HashSet<>();
     private final List<CommandErrorHandler> errorHandlers = new ArrayList<>();
+    private final List<CommandEventProcessor> eventProcessors = new ArrayList<>();
     private CommandService commandService;
 
     @Override
@@ -51,6 +52,9 @@ public final class CommandExtension implements BotrinoExtension {
         if (CommandErrorHandler.class.isAssignableFrom(clazz)) {
             errorHandlers.add(instanceCache.getInstance(clazz.asSubclass(CommandErrorHandler.class)));
         }
+        if (CommandEventProcessor.class.isAssignableFrom(clazz)) {
+            eventProcessors.add(instanceCache.getInstance(clazz.asSubclass(CommandEventProcessor.class)));
+        }
     }
 
     @Override
@@ -63,6 +67,9 @@ public final class CommandExtension implements BotrinoExtension {
         }
         if (serviceInstance instanceof CommandErrorHandler) {
             errorHandlers.add((CommandErrorHandler) serviceInstance);
+        }
+        if (serviceInstance instanceof CommandEventProcessor) {
+            eventProcessors.add((CommandEventProcessor) serviceInstance);
         }
     }
 
@@ -82,6 +89,8 @@ public final class CommandExtension implements BotrinoExtension {
         commands.forEach(commandService::addCommand);
         commandService.setErrorHandler(ConfigUtils.selectImplementation(CommandErrorHandler.class, errorHandlers)
                 .orElse(CommandErrorHandler.NO_OP));
+        commandService.setEventProcessor(ConfigUtils.selectImplementation(CommandEventProcessor.class, eventProcessors)
+                .orElse(CommandEventProcessor.NO_OP));
         return commandService.listenToCommands();
     }
 }

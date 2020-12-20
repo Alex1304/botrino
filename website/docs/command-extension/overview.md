@@ -17,15 +17,14 @@ By definition, as this is an extension, it does not belong to the core framework
 * Attach a documentation to all your commands and subcommands
 * Define privileges for each command with your own rules
 * Global and per-command error handling
-* Per-guild prefix and language
+* Process message create events to filter them, or to adapt prefix and language
 * Rate-limiting / cooldowns
-* Blacklist individual users, guilds or channels from using commands to handle cases of abuse
-* Create interactive menus
+* Interactive menus
 
 ## Code examples
 
 :::info
-The examples below make use of translated strings, they are assumed to exist as described in [this page](../api/i18n.md).
+The examples below make use of translated strings, they are assumed to exist in properties files as described in [this page](../api/i18n.md).
 :::
 
 A basic `!ping` command:
