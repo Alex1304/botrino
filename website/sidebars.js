@@ -10,11 +10,13 @@ module.exports = {
         ],
         'Command extension': [
             'command-extension/overview',
-            'command-extension/the-command-service',
+            'command-extension/configuration',
             'command-extension/creating-commands',
             'command-extension/subcommands',
             'command-extension/privileges',
+            'command-extension/rate-limiting',
             'command-extension/handling-errors',
+            'command-extension/filtering-and-adapting-events',
             'command-extension/documenting-commands',
             'command-extension/interactive-menus'
         ]

@@ -17,7 +17,7 @@ By definition, as this is an extension, it does not belong to the core framework
 * Attach a documentation to all your commands and subcommands
 * Define privileges for each command with your own rules
 * Global and per-command error handling
-* Process message create events to filter them, or to adapt prefix and language
+* Process message create events to filter them or to adapt prefix and language
 * Rate-limiting / cooldowns
 * Interactive menus
 
@@ -46,7 +46,9 @@ public final class PingCommand implements Command {
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
-        return ctx.channel().createMessage(ctx.translate(Strings.APP, "ping")).then();
+        return ctx.channel()
+                .createMessage(ctx.translate(Strings.APP, "ping"))
+                .then();
     }
 }
 ```
@@ -120,4 +122,14 @@ public final class SendWordCommand implements Command {
 
 ## Getting started
 
-Using the Maven archetype as outlined in Botrino's [Getting Started guide](../getting-started.md) will automatically configure the command extension for you. The section ["From a blank project"](../getting-started.md#from-a-blank-project) explains how to go for a more manual approach, and the guide already shows how to configure the command extension. Simply make sure to include the `botrino-command` artifact in your project dependencies and to add `requires botrino.command;` in your `module-info.java`, and you're ready to go.
+Using the Maven archetype as outlined in Botrino's [Getting Started guide](../getting-started.md) will automatically configure the command extension for you. The section ["From a blank project"](../getting-started.md#from-a-blank-project) explains how to go for a more manual approach, and the guide already shows how to configure the command extension. Simply make sure to include the `botrino-command` artifact in your project dependencies and to add `requires botrino.command;` in your `module-info.java`. Then make sure to add to following minimal contents to your JSON configuration file:
+
+```json
+{
+    "command": {
+        "prefix": "!"
+    }
+}
+```
+
+Specify the command prefix you want for your bot here. The `"command"` property should be at the root of your JSON, alongside with `"bot"` and `"i18n"`. The full reference for the configuration of the command extension can be found [in the next page](configuration.md).

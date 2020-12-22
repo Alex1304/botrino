@@ -43,18 +43,35 @@ Botrino comes with a few configuration entries by default. Here is the list of t
 
 #### The `bot` entry
 
-This entry is where you input the bot information (token, presence, intents, etc). The JSON for the `bot` entry has the following structure:
+This entry is where you input the bot information (token, presence, intents, etc).
 
-```js
+JSON structure for `bot`:
+
+| Field | Type | Description | Required? |
+|-------|------|-------------|-----------|
+| token | string | the token of the bot, generated in the [Discord Developer portal](https://discord.com/developers/applications) | Yes |
+| presence | object | the presence of the bot in Discord | No, defaults to `{"status":"online"}` |
+| enabled_intents | integer | the [Gateway Intents](https://discord.com/developers/docs/topics/gateway#gateway-intents) to enable | No, defaults to `32509` (all non-privileged intents) |
+
+JSON structure for `presence`:
+
+| Field | Type | Description | Required? |
+|-------|------|-------------|-----------|
+| status | string | one of "online", "idle", "dnd", "invisible" | No, defaults to "online" |
+| activity_type | string | one of "playing", "watching", "listening", "streaming" | No |
+| activity_text | string | the text to display in the presence activity of the bot | No |
+
+Example:
+```json
 {
     "bot": {
-        "token": "...", // string: required
-        "presence": { // object: optional, default {"status": "online"}
-            "status": "...", // one of "online", "idle", "dnd", "invisible": required
-            "activity_type": "...", // one of "playing", "watching", "listening", "streaming": optional
-            "activity_text": "..." // string: optional
+        "token": "yourTokenHere",
+        "presence": {
+            "status": "online",
+            "activity_type": "playing",
+            "activity_text": "Hello world!"
         },
-        "enabled_intents": 0 // integer: optional, default 32509 (all non-privileged intents)
+        "enabled_intents": 32509
     }
 }
 ```
@@ -63,13 +80,22 @@ The corresponding class in the Java code is `botrino.api.config.object.BotConfig
 
 #### The `i18n` entry
 
-This entry is where you specify the localization settings (default locale and supported locales). The JSON for the `i18n` entry has the following structure:
+This entry is where you specify the localization settings (default locale and supported locales).
 
-```js
+JSON structure for `i18n`:
+
+
+| Field | Type | Description | Required? |
+|-------|------|-------------|-----------|
+| default_locale | string | a language tag with a format compatible with [`java.util.Locale#forLanguageTag`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html#forLanguageTag(java.lang.String)) | Yes
+| supported_locales | array of string | a list of language tags used as a hint to indicate the different languages supported | No |
+
+Example:
+```json
 {
     "i18n": {
-        "default_locale": "...", // string: required, must be a valid locale code ("en", "en-GB", "fr-FR"...)
-        "supported_locales": [] // array of strings: optional, values must be valid locale codes
+        "default_locale": "en",
+        "supported_locales": ["en"]
     }
 }
 ```
