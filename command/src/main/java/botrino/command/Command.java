@@ -1,6 +1,7 @@
 package botrino.command;
 
 import botrino.api.i18n.Translator;
+import botrino.command.annotation.Alias;
 import botrino.command.doc.CommandDocumentation;
 import botrino.command.privilege.Privilege;
 import botrino.command.privilege.Privileges;
@@ -30,6 +31,17 @@ public interface Command {
     }
 
     /**
+     * Initializes a command builder with the given alias and action function.
+     *
+     * @param alias the alias of the command
+     * @param action  the action to execute when the command is ran
+     * @return a new builder
+     */
+    static Builder builder(String alias, Function<? super CommandContext, ? extends Mono<Void>> action) {
+        return new Builder(Set.of(alias), action);
+    }
+
+    /**
      * Creates a command with the given aliases and action function, with default settings (empty documentation,
      * unrestricted privilege and scope, no subcommand, no rate limit, no error handler). Use {@link #builder(Set,
      * Function)} to customize those settings.
@@ -43,11 +55,17 @@ public interface Command {
     }
 
     /**
-     * Defines the aliases for this command.
+     * Creates a command with the given alias and action function, with default settings (empty documentation,
+     * unrestricted privilege and scope, no subcommand, no rate limit, no error handler). Use {@link #builder(Set,
+     * Function)} to customize those settings.
      *
-     * @return the set of aliases, must not be empty
+     * @param alias the alias of the command
+     * @param action  the action to execute when the command is ran
+     * @return a new {@link Command}
      */
-    Set<String> aliases();
+    static Command of(String alias, Function<? super CommandContext, ? extends Mono<Void>> action) {
+        return builder(alias, action).build();
+    }
 
     /**
      * Defines the action of the command.
@@ -56,6 +74,19 @@ public interface Command {
      * @return a Mono that completes empty when the command is successful, and emits an error when something goes wrong.
      */
     Mono<Void> run(CommandContext ctx);
+
+    /**
+     * Defines the aliases for this command.
+     *
+     * @return the set of aliases. If empty, the command will not be registered.
+     */
+    default Set<String> aliases() {
+        var topLevelAnnot = getClass().getAnnotation(Alias.class);
+        if (topLevelAnnot != null) {
+            return Set.of(topLevelAnnot.value());
+        }
+        return Set.of();
+    }
 
     /**
      * Defines the documentation of the command.
@@ -130,8 +161,8 @@ public interface Command {
         }
 
         /**
-         * Inherit properties of the other command such as privilege, scope, and error handler. It won't inherit
-         * aliases, action, documentation and subcommands.
+         * Inherit properties of the other command, such as privilege, scope, error handler and rate limit. It won't
+         * inherit aliases, action, documentation and subcommands.
          *
          * @param other the other command to inherit from
          * @return this builder
@@ -140,7 +171,8 @@ public interface Command {
             Objects.requireNonNull(other);
             return setPrivilege(other.privilege())
                     .setScope(other.scope())
-                    .setErrorHandler(other.errorHandler());
+                    .setErrorHandler(other.errorHandler())
+                    .setRateLimit(other.rateLimit());
         }
 
         /**

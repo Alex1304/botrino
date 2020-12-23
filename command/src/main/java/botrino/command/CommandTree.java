@@ -64,14 +64,14 @@ class CommandTree {
 
     @Nullable
     Command findForInput(TokenizedInput input) {
-        Node found = null;
-        var map = rootCommands;
-        var args = input.getMutableArgs();
-        while (!args.isEmpty() && map.containsKey(args.element())) {
-            found = map.get(args.remove());
-            map = found.subcommands;
-        }
-        return found == null ? null : found.command;
+        return getCommandAt(input.getMutableArgs());
+    }
+
+    Optional<Command> getCommandAt(String topLevelAlias, String... subcommandAliases) {
+        var args = new ArrayDeque<String>();
+        args.add(topLevelAlias);
+        args.addAll(Arrays.asList(subcommandAliases));
+        return Optional.ofNullable(getCommandAt(args));
     }
 
     Set<Command> listCommands(String... path) {
@@ -87,6 +87,17 @@ class CommandTree {
                 .distinct()
                 .map(n -> n.command)
                 .collect(toUnmodifiableSet());
+    }
+
+    @Nullable
+    private Command getCommandAt(ArrayDeque<String> args) {
+        Node found = null;
+        var map = rootCommands;
+        while (!args.isEmpty() && map.containsKey(args.element())) {
+            found = map.get(args.remove());
+            map = found.subcommands;
+        }
+        return found == null ? null : found.command;
     }
 
     private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> in, Map<String, Node> out) {

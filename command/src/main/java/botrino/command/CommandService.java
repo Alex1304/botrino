@@ -45,6 +45,7 @@ import reactor.util.Loggers;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -113,19 +114,43 @@ public final class CommandService {
     }
 
     /**
-     * Adds a command to this command service. The subcommand tree is resolved and the root is registered in the service
-     * so that it can be invoked via message create events. It is generally not necessary to use this method as classes
-     * within bot modules implementing {@link Command} are automatically added, but it can be useful when adding
-     * commands built with {@link Command#of(Set, Function)} or {@link Command#builder(Set, Function)}.
+     * Adds a command to this command service at the top level. The subcommand tree is resolved and the root is
+     * registered in the service so that it can be invoked via message create events. It is generally not necessary to
+     * use this method as classes within bot modules implementing {@link Command} are automatically added, but it can be
+     * useful when adding commands built with {@link Command#of(Set, Function)} or {@link Command#builder(Set,
+     * Function)}.
      *
      * @param command the command to add
      * @throws IllegalStateException if one of the aliases defined by the command conflicts with a command already
      *                               added, or if there is an alias conflict within the nested subcommands.
      */
-    public void addCommand(Command command) {
+    public void addTopLevelCommand(Command command) {
         Objects.requireNonNull(command);
         commandTree.addCommand(command);
         LOGGER.debug("Added command {}", command);
+    }
+
+    /**
+     * Get the command instance for the given top level alias and subcommand aliases.
+     *
+     * <p>
+     * For example, if a top-level command {@code foo} defines a subcommand {@code bar}, which itself defines a
+     * subcommand {@code baz}:
+     * <ul>
+     *     <li>{@code getCommandAt("foo")} will return the {@code foo} command</li>
+     *     <li>{@code getCommandAt("foo", "bar")} will list the {@code bar} command</li>
+     *     <li>{@code getCommandAt("foo", "bar", "baz")} will list the {@code baz} command</li>
+     * </ul>
+     *
+     * @param topLevelAlias     the alias of the top level command to look for
+     * @param subcommandAliases the sequence of subcommand aliases to locate the command instance of a specific
+     *                          subcommand
+     * @return the command instance, if found
+     */
+    public Optional<Command> getCommandAt(String topLevelAlias, String... subcommandAliases) {
+        Objects.requireNonNull(topLevelAlias);
+        Objects.requireNonNull(subcommandAliases);
+        return commandTree.getCommandAt(topLevelAlias, subcommandAliases);
     }
 
     /**
@@ -146,6 +171,7 @@ public final class CommandService {
      * @throws InvalidSyntaxException if {@code path} refers to a non-existing subcommand
      */
     public Set<Command> listCommands(String... path) {
+        Objects.requireNonNull(path);
         return commandTree.listCommands(path);
     }
 

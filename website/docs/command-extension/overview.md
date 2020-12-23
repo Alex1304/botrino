@@ -33,16 +33,15 @@ package com.example.myproject;
 
 import botrino.command.Command;
 import botrino.command.CommandContext;
+import botrino.command.annotation.Alias;
+import botrino.command.annotation.TopLevelCommand;
 import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
+@TopLevelCommand
+@Alias("ping")
 public final class PingCommand implements Command {
-
-    @Override
-    public Set<String> aliases() {
-        return Set.of("ping");
-    }
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
@@ -60,6 +59,8 @@ package com.example.myproject;
 
 import botrino.command.Command;
 import botrino.command.CommandContext;
+import botrino.command.annotation.Alias;
+import botrino.command.annotation.TopLevelCommand;
 import botrino.command.grammar.ArgumentMapper;
 import botrino.command.grammar.CommandGrammar;
 import botrino.command.privilege.Privilege;
@@ -75,6 +76,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
+@TopLevelCommand
+@Alias("sendword")
 public final class SendWordCommand implements Command {
 
     private final CommandGrammar<Args> grammar = CommandGrammar.builder()
@@ -83,11 +86,6 @@ public final class SendWordCommand implements Command {
             .nextArgument("channels", ArgumentMapper.asGuildChannel())
             .setVarargs(true)
             .build(Args.class);
-
-    @Override
-    public Set<String> aliases() {
-        return Set.of("sendword");
-    }
 
     @Override
     public Mono<Void> run(CommandContext ctx) {

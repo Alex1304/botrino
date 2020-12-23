@@ -26,6 +26,7 @@ package botrino.command;
 import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
+import botrino.command.annotation.TopLevelCommand;
 import botrino.command.config.CommandConfig;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -46,7 +47,7 @@ public final class CommandExtension implements BotrinoExtension {
         if (clazz.isAnnotationPresent(RdiService.class)) {
             return;
         }
-        if (Command.class.isAssignableFrom(clazz)) {
+        if (Command.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(TopLevelCommand.class)) {
             commands.add(instanceCache.getInstance(clazz.asSubclass(Command.class)));
         }
         if (CommandErrorHandler.class.isAssignableFrom(clazz)) {
@@ -62,7 +63,8 @@ public final class CommandExtension implements BotrinoExtension {
         if (serviceInstance instanceof CommandService) {
             this.commandService = (CommandService) serviceInstance;
         }
-        if (serviceInstance instanceof Command) {
+        if (serviceInstance instanceof Command
+                && serviceInstance.getClass().isAnnotationPresent(TopLevelCommand.class)) {
             commands.add((Command) serviceInstance);
         }
         if (serviceInstance instanceof CommandErrorHandler) {
@@ -86,7 +88,7 @@ public final class CommandExtension implements BotrinoExtension {
     @Override
     public Mono<Void> finishAndJoin() {
         Objects.requireNonNull(commandService);
-        commands.forEach(commandService::addCommand);
+        commands.forEach(commandService::addTopLevelCommand);
         commandService.setErrorHandler(ConfigUtils.selectImplementation(CommandErrorHandler.class, errorHandlers)
                 .orElse(CommandErrorHandler.NO_OP));
         commandService.setEventProcessor(ConfigUtils.selectImplementation(CommandEventProcessor.class, eventProcessors)

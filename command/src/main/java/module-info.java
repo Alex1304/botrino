@@ -3,6 +3,7 @@ import botrino.command.CommandExtension;
 
 module botrino.command {
     exports botrino.command;
+    exports botrino.command.annotation;
     exports botrino.command.config;
     exports botrino.command.doc;
     exports botrino.command.grammar;

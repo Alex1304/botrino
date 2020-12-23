@@ -39,7 +39,8 @@ public final class CommandContext implements Translator {
     private final Locale locale;
     private final MessageChannel channel;
 
-    CommandContext(MessageCreateEvent event, String prefixUsed, TokenizedInput input, Locale locale, MessageChannel channel) {
+    CommandContext(MessageCreateEvent event, String prefixUsed, TokenizedInput input, Locale locale,
+                   MessageChannel channel) {
         this.event = event;
         this.prefixUsed = prefixUsed;
         this.input = input;
