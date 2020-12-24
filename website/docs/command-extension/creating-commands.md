@@ -31,9 +31,7 @@ public final class PingCommand implements Command {
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
-        return ctx.channel()
-                .createMessage(ctx.translate(Strings.APP, "ping"))
-                .then();
+        return ctx.channel().createMessage("Pong!").then();
     }
 }
 ```
@@ -58,12 +56,9 @@ There are many default methods in the `Command` interface that you can override 
 Another way to create commands is to create them "inline", via the static factory methods of `Command`:
 
 ```java
-var command = Command.of("ping",
-        ctx -> ctx.channel()
-                .createMessage("Pong!")
-                .then());
+var ping = Command.of("ping", ctx -> ctx.channel().createMessage("Pong!").then());
 
-var moreComplexCommand = Command.builder("hello",
+var hello = Command.builder("hello",
         ctx -> ctx.channel()
                 .createMessage("Hello!")
                 .then())
@@ -73,6 +68,10 @@ var moreComplexCommand = Command.builder("hello",
 ```
 
 The `builder` allows to access the same features as the default interface methods of `Command` (privilege, scope, rate limit...).
+
+:::caution
+Even though `Command` is technically a functional interface, implementing it as a lambda will not work, because it won't be possible to specify an alias for the command. You need to use either `Command.of` or `Command.builder`, both accepting an argument for aliases.
+:::
 
 ## Registering commands
 
@@ -101,9 +100,7 @@ public final class PingCommand implements Command {
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
-        return ctx.channel()
-                .createMessage(ctx.translate(Strings.APP, "ping"))
-                .then();
+        return ctx.channel().createMessage("Pong!").then();
     }
 }
 ```
@@ -129,10 +126,9 @@ public final class SampleService {
 
     @RdiFactory
     public SampleService(CommandService commandService) {
-        var command = Command.of(Set.of("ping"), ctx ->
-                ctx.channel()
-                        .createMessage("Pong!")
-                        .then());
+        var command = Command.of("ping", ctx -> ctx.channel()
+                .createMessage("Pong!")
+                .then());
         commandService.addTopLevelCommand(command);
     }
 }
