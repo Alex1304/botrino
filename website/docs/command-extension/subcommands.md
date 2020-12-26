@@ -12,9 +12,9 @@ To create a subcommand, simply override the `Set<Command> subcommands()` method 
 @Override
 public Set<Command> subcommands() {
     return Set.of(
-        Command.builder(Set.of("ping"),
+        Command.builder("sub",
                 ctx -> ctx.channel()
-                        .createMessage("Pong!")
+                        .createMessage("This is a subcommand!")
                         .then())
                 .inheritFrom(this)
                 .build()
@@ -22,17 +22,19 @@ public Set<Command> subcommands() {
 }
 ```
 
+If let's say the prefix is `!` and the top level command is named `top`, sending `!top sub` in chat will make the bot reply with "This is a subcommand!".
+
 :::info
-`inheritFrom(this)` allows to inherit some settings from the parent command, such as privilege, scope, error handler and rate limit. It won't inherit aliases, action, documentation and subcommands. You are not required to call it if you don't want those properties to be inherited.
+The `Mono<Void> run(CommandContext)` method of the top level command will not be run if the subcommand is triggered.
 :::
 
 :::tip
-If you have a very complex command with many subcommands, it might be better to store your subcommand instances in private fields instead of nesting them, and make your `subcommands()` method return `Set.of(field1, field2, ...)`.
+`inheritFrom(this)` allows to inherit some settings from the parent command, such as privilege, scope, error handler and rate limit. It won't inherit aliases, action, documentation and subcommands. You are not required to call it if you don't want those properties to be inherited.
 :::
 
 ## Command classes as subcommands
 
-If the code of your subcommand is quite complex, you may prefer to declare your subcommand by creating a class implementing `Command` instead:
+If the code of your subcommand is quite complex, you may prefer to declare your subcommand by creating a class implementing `Command` instead. The advantage of this approach is that you can reuse the subcommand class for more than one top-level command, and write code with the same flexibility as regular commands.
 
 ```java
 package com.example.myproject;
@@ -44,13 +46,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
-@Alias("ping")
-public final class PingCommand implements Command {
+@Alias("sub")
+public final class MySubcommand implements Command {
 
     @Override
     public Mono<Void> run(CommandContext ctx) {
         return ctx.channel()
-                .createMessage("Pong!")
+                .createMessage("This is a subcommand!")
                 .then();
     }
 }
@@ -59,3 +61,39 @@ public final class PingCommand implements Command {
 :::warning
 Do not use the `@TopLevelCommand` annotation, as we want this command to be a subcommand and not a top-level command.
 :::
+
+To register this subcommand, you have two options:
+
+1. Either instantiate the class yourself:
+    ```java title="MyTopLevelCommand.java"
+    @Override
+    public Set<Command> subcommands() {
+        return Set.of(new MySubcommand());
+    }
+    ```
+2. Or declare the class as a service and inject it in your top-level command:
+    ```java title="MySubcommand.java"
+    @RdiService
+    @Alias("sub")
+    public final class MySubcommand implements Command {
+        // ...
+    ```
+    ```java title="MyTopLevelCommand.java"
+    @RdiService
+    @Alias("top")
+    public final class MyTopLevelCommand implements Command {
+
+        private final MySubcommand sub;
+
+        @RdiFactory
+        public MyTopLevelCommand(MySubcommand sub) {
+            this.sub = sub;
+        }
+
+        @Override
+        public Set<Command> subcommands() {
+            return Set.of(sub);
+        }
+
+        // ...
+    ```
