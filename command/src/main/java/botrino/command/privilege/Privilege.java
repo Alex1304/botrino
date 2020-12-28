@@ -24,18 +24,21 @@
 package botrino.command.privilege;
 
 import botrino.command.CommandContext;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
-import static java.util.function.Predicate.not;
+import java.util.function.BinaryOperator;
 
 /**
  * Represents a requirement to fulfill in order to execute a command.
  */
 @FunctionalInterface
 public interface Privilege {
+
+    private static Mono<PrivilegeException> evaluate(Privilege p, CommandContext ctx) {
+        return p.checkGranted(ctx)
+                .cast(PrivilegeException.class)
+                .onErrorResume(PrivilegeException.class, Mono::just);
+    }
 
     /**
      * Checks if this privilege is granted according to the given context. If the privilege is not granted, it will
@@ -61,48 +64,33 @@ public interface Privilege {
     }
 
     /**
-     * Returns a {@link Privilege} that evaluates as granted only if both this privilege and the other one are
-     * granted. Both privileges are evaluated concurrently, so that the resulting {@link PrivilegeException} will be a
-     * concatenation of both reason lists if both evaluations fail.
+     * Returns a {@link Privilege} that evaluates as granted only if both this privilege and the other one are granted.
+     * This privilege is evaluated first, and if it fails, the other one is not tested. In case of failure, the
+     * first exception will be forwarded.
      *
      * @param other the other privilege
      * @return a new {@link Privilege}
      */
     default Privilege and(Privilege other) {
-        return ctx -> Flux.merge(evaluate(this, ctx), evaluate(other, ctx))
-                .collectList()
-                .filter(not(List::isEmpty))
-                .flatMapMany(Flux::fromIterable)
-                .flatMapIterable(PrivilegeException::getReasons)
-                .collectList()
-                .map(PrivilegeException::new)
-                .flatMap(Mono::error)
-                .then();
+        return ctx -> evaluate(this, ctx)
+                .switchIfEmpty(evaluate(other, ctx))
+                .flatMap(Mono::error);
     }
 
     /**
      * Returns a {@link Privilege} that evaluates as granted if at least one of this privilege or the other one is
-     * granted. Both privileges are evaluated concurrently, so that the resulting {@link PrivilegeException} will be a
-     * concatenation of both reason lists if both evaluations fail.
+     * granted. If this privilege is granted, the other one is not tested. If both privileges fail, the resulting {@link
+     * PrivilegeException} will be determined by the given aggregator function.
      *
-     * @param other the other privilege
+     * @param other               the other privilege
+     * @param exceptionAggregator a function that determines the {@link PrivilegeException} to emit if both evaluations
+     *                            fail, based on the two original exceptions
      * @return a new {@link Privilege}
      */
-    default Privilege or(Privilege other) {
-        return ctx -> Flux.merge(evaluate(this, ctx), evaluate(other, ctx))
-                .collectList()
-                .filter(l -> l.size() == 2)
-                .flatMapMany(Flux::fromIterable)
-                .flatMapIterable(PrivilegeException::getReasons)
-                .collectList()
-                .map(PrivilegeException::new)
-                .flatMap(Mono::error)
-                .then();
-    }
-
-    private static Mono<PrivilegeException> evaluate(Privilege p, CommandContext ctx) {
-        return p.checkGranted(ctx)
-                .cast(PrivilegeException.class)
-                .onErrorResume(PrivilegeException.class, Mono::just);
+    default Privilege or(Privilege other, BinaryOperator<PrivilegeException> exceptionAggregator) {
+        return ctx -> evaluate(this, ctx)
+                .flatMap(ex1 -> evaluate(other, ctx)
+                        .map(ex2 -> exceptionAggregator.apply(ex1, ex2))
+                        .flatMap(Mono::error));
     }
 }

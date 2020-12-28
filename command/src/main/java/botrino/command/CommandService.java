@@ -26,6 +26,7 @@ package botrino.command;
 import botrino.api.config.ConfigContainer;
 import botrino.api.config.ConfigException;
 import botrino.api.config.object.I18nConfig;
+import botrino.api.util.MatcherFunction;
 import botrino.command.config.CommandConfig;
 import botrino.command.menu.InteractiveMenuFactory;
 import botrino.command.menu.PaginationControls;
@@ -238,18 +239,12 @@ public final class CommandService {
     }
 
     private Mono<Void> executeErrorHandler(Throwable t, CommandErrorHandler errorHandler, CommandContext ctx) {
-        if (t instanceof CommandFailedException) {
-            return errorHandler.handleCommandFailed((CommandFailedException) t, ctx);
-        }
-        if (t instanceof InvalidSyntaxException) {
-            return errorHandler.handleInvalidSyntax((InvalidSyntaxException) t, ctx);
-        }
-        if (t instanceof PrivilegeException) {
-            return errorHandler.handlePrivilege((PrivilegeException) t, ctx);
-        }
-        if (t instanceof RateLimitException) {
-            return errorHandler.handleRateLimit((RateLimitException) t, ctx);
-        }
-        return errorHandler.handleDefault(t, ctx);
+        return MatcherFunction.<Mono<Void>>create()
+                .matchType(CommandFailedException.class, e -> errorHandler.handleCommandFailed(e, ctx))
+                .matchType(InvalidSyntaxException.class, e -> errorHandler.handleInvalidSyntax(e, ctx))
+                .matchType(PrivilegeException.class, e -> errorHandler.handlePrivilege(e, ctx))
+                .matchType(RateLimitException.class, e -> errorHandler.handleRateLimit(e, ctx))
+                .apply(t)
+                .orElseGet(() -> errorHandler.handleDefault(t, ctx));
     }
 }

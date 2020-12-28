@@ -26,6 +26,7 @@ package botrino.command;
 import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
+import botrino.api.util.MatcherConsumer;
 import botrino.command.annotation.TopLevelCommand;
 import botrino.command.config.CommandConfig;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
@@ -60,19 +61,13 @@ public final class CommandExtension implements BotrinoExtension {
 
     @Override
     public void onServiceCreated(Object serviceInstance) {
-        if (serviceInstance instanceof CommandService) {
-            this.commandService = (CommandService) serviceInstance;
-        }
-        if (serviceInstance instanceof Command
-                && serviceInstance.getClass().isAnnotationPresent(TopLevelCommand.class)) {
-            commands.add((Command) serviceInstance);
-        }
-        if (serviceInstance instanceof CommandErrorHandler) {
-            errorHandlers.add((CommandErrorHandler) serviceInstance);
-        }
-        if (serviceInstance instanceof CommandEventProcessor) {
-            eventProcessors.add((CommandEventProcessor) serviceInstance);
-        }
+        MatcherConsumer.create()
+                .matchType(CommandService.class, o -> this.commandService = o)
+                .matchType(Command.class, o -> o.getClass().isAnnotationPresent(TopLevelCommand.class), commands::add)
+                .matchType(CommandErrorHandler.class, errorHandlers::add)
+                .matchType(CommandEventProcessor.class, eventProcessors::add)
+                .allowMultipleMatches(true)
+                .accept(serviceInstance);
     }
 
     @Override

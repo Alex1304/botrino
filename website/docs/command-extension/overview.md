@@ -106,7 +106,7 @@ public final class SendWordCommand implements Command {
     @Override
     public Privilege privilege() {
         return Privileges.checkPermissions(
-                tr -> tr.translate(Strings.APP, "error_perm_denied"),
+                () -> new PrivilegeException(tr.translate(Strings.APP, "error_requires_admin")),
                 perms -> perms.contains(Permission.ADMINISTRATOR));
     }
 

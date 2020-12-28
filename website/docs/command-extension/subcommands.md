@@ -34,7 +34,7 @@ The `Mono<Void> run(CommandContext)` method of the top level command will not be
 
 ## Command classes as subcommands
 
-If the code of your subcommand is quite complex, you may prefer to declare your subcommand by creating a class implementing `Command` instead. The advantage of this approach is that you can reuse the subcommand class for more than one top-level command, and write code with the same flexibility as regular commands.
+If the code of your subcommand is quite complex, you may prefer to declare your subcommand by creating a class implementing `Command` instead. The advantage of this approach is that you can easily reuse the subcommand class for more than one top-level command, and write code with the same flexibility as regular commands.
 
 ```java
 package com.example.myproject;
@@ -71,7 +71,7 @@ To register this subcommand, you have two options:
         return Set.of(new MySubcommand());
     }
     ```
-2. Or declare the class as a service and inject it in your top-level command:
+2. Or declare the class as a service and inject it in your top-level command (recommended):
     ```java title="MySubcommand.java"
     @RdiService
     @Alias("sub")
@@ -97,3 +97,27 @@ To register this subcommand, you have two options:
 
         // ...
     ```
+
+## Subcommand-only commands
+
+If you have a top-level command which can only be used via its subcommands, you can make the top-level command implement `ParentCommand` instead of `Command`. That interface extends `Command` so it's the same in terms of features, except that the `run()` method has a default implementation which simply throws an invalid syntax error, and the `subcommands()` method is made abstract so you are forced to implement it.
+
+```java
+@Alias("top")
+public final class MyTopLevelCommand implements ParentCommand {
+
+    // No need to override run()
+
+    @Override
+    public Set<Command> subcommands() {
+        return Set.of(
+            Command.builder("sub",
+                    ctx -> ctx.channel()
+                            .createMessage("This is a subcommand!")
+                            .then())
+                    .inheritFrom(this)
+                    .build()
+        );
+    }
+}
+```

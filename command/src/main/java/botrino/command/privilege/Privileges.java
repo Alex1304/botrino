@@ -23,8 +23,7 @@
  */
 package botrino.command.privilege;
 
-import botrino.api.i18n.Translator;
-import botrino.command.Scope;
+import botrino.command.CommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.User;
@@ -58,7 +57,7 @@ public final class Privileges {
     }
 
     /**
-     * Returns a {@link Privilege} that denies everything.
+     * Returns a {@link Privilege} that denies everything. It will emit a generic {@link PrivilegeException}.
      *
      * @return a {@link Privilege}
      */
@@ -67,50 +66,56 @@ public final class Privileges {
     }
 
     /**
-     * Returns a {@link Privilege} that denies everything, with a custom message.
+     * Returns a {@link Privilege} that denies everything. It will emit the specified {@link PrivilegeException}
+     * instance.
      *
-     * @param deniedMessageFactory a function that builds the message to include in the {@link PrivilegeException}
+     * @param exception a function specifying the {@link PrivilegeException} instance to emit in case of failure
      * @return a {@link Privilege}
      */
-    public static Privilege denied(Function<? super Translator, String> deniedMessageFactory) {
-        return ctx -> Mono.error(new PrivilegeException(deniedMessageFactory.apply(ctx)));
+    public static Privilege denied(Function<? super CommandContext, ? extends PrivilegeException> exception) {
+        return ctx -> Mono.error(() -> exception.apply(ctx));
     }
 
     /**
      * Builds a {@link Privilege} that performs a check against the user's effective permissions in the current channel.
-     * The check will always fail if inside a DM channel, so this is relevant for commands in {@link Scope#GUILD_ONLY}.
+     * If the permission check fails, the specified supplier will determine the {@link PrivilegeException} to emit. If
+     * the failure is due to the privilege being checked outside of a guild or due to the inability to retrieve the
+     * member, a generic {@link PrivilegeException} will be emitted instead.
      *
-     * @param deniedMessageFactory a function that builds the message to include in the {@link PrivilegeException} in
-     *                             case of failure
-     * @param permissionPredicate  the predicate that checks for permissions
+     * @param exception   a function specifying the {@link PrivilegeException} instance to emit in case of failure
+     * @param permissionPredicate the predicate that checks for permissions
      * @return a {@link Privilege}
      */
-    public static Privilege checkPermissions(Function<? super Translator, String> deniedMessageFactory,
+    public static Privilege checkPermissions(Function<? super CommandContext, ? extends PrivilegeException> exception,
                                              Predicate<? super PermissionSet> permissionPredicate) {
-        return ctx -> Mono.justOrEmpty(ctx.channel())
+        return ctx -> Mono.just(ctx.channel())
                 .ofType(GuildMessageChannel.class)
+                .switchIfEmpty(Mono.error(PrivilegeException::new))
                 .filterWhen(channel -> Mono.justOrEmpty(ctx.event().getMessage().getAuthor())
+                        .switchIfEmpty(Mono.error(PrivilegeException::new))
                         .map(User::getId)
                         .flatMap(id -> channel.getEffectivePermissions(id).map(permissionPredicate::test)))
-                .switchIfEmpty(Mono.error(() -> new PrivilegeException(deniedMessageFactory.apply(ctx))))
+                .switchIfEmpty(Mono.error(() -> exception.apply(ctx)))
                 .then();
     }
 
     /**
-     * Builds a {@link Privilege} that performs a check against the member's roles in the current guild. The check will
-     * always fail if inside a DM channel, so this is relevant for commands in {@link Scope#GUILD_ONLY}.
+     * Builds a {@link Privilege} that performs a check against the member's roles in the current guild. If the role
+     * check fails, the specified supplier will determine the {@link PrivilegeException} to emit. If the failure is due
+     * to the privilege being checked outside of a guild or due to the inability to retrieve the member, a generic
+     * {@link PrivilegeException} will be emitted instead.
      *
-     * @param deniedMessageFactory a function that builds the message to include in the {@link PrivilegeException} in
-     *                             case of failure
-     * @param rolePredicate        the predicate that checks for roles
+     * @param exception a function specifying the {@link PrivilegeException} instance to emit in case of failure
+     * @param rolePredicate     the predicate that checks for roles
      * @return a {@link Privilege}
      */
-    public static Privilege checkRoles(Function<? super Translator, String> deniedMessageFactory,
+    public static Privilege checkRoles(Function<? super CommandContext, ? extends PrivilegeException> exception,
                                        Predicate<? super Set<Snowflake>> rolePredicate) {
         return ctx -> Mono.justOrEmpty(ctx.event().getMember())
+                .switchIfEmpty(Mono.error(PrivilegeException::new))
                 .map(Member::getRoleIds)
                 .filter(rolePredicate)
-                .switchIfEmpty(Mono.error(() -> new PrivilegeException(deniedMessageFactory.apply(ctx))))
+                .switchIfEmpty(Mono.error(() -> exception.apply(ctx)))
                 .then();
     }
 }
