@@ -6,34 +6,7 @@ The execution of a command may fail for many reasons. You can handle these error
 
 ## Global error handler
 
-If you declare a class implementing `CommandErrorHandler`, it will automatically be registered as a **global error handler**. It means that this handler will be applied to all commands.
-
-The methods of `CommandErrorHandler` correspond to the most common error types. Each method exposes the `CommandContext` in which the error happened. None of them are required to be implemented, by default they just forward errors downstream which will only log them at ERROR level. Currently there are five of them:
-
-* `handleCommandFailed(CommandFailedException, CommandContext)`: allows to recover on a `CommandFailedException`. This exception represents a "normal" failure of the command, for example if the command allows the user to search for a resource but the resource requested by the user was not found. This exception generally carries a user-friendly message, so the way to handle it will mostly consist of replying to the user with that message.
-* `handleInvalidSyntax(InvalidSyntaxException, CommandContext)`: allows to recover on an `InvalidSyntaxException`. This can be used to send a help message to the user on the syntax of the command.
-* `handlePrivilege(PrivilegeException, CommandContext)`: allows to recover on a `PrivilegeException`. It is thrown when a user attempts to use a command with insufficient privileges. Typically, handling this exception will consist of telling the user they cannot use the command, or simply failing silently. More details on privileges can be found in [this section](privileges.md).
-* `handleCooldown(CooldownException, CommandContext)`: allows to recover on a `CooldownException`. It is thrown when a user attempts to use a command past the maximum usage limit within a time interval. Generally, it will be handled by notifying the user that they need to wait some time before trying the command again (the exception carries the exact time left). More details on cooldowns can be found in [this section](cooldowns.md).
-* `handleDefault(Throwable, CommandContext)`: allows to recover on an exception type that corresponds to none of the above.
-
-## Command-specific error handler
-
-It is possible to override the global error handler with a command-specific one. Simply override the `errorHandler()` method from `Command`, or call `setErrorHandler` on `Command.Builder`, and implement the error handler directly as an anonymous class:
-
-```java
-@Override
-public CommandErrorHandler errorHandler() {
-    return new CommandErrorHandler() {
-        // Override methods here
-    };
-}
-```
-
-:::warning
-If you aren't using an anonymous class, make sure to add the `@Exclude` annotation on it otherwise it will be recognized as a global error handler. Alternatively, you may use `@Primary` on your global error handler so you don't need to worry about it.
-:::
-
-## Example
+If you create a class implementing `CommandErrorHandler` in your bot module, it will automatically be registered as a **global error handler**. It means that this handler will be applied to all commands.
 
 :::tip
 The example below uses hardcoded strings, but you are encouraged to externalize them according to [this guide](../api/i18n.md).
@@ -51,7 +24,7 @@ import botrino.command.cooldown.CooldownException;
 import botrino.command.privilege.PrivilegeException;
 import reactor.core.publisher.Mono;
 
-public class GlobalErrorHandler implements CommandErrorHandler {
+public final class GlobalErrorHandler implements CommandErrorHandler {
 
     @Override
     public Mono<Void> handleCommandFailed(CommandFailedException e,
@@ -100,5 +73,34 @@ public class GlobalErrorHandler implements CommandErrorHandler {
                 }).then(Mono.error(t)); // Forward downstream for logging
     }
 }
-
 ```
+
+The methods of `CommandErrorHandler` correspond to the most common error types. Each method exposes the `CommandContext` in which the error happened. None of them are required to be implemented, by default they just forward errors downstream which will only log them at ERROR level. Currently there are five of them:
+
+* `handleCommandFailed(CommandFailedException, CommandContext)`: allows to recover on a `CommandFailedException`. This exception represents a "normal" failure of the command, for example if the command allows the user to search for a resource but the resource requested by the user was not found. This exception generally carries a user-friendly message, so the way to handle it will mostly consist of replying to the user with that message.
+* `handleInvalidSyntax(InvalidSyntaxException, CommandContext)`: allows to recover on an `InvalidSyntaxException`. This can be used to send a help message to the user on the syntax of the command.
+* `handlePrivilege(PrivilegeException, CommandContext)`: allows to recover on a `PrivilegeException`. It is thrown when a user attempts to use a command with insufficient privileges. Typically, handling this exception will consist of telling the user they cannot use the command, or simply failing silently. More details on privileges can be found in [this section](privileges.md).
+* `handleCooldown(CooldownException, CommandContext)`: allows to recover on a `CooldownException`. It is thrown when a user attempts to use a command past the maximum usage limit within a time interval. Generally, it will be handled by notifying the user that they need to wait some time before trying the command again (the exception carries the exact time left). More details on cooldowns can be found in [this section](cooldowns.md).
+* `handleDefault(Throwable, CommandContext)`: allows to recover on an exception type that corresponds to none of the above.
+
+:::caution
+* The implementation class must have a no-arg constructor.
+* If more than one implementation of `CommandErrorHandler` are found, it will result in an error as it is impossible to determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with the `@Primary` annotation to lift the ambiguity. You may alternatively use the `@Exclude` annotation if you don't want one implementation to be picked up by Botrino.
+:::
+
+## Command-specific error handler
+
+It is possible to override the global error handler for a specific command. Simply override the `errorHandler()` method from `Command` (or call `setErrorHandler` on `Command.Builder`) and implement the error handler directly as an anonymous class:
+
+```java
+@Override
+public CommandErrorHandler errorHandler() {
+    return new CommandErrorHandler() {
+        // Override methods here
+    };
+}
+```
+
+:::warning
+If you aren't using an anonymous class, make sure to add the `@Exclude` annotation on it otherwise it will be recognized as a global error handler. Alternatively, you may use `@Primary` on your global error handler so you don't need to worry about it.
+:::
