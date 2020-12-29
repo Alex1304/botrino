@@ -2,10 +2,10 @@ package botrino.command;
 
 import botrino.api.i18n.Translator;
 import botrino.command.annotation.Alias;
+import botrino.command.cooldown.Cooldown;
 import botrino.command.doc.CommandDocumentation;
 import botrino.command.privilege.Privilege;
 import botrino.command.privilege.Privileges;
-import botrino.command.ratelimit.RateLimit;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
@@ -33,8 +33,8 @@ public interface Command {
     /**
      * Initializes a command builder with the given alias and action function.
      *
-     * @param alias the alias of the command
-     * @param action  the action to execute when the command is ran
+     * @param alias  the alias of the command
+     * @param action the action to execute when the command is ran
      * @return a new builder
      */
     static Builder builder(String alias, Function<? super CommandContext, ? extends Mono<Void>> action) {
@@ -43,7 +43,7 @@ public interface Command {
 
     /**
      * Creates a command with the given aliases and action function, with default settings (empty documentation,
-     * unrestricted privilege and scope, no subcommand, no rate limit, no error handler). Use {@link #builder(Set,
+     * unrestricted privilege and scope, no subcommand, no cooldown, no error handler). Use {@link #builder(Set,
      * Function)} to customize those settings.
      *
      * @param aliases the aliases of the command
@@ -56,11 +56,11 @@ public interface Command {
 
     /**
      * Creates a command with the given alias and action function, with default settings (empty documentation,
-     * unrestricted privilege and scope, no subcommand, no rate limit, no error handler). Use {@link #builder(Set,
+     * unrestricted privilege and scope, no subcommand, no cooldown, no error handler). Use {@link #builder(Set,
      * Function)} to customize those settings.
      *
-     * @param alias the alias of the command
-     * @param action  the action to execute when the command is ran
+     * @param alias  the alias of the command
+     * @param action the action to execute when the command is ran
      * @return a new {@link Command}
      */
     static Command of(String alias, Function<? super CommandContext, ? extends Mono<Void>> action) {
@@ -135,13 +135,13 @@ public interface Command {
     }
 
     /**
-     * Defines the rate limit of the command on a per user basis. In other words, the number of times a user can execute
+     * Defines the cooldown of the command on a per user basis. In other words, the number of times a user can execute
      * this command within a certain timeframe.
      *
-     * @return the rate limit
+     * @return the cooldown
      */
-    default RateLimit rateLimit() {
-        return RateLimit.unbounded();
+    default Cooldown cooldown() {
+        return Cooldown.none();
     }
 
     final class Builder {
@@ -153,7 +153,7 @@ public interface Command {
         private Privilege privilege;
         private Scope scope;
         private CommandErrorHandler errorHandler;
-        private RateLimit rateLimit;
+        private Cooldown cooldown;
 
         private Builder(Set<String> aliases, Function<? super CommandContext, ? extends Mono<Void>> action) {
             this.aliases = aliases;
@@ -161,7 +161,7 @@ public interface Command {
         }
 
         /**
-         * Inherit properties of the other command, such as privilege, scope, error handler and rate limit. It won't
+         * Inherit properties of the other command, such as privilege, scope, error handler and cooldown. It won't
          * inherit aliases, action, documentation and subcommands.
          *
          * @param other the other command to inherit from
@@ -172,7 +172,7 @@ public interface Command {
             return setPrivilege(other.privilege())
                     .setScope(other.scope())
                     .setErrorHandler(other.errorHandler())
-                    .setRateLimit(other.rateLimit());
+                    .setCooldown(other.cooldown());
         }
 
         /**
@@ -235,14 +235,13 @@ public interface Command {
         }
 
         /**
-         * Defines the rate limit for this command.
+         * Defines the cooldown for this command.
          *
-         * @param rateLimit the rate limit for this command, or null to use default value ({@link
-         *                  RateLimit#unbounded()})
+         * @param cooldown the cooldown for this command, or null to use default value ({@link Cooldown#none()})
          * @return this builder
          */
-        public Builder setRateLimit(@Nullable RateLimit rateLimit) {
-            this.rateLimit = rateLimit;
+        public Builder setCooldown(@Nullable Cooldown cooldown) {
+            this.cooldown = cooldown;
             return this;
         }
 
@@ -290,8 +289,8 @@ public interface Command {
                 }
 
                 @Override
-                public RateLimit rateLimit() {
-                    return rateLimit == null ? Command.super.rateLimit() : rateLimit;
+                public Cooldown cooldown() {
+                    return cooldown == null ? Command.super.cooldown() : cooldown;
                 }
 
                 @Override

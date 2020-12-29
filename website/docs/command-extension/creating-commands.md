@@ -49,7 +49,7 @@ There are many default methods in the `Command` interface that you can override 
 * `scope()`: defines where the command can be used. The possible values are: `Scope.ANYWHERE` (the command can be used anywhere), `Scope.DM_ONLY` (the command only works in private messages), `Scope.GUILD_ONLY` (the command only works inside a guild). A command ran outside of its scope will be ignored.
 * `subcommands()`: defines subcommands for the command. More details about subcommands can be found [here](subcommands.md).
 * `errorHandler()`: defines a command-specific error handler, overriding the global error handler if it exists. More details about error handlers can be found [here](handling-errors.md).
-* `rateLimit()`: defines a rate limit for the command, that is the maximum number of times a command can be used per user within a specific timeframe. More details about rate limiting can be found [here](rate-limiting.md).
+* `cooldown()`: defines a cooldown for the command, that is the maximum number of times a command can be used per user within a specific timeframe. More details about cooldowns can be found [here](cooldowns.md).
 
 ### Inline commands
 
@@ -62,12 +62,12 @@ var hello = Command.builder("hello",
         ctx -> ctx.channel()
                 .createMessage("Hello!")
                 .then())
-        .scope(Scope.DM_ONLY)
-        .rateLimit(RateLimit.of(2, Duration.ofSeconds(5)))
+        .setScope(Scope.DM_ONLY)
+        .setCooldown(Cooldown.of(2, Duration.ofSeconds(5)))
         .build();
 ```
 
-The `builder` allows to access the same features as the default interface methods of `Command` (privilege, scope, rate limit...).
+The `builder` allows to access the same features as the default interface methods of `Command` (privilege, scope, cooldown...).
 
 :::caution
 Even though `Command` is technically a functional interface, implementing it as a lambda will not work, because it won't be possible to specify an alias for the command. You need to use either `Command.of` or `Command.builder`, both accepting an argument for aliases.
@@ -75,7 +75,7 @@ Even though `Command` is technically a functional interface, implementing it as 
 
 ## Registering commands
 
-In order to use the commands, you need to register them. Here again there are different ways to proceed.
+In order for your commands to be recognized, you need to **register** them. Here again, there are different ways to proceed.
 
 ### The `@TopLevelCommand` annotation
 

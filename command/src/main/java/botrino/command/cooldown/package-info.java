@@ -26,6 +26,6 @@
  * Contains classes to define rate limits for commands.
  */
 @NonNullApi
-package botrino.command.ratelimit;
+package botrino.command.cooldown;
 
 import reactor.util.annotation.NonNullApi;

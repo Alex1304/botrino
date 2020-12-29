@@ -78,11 +78,12 @@ public final class Privileges {
 
     /**
      * Builds a {@link Privilege} that performs a check against the user's effective permissions in the current channel.
-     * If the permission check fails, the specified supplier will determine the {@link PrivilegeException} to emit. If
+     * If the permission check fails, the specified function will determine the {@link PrivilegeException} to emit. If
      * the failure is due to the privilege being checked outside of a guild or due to the inability to retrieve the
      * member, a generic {@link PrivilegeException} will be emitted instead.
      *
-     * @param exception   a function specifying the {@link PrivilegeException} instance to emit in case of failure
+     * @param exception           a function specifying the {@link PrivilegeException} instance to emit in case of
+     *                            failure
      * @param permissionPredicate the predicate that checks for permissions
      * @return a {@link Privilege}
      */
@@ -100,13 +101,25 @@ public final class Privileges {
     }
 
     /**
+     * Builds a {@link Privilege} that performs a check against the user's effective permissions in the current channel.
+     * If the permission check fails, a generic {@link PrivilegeException} will be emitted. To customize the {@link
+     * PrivilegeException} instance, use {@link #checkPermissions(Function, Predicate)} instead.
+     *
+     * @param permissionPredicate the predicate that checks for permissions
+     * @return a {@link Privilege}
+     */
+    public static Privilege checkPermissions(Predicate<? super PermissionSet> permissionPredicate) {
+        return checkPermissions(ctx -> new PrivilegeException(), permissionPredicate);
+    }
+
+    /**
      * Builds a {@link Privilege} that performs a check against the member's roles in the current guild. If the role
-     * check fails, the specified supplier will determine the {@link PrivilegeException} to emit. If the failure is due
+     * check fails, the specified function will determine the {@link PrivilegeException} to emit. If the failure is due
      * to the privilege being checked outside of a guild or due to the inability to retrieve the member, a generic
      * {@link PrivilegeException} will be emitted instead.
      *
-     * @param exception a function specifying the {@link PrivilegeException} instance to emit in case of failure
-     * @param rolePredicate     the predicate that checks for roles
+     * @param exception     a function specifying the {@link PrivilegeException} instance to emit in case of failure
+     * @param rolePredicate the predicate that checks for roles
      * @return a {@link Privilege}
      */
     public static Privilege checkRoles(Function<? super CommandContext, ? extends PrivilegeException> exception,
@@ -117,5 +130,47 @@ public final class Privileges {
                 .filter(rolePredicate)
                 .switchIfEmpty(Mono.error(() -> exception.apply(ctx)))
                 .then();
+    }
+
+    /**
+     * Builds a {@link Privilege} that performs a check against the member's roles in the current guild. If the role
+     * check fails, a generic {@link PrivilegeException} will be emitted. To customize the {@link PrivilegeException}
+     * instance, use {@link #checkRoles(Function, Predicate)} instead.
+     *
+     * @param rolePredicate the predicate that checks for roles
+     * @return a {@link Privilege}
+     */
+    public static Privilege checkRoles(Predicate<? super Set<Snowflake>> rolePredicate) {
+        return checkRoles(ctx -> new PrivilegeException(), rolePredicate);
+    }
+
+    /**
+     * Builds a {@link Privilege} that checks if the author is the owner of the current guild. If the check fails, the
+     * specified function will determine the {@link PrivilegeException} to emit. If the failure is due to the privilege
+     * being checked outside of a guild or due to the inability to retrieve the guild, a generic {@link
+     * PrivilegeException} will be emitted instead.
+     *
+     * @param exception a function specifying the {@link PrivilegeException} instance to emit in case of failure
+     * @return a {@link Privilege}
+     */
+    public static Privilege guildOwner(Function<? super CommandContext, ? extends PrivilegeException> exception) {
+        return ctx -> Mono.justOrEmpty(ctx.event().getMember())
+                .switchIfEmpty(Mono.error(PrivilegeException::new))
+                .filterWhen(member -> member.getGuild()
+                        .map(guild -> guild.getOwnerId().equals(member.getId()))
+                        .switchIfEmpty(Mono.error(PrivilegeException::new)))
+                .switchIfEmpty(Mono.error(() -> exception.apply(ctx)))
+                .then();
+    }
+
+    /**
+     * Builds a {@link Privilege} that checks if the author is the owner of the current guild. If the check fails, a
+     * generic {@link PrivilegeException} will be emitted. To customize the {@link PrivilegeException} instance, use
+     * {@link #guildOwner(Function)} instead.
+     *
+     * @return a {@link Privilege}
+     */
+    public static Privilege guildOwner() {
+        return guildOwner(ctx -> new PrivilegeException());
     }
 }

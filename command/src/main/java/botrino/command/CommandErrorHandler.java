@@ -24,7 +24,7 @@
 package botrino.command;
 
 import botrino.command.privilege.PrivilegeException;
-import botrino.command.ratelimit.RateLimitException;
+import botrino.command.cooldown.CooldownException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -81,14 +81,14 @@ public interface CommandErrorHandler {
     }
 
     /**
-     * Recover from a {@link RateLimitException}, typically occurring when a user breaks the rate limit for a command.
+     * Recover from a {@link CooldownException}, typically occurring when a user breaks the cooldown for a command.
      *
      * @param e   the exception
      * @param ctx the context of the command that failed
      * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
      * level.
      */
-    default Mono<Void> handleRateLimit(RateLimitException e, CommandContext ctx) {
+    default Mono<Void> handleCooldown(CooldownException e, CommandContext ctx) {
         return Mono.error(e);
     }
 

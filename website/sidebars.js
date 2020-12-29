@@ -14,7 +14,7 @@ module.exports = {
             'command-extension/creating-commands',
             'command-extension/subcommands',
             'command-extension/privileges',
-            'command-extension/rate-limiting',
+            'command-extension/cooldowns',
             'command-extension/handling-errors',
             'command-extension/filtering-and-adapting-events',
             'command-extension/documenting-commands',

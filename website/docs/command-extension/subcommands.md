@@ -25,11 +25,11 @@ public Set<Command> subcommands() {
 If let's say the prefix is `!` and the top level command is named `top`, sending `!top sub` in chat will make the bot reply with "This is a subcommand!".
 
 :::info
-The `Mono<Void> run(CommandContext)` method of the top level command will not be run if the subcommand is triggered.
+The `Mono<Void> run(CommandContext)` method of the top level command will **not** be run if the subcommand is triggered.
 :::
 
 :::tip
-`inheritFrom(this)` allows to inherit some settings from the parent command, such as privilege, scope, error handler and rate limit. It won't inherit aliases, action, documentation and subcommands. You are not required to call it if you don't want those properties to be inherited.
+`inheritFrom(this)` allows to inherit some settings from the parent command, such as privilege, scope, error handler and cooldown. It won't inherit aliases, action, documentation and subcommands. You are not required to call it if you don't want those properties to be inherited.
 :::
 
 ## Command classes as subcommands
@@ -72,13 +72,13 @@ To register this subcommand, you have two options:
     }
     ```
 2. Or declare the class as a service and inject it in your top-level command (recommended):
-    ```java title="MySubcommand.java"
+    ```java title="MySubcommand.java" {1}
     @RdiService
     @Alias("sub")
     public final class MySubcommand implements Command {
         // ...
     ```
-    ```java title="MyTopLevelCommand.java"
+    ```java title="MyTopLevelCommand.java" {1,7}
     @RdiService
     @Alias("top")
     public final class MyTopLevelCommand implements Command {
@@ -100,7 +100,7 @@ To register this subcommand, you have two options:
 
 ## Subcommand-only commands
 
-If you have a top-level command which can only be used via its subcommands, you can make the top-level command implement `ParentCommand` instead of `Command`. That interface extends `Command` so it's the same in terms of features, except that the `run()` method has a default implementation which simply throws an invalid syntax error, and the `subcommands()` method is made abstract so you are forced to implement it.
+If you have a top-level command which can only be used via its subcommands, you can make the top-level command implement `ParentCommand` instead of `Command`. That interface extends `Command` so it's the same in terms of features, except that the `run()` method has a default implementation which simply throws an invalid syntax error, and the `subcommands()` method is made abstract.
 
 ```java
 @Alias("top")

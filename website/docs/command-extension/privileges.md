@@ -1,3 +1,52 @@
 ---
 title: Privileges
 ---
+
+Another common use case when making commands is to be able to restrict access to some commands that should not be used by everyone. The Privilege API provides a way to conveniently implement these kind of restrictions.
+
+## The `Privilege` interface
+
+`Privilege` is a functional interface that is in charge of checking if access to the command is granted for a specific context. If granted, the abstract method of the interface returns a `Mono` that completes empty, which signals that the command can be run normally. If not granted, the returned `Mono` is expected to emit `PrivilegeException` (or a subclass of this exception), possibly carrying details on the reason of the failure. In this case, the command execution will be cancelled.
+
+An instance of this interface can be provided via a lambda expression, and can be attached to a command by overriding the `privilege()` method of `Command` (or the corresponding method in `Command.Builder`). The example below defines a privilege which only grants users whose username starts with "A":
+
+```java
+@Override
+public Privilege privilege() {
+    return ctx -> Mono.justOrEmpty(ctx.event().getMessage().getAuthor())
+            .filter(author -> author.getUsername().startsWith("A"))
+            .switchIfEmpty(Mono.error(PrivilegeException::new))
+            .then();
+}
+```
+
+:::info
+Handling `PrivilegeException` (for example to display a user-friendly message) is documented on the [Handling Errors](handling-errors.md) page.
+:::
+
+## Privilege presets
+
+In most cases, checking if access to a command is granted will simply consist of checking if the user has a particular role or a particular permission in the guild. You can use one of the static methods of the `Privileges` class instead of implementing that yourself:
+
+```java
+@Override
+public Privilege privilege() {
+    return Privileges.checkPermissions(perms -> perms.contains(ADMINISTRATOR));
+}
+```
+
+Check out the [Javadoc for the `Privileges` class](https://javadoc.io/doc/com.alex1304.botrino/botrino-command/latest/botrino.command/botrino/command/privilege/Privileges.html) for more presets like this one.
+
+## Composing privileges
+
+You can compose several `Privilege` instances by using the `and()` and `or()` methods:
+
+```java
+@Override
+public Privilege privilege() {
+    return Privileges.checkRoles(roles -> !roles.isEmpty())
+            .or(Privileges.guildOwner());
+}
+```
+
+This code means "Grant if the user has at least one role OR if they are the owner of the server".

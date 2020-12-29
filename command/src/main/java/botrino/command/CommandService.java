@@ -28,11 +28,11 @@ import botrino.api.config.ConfigException;
 import botrino.api.config.object.I18nConfig;
 import botrino.api.util.MatcherFunction;
 import botrino.command.config.CommandConfig;
+import botrino.command.cooldown.Cooldown;
+import botrino.command.cooldown.CooldownException;
 import botrino.command.menu.InteractiveMenuFactory;
 import botrino.command.menu.PaginationControls;
 import botrino.command.privilege.PrivilegeException;
-import botrino.command.ratelimit.CommandRateLimiter;
-import botrino.command.ratelimit.RateLimitException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 import discord4j.common.util.Snowflake;
@@ -48,13 +48,13 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static reactor.function.TupleUtils.function;
 
 /**
- * Service that centralizes the management of commands. It holds the command tree, the global command error handler, the
- * prefix and locale for each guild, the rate limiter, the blacklist, and the interactive menu factory.
+ * Service that centralizes the management of commands.
  */
 @RdiService
 public final class CommandService {
@@ -66,7 +66,7 @@ public final class CommandService {
     private final InteractiveMenuFactory interactiveMenuFactory;
     private final Locale defaultLocale;
     private final CommandTree commandTree = new CommandTree();
-    private final CommandRateLimiter commandRateLimiter = new CommandRateLimiter();
+    private final ConcurrentHashMap<Command, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
     private CommandErrorHandler errorHandler;
     private CommandEventProcessor eventProcessor;
 
@@ -228,7 +228,7 @@ public final class CommandService {
                             var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
                             return command.privilege().checkGranted(ctx)
                                     .then(Mono.defer(() -> {
-                                        commandRateLimiter.permit(authorId, command);
+                                        cooldownPerCommand.computeIfAbsent(command, Command::cooldown).fire(authorId);
                                         return command.run(ctx);
                                     }))
                                     .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
@@ -243,7 +243,7 @@ public final class CommandService {
                 .matchType(CommandFailedException.class, e -> errorHandler.handleCommandFailed(e, ctx))
                 .matchType(InvalidSyntaxException.class, e -> errorHandler.handleInvalidSyntax(e, ctx))
                 .matchType(PrivilegeException.class, e -> errorHandler.handlePrivilege(e, ctx))
-                .matchType(RateLimitException.class, e -> errorHandler.handleRateLimit(e, ctx))
+                .matchType(CooldownException.class, e -> errorHandler.handleCooldown(e, ctx))
                 .apply(t)
                 .orElseGet(() -> errorHandler.handleDefault(t, ctx));
     }

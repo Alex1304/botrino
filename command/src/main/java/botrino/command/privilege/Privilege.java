@@ -65,8 +65,8 @@ public interface Privilege {
 
     /**
      * Returns a {@link Privilege} that evaluates as granted only if both this privilege and the other one are granted.
-     * This privilege is evaluated first, and if it fails, the other one is not tested. In case of failure, the
-     * first exception will be forwarded.
+     * This privilege is evaluated first, and if it fails, the other one is not tested. In case of failure, the first
+     * exception will be forwarded.
      *
      * @param other the other privilege
      * @return a new {@link Privilege}
@@ -92,5 +92,23 @@ public interface Privilege {
                 .flatMap(ex1 -> evaluate(other, ctx)
                         .map(ex2 -> exceptionAggregator.apply(ex1, ex2))
                         .flatMap(Mono::error));
+    }
+
+    /**
+     * Returns a {@link Privilege} that evaluates as granted if at least one of this privilege or the other one is
+     * granted. If this privilege is granted, the other one is not tested. If both privileges fail, it will result in a
+     * generic {@link PrivilegeException} that adds the two original ones as suppressed. To customize the instance of
+     * {@link PrivilegeException} emitted in this case, use {@link #or(Privilege, BinaryOperator)} instead.
+     *
+     * @param other the other privilege
+     * @return a new {@link Privilege}
+     */
+    default Privilege or(Privilege other) {
+        return or(other, (e1, e2) -> {
+            var e = new PrivilegeException();
+            e.addSuppressed(e1);
+            e.addSuppressed(e2);
+            return e;
+        });
     }
 }

@@ -16,9 +16,9 @@ By definition, as this is an extension, it does not belong to the core framework
 * Unlimited subcommands
 * Attach a documentation to all your commands and subcommands
 * Define privileges for each command with your own rules
+* Cooldowns
 * Global and per-command error handling
 * Process message create events to filter them or to adapt prefix and language
-* Rate-limiting / cooldowns
 * Interactive menus
 
 ## Code examples
@@ -52,7 +52,7 @@ public final class PingCommand implements Command {
 }
 ```
 
-A `!sendword <word> <count> [channels...]` command that sends a word `count` times in zero, one or more channels. Requires `ADMINISTRATOR` permission and may be used at most once every 1 minute:
+A `!sendword <word> <count> [channels...]` command that sends a word `count` times in each of the specified channels. Requires `ADMINISTRATOR` permission and may be used at most once every 1 minute:
 
 ```java
 package com.example.myproject;
@@ -65,7 +65,7 @@ import botrino.command.grammar.ArgumentMapper;
 import botrino.command.grammar.CommandGrammar;
 import botrino.command.privilege.Privilege;
 import botrino.command.privilege.Privileges;
-import botrino.command.ratelimit.RateLimit;
+import botrino.command.cooldown.Cooldown;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.Permission;
@@ -74,7 +74,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 
 @TopLevelCommand
 @Alias("sendword")
@@ -99,14 +98,15 @@ public final class SendWordCommand implements Command {
     }
 
     @Override
-    public RateLimit rateLimit() {
-        return RateLimit.of(1, Duration.ofMinutes(1));
+    public Cooldown cooldown() {
+        return Cooldown.of(1, Duration.ofMinutes(1));
     }
 
     @Override
     public Privilege privilege() {
         return Privileges.checkPermissions(
-                () -> new PrivilegeException(tr.translate(Strings.APP, "error_requires_admin")),
+                ctx -> new PrivilegeException(ctx.translate(Strings.APP,
+                        "error_requires_admin")),
                 perms -> perms.contains(Permission.ADMINISTRATOR));
     }
 

@@ -21,33 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.ratelimit;
+package botrino.command.cooldown;
 
 import botrino.api.util.DurationUtils;
 
 import java.time.Duration;
 
 /**
- * Thrown when the rate limit for a certain action has been broken.
+ * Thrown when an action is on cooldown.
  */
-public final class RateLimitException extends RuntimeException {
+public final class CooldownException extends RuntimeException {
 
-    private final RateLimit originalRateLimit;
+    private final long permits;
+    private final Duration resetInterval;
     private final Duration retryAfter;
 
-    public RateLimitException(RateLimit originalRateLimit, Duration retryAfter) {
-        super("Rate limit of " + originalRateLimit + " reached. Retry after: " + DurationUtils.format(retryAfter));
-        this.originalRateLimit = originalRateLimit;
+    public CooldownException(long permits, Duration resetInterval, Duration retryAfter) {
+        super("Action on cooldown. Retry after: " + DurationUtils.format(retryAfter));
+        this.permits = permits;
+        this.resetInterval = resetInterval;
         this.retryAfter = retryAfter;
     }
 
     /**
-     * Gets the original rate limit that was applied to the command.
+     * Gets the original number of permits of the cooldown.
      *
-     * @return the original rate limit
+     * @return the permits
      */
-    public RateLimit getOriginalRateLimit() {
-        return originalRateLimit;
+    public long getPermits() {
+        return permits;
+    }
+
+    /**
+     * Gets the original reset interval of the cooldown.
+     *
+     * @return the reset interval
+     */
+    public Duration getResetInterval() {
+        return resetInterval;
     }
 
     /**
