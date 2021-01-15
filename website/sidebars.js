@@ -12,6 +12,7 @@ module.exports = {
             'command-extension/overview',
             'command-extension/configuration',
             'command-extension/creating-commands',
+            'command-extension/input-tokenization',
             'command-extension/subcommands',
             'command-extension/privileges',
             'command-extension/cooldowns',

@@ -63,6 +63,6 @@ public final class ExampleEventProcessor implements CommandEventProcessor {
 * If more than one implementation of `CommandEventProcessor` are found, it will result in an error as it is impossible to determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with the `@Primary` annotation to lift the ambiguity. You may alternatively use the `@Exclude` annotation if you don't want one implementation to be picked up by Botrino.
 :::
 
-Here is the example implementation above in action, in a guild named "test". You can notice the bot now responds with `t!` instead of the default prefix as the guild name starts with "t", and the `t!ping ignore` produces no response because the event was dropped due to the presence of "ignored" in the message content.
+Here is the example implementation above in action, in a guild named "test". You can notice the bot now responds with `t!` instead of the default prefix as the guild name starts with "t", and the `t!ping ignore` produces no response because the event was dropped due to the presence of "ignore" in the message content.
 
 <img src={useBaseUrl('img/eventProcessorExample.png')} alt="" />
