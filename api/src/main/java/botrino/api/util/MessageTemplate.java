@@ -61,6 +61,15 @@ public final class MessageTemplate {
     }
 
     /**
+     * Creates a new builder for {@link MessageTemplate}.
+     *
+     * @return a new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
      * Converts this template to a consumer of {@link MessageCreateSpec}.
      *
      * @return a create spec consumer
@@ -109,6 +118,9 @@ public final class MessageTemplate {
         private AllowedMentions allowedMentions;
         private Snowflake nonce;
         private boolean tts;
+
+        private Builder() {
+        }
 
         /**
          * Sets the message content for this template.

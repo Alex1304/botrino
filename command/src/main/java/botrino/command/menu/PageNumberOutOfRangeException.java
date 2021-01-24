@@ -2,22 +2,13 @@ package botrino.command.menu;
 
 public class PageNumberOutOfRangeException extends RuntimeException {
 
-	private final int minPage;
 	private final int maxPage;
 	private final int actualValue;
 	
-	public PageNumberOutOfRangeException(int actualValue, int minPage, int maxPage) {
-		super("must be between " + minPage + " and " + maxPage + ", but was " + actualValue);
-		if (minPage > maxPage) {
-			throw new IllegalArgumentException("minPage > maxPage");
-		}
-		this.minPage = minPage;
+	public PageNumberOutOfRangeException(int actualValue, int maxPage) {
+		super("must be between 0 and " + maxPage + ", but was " + actualValue);
 		this.maxPage = maxPage;
 		this.actualValue = actualValue;
-	}
-	
-	public int getMinPage() {
-		return minPage;
 	}
 
 	public int getMaxPage() {
@@ -28,9 +19,9 @@ public class PageNumberOutOfRangeException extends RuntimeException {
 		return actualValue;
 	}
 	
-	public static void check(int value, int min, int max) {
-		if (value < min || value > max) {
-			throw new PageNumberOutOfRangeException(value, min, max);
+	public static void check(int value, int max) {
+		if (value < 0 || value > max) {
+			throw new PageNumberOutOfRangeException(value, max);
 		}
 	}
 }

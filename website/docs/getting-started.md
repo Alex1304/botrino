@@ -6,10 +6,6 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-:::caution
-🚧 **The documentation for this framework is still work in progress. It will be complete before the first stable release which should happen very soon&trade;**.
-:::
-
 ## Prerequisites
 
 * JDK 11 or above. You can download the OpenJDK [here](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot)

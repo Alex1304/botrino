@@ -37,21 +37,21 @@ public final class InteractiveMenuFactory {
     }
 
     /**
-     * Creates a new empty InteractiveMenu with a given message that will serve as menu prompt.
+     * Creates a new empty {@link InteractiveMenu} with a given message that will serve as menu prompt.
      *
      * @param messageCreateSpec the spec to build the menu message
-     * @return a new InteractiveMenu
+     * @return a new {@link InteractiveMenu}
      */
     public InteractiveMenu create(Consumer<MessageCreateSpec> messageCreateSpec) {
         Objects.requireNonNull(messageCreateSpec);
-        return create((CommandContext ctx) -> Mono.just(messageCreateSpec));
+        return createAsync((CommandContext ctx) -> Mono.just(messageCreateSpec));
     }
 
     /**
-     * Creates a new empty InteractiveMenu with a given message that will serve as menu prompt.
+     * Creates a new empty {@link InteractiveMenu} with a given message that will serve as menu prompt.
      *
      * @param message the menu message
-     * @return a new InteractiveMenu
+     * @return a new {@link InteractiveMenu}
      */
     public InteractiveMenu create(String message) {
         Objects.requireNonNull(message);
@@ -59,14 +59,14 @@ public final class InteractiveMenuFactory {
     }
 
     /**
-     * Creates a new empty InteractiveMenu with a given message that will serve as menu prompt. The menu message may be
-     * supplied from an asynchronous source.
+     * Creates a new empty {@link InteractiveMenu} with a given message that will serve as menu prompt. The menu message
+     * may be supplied from an asynchronous source.
      *
      * @param menuMessageFactory a function accepting the command context and asynchronously generating the message of
      *                           the menu
-     * @return a new InteractiveMenu
+     * @return a new {@link InteractiveMenu}
      */
-    public InteractiveMenu create(MenuMessageFactory menuMessageFactory) {
+    public InteractiveMenu createAsync(MenuMessageFactory menuMessageFactory) {
         Objects.requireNonNull(menuMessageFactory);
         return new InteractiveMenu(menuMessageFactory, defaultTimeout);
     }
@@ -79,13 +79,13 @@ public final class InteractiveMenuFactory {
      *                         returned by this function may emit a {@link PageNumberOutOfRangeException} which is
      *                         handled by default to cover cases where the user inputs an invalid page number. Note that
      *                         if {@link PageNumberOutOfRangeException} is emitted with min/max values that aren't the
-     *                         same depending on the current page number, the behavior of the InteractiveMenu will be
-     *                         undefined.
-     * @return a new InteractiveMenu prefilled with menu items useful for pagination.
+     *                         same depending on the current page number, the behavior of the {@link InteractiveMenu}
+     *                         will be undefined.
+     * @return a new {@link InteractiveMenu} prefilled with menu items useful for pagination.
      */
-    public InteractiveMenu createAsyncPaginated(MessagePaginator messagePaginator) {
+    public InteractiveMenu createPaginated(MessagePaginator messagePaginator) {
         Objects.requireNonNull(messagePaginator);
-        return create((CommandContext ctx) -> messagePaginator.renderPage(ctx, 0).map(MessageTemplate::toCreateSpec))
+        return createAsync(ctx -> messagePaginator.renderPage(ctx, 0).map(MessageTemplate::toCreateSpec))
                 .writeInteractionContext(context -> context.put("currentPage", 0))
                 .addReactionItem(controls.getPreviousEmoji(), interaction -> Mono.fromCallable(
                         () -> interaction.update("currentPage", x -> x - 1, -1))
@@ -94,7 +94,7 @@ public final class InteractiveMenuFactory {
                                 .map(MessageTemplate::toEditSpec))
                         .onErrorResume(PageNumberOutOfRangeException.class, e -> Mono.fromCallable(
                                 () -> interaction.update("currentPage",
-                                        x -> x + e.getMaxPage() - e.getMinPage() + 1, 0))
+                                        x -> x + e.getMaxPage() + 1, 0))
                                 .flatMap(targetPage -> messagePaginator
                                         .renderPage(interaction.getOriginalCommandContext(), targetPage)
                                         .map(MessageTemplate::toEditSpec)))
@@ -107,7 +107,7 @@ public final class InteractiveMenuFactory {
                                 .map(MessageTemplate::toEditSpec))
                         .onErrorResume(PageNumberOutOfRangeException.class, e -> Mono.fromCallable(
                                 () -> interaction.update("currentPage",
-                                        x -> x - e.getMaxPage() + e.getMinPage() - 1, 0))
+                                        x -> x - e.getMaxPage() - 1, 0))
                                 .flatMap(targetPage -> messagePaginator
                                         .renderPage(interaction.getOriginalCommandContext(), targetPage)
                                         .map(MessageTemplate::toEditSpec)))

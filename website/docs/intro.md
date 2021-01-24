@@ -5,10 +5,6 @@ slug: /
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-:::caution
-🚧 **The documentation for this framework is still work in progress. It will be complete before the first stable release which should happen very soon&trade;**.
-:::
-
 <img style={{float:'right',padding:'5%'}} src={useBaseUrl('img/logo.svg')} width="20%" alt="" />
 
 ## What is Botrino?
