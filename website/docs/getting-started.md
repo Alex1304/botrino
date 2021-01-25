@@ -105,8 +105,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.alex1304.botrino-api:[VERSION]'
-    implementation 'com.alex1304.botrino-command:[VERSION]'
+    implementation 'com.alex1304.botrino:botrino-api:[VERSION]'
+    implementation 'com.alex1304.botrino:botrino-command:[VERSION]'
 }
 ```
 
