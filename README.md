@@ -219,7 +219,7 @@ mvn archetype:generate -DarchetypeGroupId=com.alex1304.botrino -DarchetypeArtifa
 
 You will be asked to enter the `groupId`, the `artifactId`, the `version` and the `package` of your project.
 
-## From a blank project
+### From a blank project
 
 You may as well start from a blank project and import Botrino yourself. Be aware that it will require a bit more effort to set up than using the archetype.
 
