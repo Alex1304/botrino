@@ -111,10 +111,6 @@ By definition, as this is an extension, it does not belong to the core framework
 
 ### Code examples
 
-:::info
-The examples below make use of translated strings, they are assumed to exist in properties files as described in [this page](../api/i18n.md).
-:::
-
 A basic `!ping` command:
 ```java
 package com.example.myproject;
