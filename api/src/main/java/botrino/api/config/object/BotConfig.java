@@ -27,11 +27,11 @@ import botrino.api.annotation.ConfigEntry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import discord4j.core.object.presence.Activity;
-import discord4j.discordjson.json.ActivityUpdateRequest;
-import discord4j.discordjson.json.gateway.StatusUpdate;
+import discord4j.core.object.presence.ClientActivity;
+import discord4j.core.object.presence.ClientPresence;
+import discord4j.core.object.presence.Status;
 import org.immutables.value.Value;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -57,19 +57,52 @@ public interface BotConfig {
         @JsonProperty("activity_text")
         Optional<String> activityText();
 
+        @JsonProperty("streaming_url")
+        Optional<String> streamingUrl();
+
         String status();
 
-        default StatusUpdate toStatusUpdate() {
-            var builder = StatusUpdate.builder()
-                    .afk(false)
-                    .status(status());
-            if (activityType().isPresent() && activityText().isPresent()) {
-                builder.activities(List.of(ActivityUpdateRequest.builder()
-                        .type(Activity.Type.valueOf(activityType().orElseThrow().toUpperCase()).getValue())
-                        .name(activityText().orElseThrow())
-                        .build()));
+        default ClientPresence toPresence() {
+            var status = Status.valueOf(status().toUpperCase());
+            var activity = activityType()
+                    .map(String::toUpperCase)
+                    .map(Activity.Type::valueOf)
+                    .orElse(Activity.Type.UNKNOWN);
+            var text = activityText().orElse(null);
+            var url = streamingUrl().orElse("http://127.0.0.1");
+            ClientActivity clientActivity = null;
+            if (text != null) {
+                switch (activity) {
+                    case PLAYING:
+                        clientActivity = ClientActivity.playing(text);
+                        break;
+                    case COMPETING:
+                        clientActivity = ClientActivity.competing(text);
+                        break;
+                    case LISTENING:
+                        clientActivity = ClientActivity.listening(text);
+                        break;
+                    case STREAMING:
+                        clientActivity = ClientActivity.streaming(text, url);
+                        break;
+                    case WATCHING:
+                        clientActivity = ClientActivity.watching(text);
+                        break;
+                }
             }
-            return builder.build();
+            switch (status) {
+                case IDLE:
+                    return clientActivity == null ? ClientPresence.idle() :
+                            ClientPresence.idle(clientActivity);
+                case DO_NOT_DISTURB:
+                    return clientActivity == null ? ClientPresence.doNotDisturb() :
+                            ClientPresence.doNotDisturb(clientActivity);
+                case INVISIBLE:
+                    return ClientPresence.invisible();
+                default:
+                    return clientActivity == null ? ClientPresence.online() :
+                            ClientPresence.online(clientActivity);
+            }
         }
     }
 }

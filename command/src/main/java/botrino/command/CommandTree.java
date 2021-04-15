@@ -36,6 +36,17 @@ class CommandTree {
 
     private final Map<String, Node> rootCommands = new ConcurrentHashMap<>();
 
+    private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> in, Map<String, Node> out) {
+        out.forEach((k, v) -> {
+            Node old;
+            if ((old = in.putIfAbsent(k, v)) != null) {
+                throw new IllegalStateException("Alias conflict: the command " + old.command + " and " + v.command +
+                        " both define the same alias '" + k + "'.");
+            }
+        });
+        return in;
+    }
+
     void addCommand(Command command) {
         if (command.subcommands().isEmpty()) {
             putAllCheckDuplicates(rootCommands, Node.leaf(command).explode());
@@ -62,16 +73,11 @@ class CommandTree {
         putAllCheckDuplicates(rootCommands, nodeAssembly.get(0).get(0).explode());
     }
 
-    @Nullable
-    Command findForInput(TokenizedInput input) {
-        return getCommandAt(input.getMutableArgs());
-    }
-
     Optional<Command> getCommandAt(String topLevelAlias, String... subcommandAliases) {
         var args = new ArrayDeque<String>();
         args.add(topLevelAlias);
         args.addAll(Arrays.asList(subcommandAliases));
-        return Optional.ofNullable(getCommandAt(args));
+        return Optional.ofNullable(getCommandAt(args)).filter(__ -> args.isEmpty());
     }
 
     Set<Command> listCommands(String... path) {
@@ -90,7 +96,7 @@ class CommandTree {
     }
 
     @Nullable
-    private Command getCommandAt(ArrayDeque<String> args) {
+    Command getCommandAt(ArrayDeque<String> args) {
         Node found = null;
         var map = rootCommands;
         while (!args.isEmpty() && map.containsKey(args.element())) {
@@ -98,17 +104,6 @@ class CommandTree {
             map = found.subcommands;
         }
         return found == null ? null : found.command;
-    }
-
-    private static Map<String, Node> putAllCheckDuplicates(Map<String, Node> in, Map<String, Node> out) {
-        out.forEach((k, v) -> {
-            Node old;
-            if ((old = in.putIfAbsent(k, v)) != null) {
-                throw new IllegalStateException("Alias conflict: the command " + old.command + " and " + v.command +
-                        " both define the same alias '" + k + "'.");
-            }
-        });
-        return in;
     }
 
     private static class Node {

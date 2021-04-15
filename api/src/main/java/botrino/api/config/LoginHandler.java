@@ -26,7 +26,7 @@ package botrino.api.config;
 import botrino.api.config.object.BotConfig;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.Presence;
+import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.MemberRequestFilter;
 import discord4j.gateway.intent.IntentSet;
 import reactor.core.publisher.Mono;
@@ -58,9 +58,9 @@ public interface LoginHandler {
         var config = configContainer.get(BotConfig.class);
         var discordClient = DiscordClient.create(config.token());
         return discordClient.gateway()
-                .setInitialStatus(shard -> config.presence()
-                        .map(BotConfig.StatusConfig::toStatusUpdate)
-                        .orElseGet(Presence::online))
+                .setInitialPresence(shard -> config.presence()
+                        .map(BotConfig.StatusConfig::toPresence)
+                        .orElseGet(ClientPresence::online))
                 .setEnabledIntents(config.enabledIntents().stream().boxed()
                         .map(IntentSet::of)
                         .findAny()

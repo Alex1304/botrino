@@ -33,6 +33,7 @@ public final class TokenizedInput {
     private final String raw;
     private final ArrayDeque<String> args;
     private final Map<String, String> flagMap;
+    private final List<String> trigger = new ArrayList<>();
 
     private TokenizedInput(String raw, ArrayDeque<String> args, Map<String, String> flagMap) {
         this.raw = raw;
@@ -104,9 +105,37 @@ public final class TokenizedInput {
     }
 
     /**
-     * Gets the arguments of the command.
+     * Gets the part of the input that allowed to retrieve the command or subcommand used, excluding arguments and
+     * flags. For example, if the original message is:
+     * <pre>
+     *     !run echo test
+     * </pre>
+     * where {@code run} is a top-level command, {@code echo} is a subcommand of {@code run} and {@code test} is an
+     * argument, this method would return a {@link List} containing:
+     * <pre>
+     *     ["run", "echo"]
+     * </pre>
+     *
+     * @return the trigger
+     * @see #getArguments()
+     */
+    public List<String> getTrigger() {
+        return List.copyOf(trigger);
+    }
+
+    /**
+     * Gets the arguments of the command, excluding the command trigger. For example, if the original message is:
+     * <pre>
+     *     !run echo test
+     * </pre>
+     * where {@code run} is a top-level command, {@code echo} is a subcommand of {@code run} and {@code test} is an
+     * argument, this method would return a {@link List} containing:
+     * <pre>
+     *     ["test"]
+     * </pre>
      *
      * @return the arguments
+     * @see #getTrigger()
      */
     public List<String> getArguments() {
         return List.copyOf(args);
@@ -149,6 +178,10 @@ public final class TokenizedInput {
         return args;
     }
 
+    void setTrigger(List<String> trigger) {
+        this.trigger.addAll(trigger);
+    }
+
     /**
      * Gets the value of the flag with the given name. If the flag has no value, the value is an empty string. If the
      * flag is not present at all, and empty Optional is returned.
@@ -166,6 +199,7 @@ public final class TokenizedInput {
                 "raw='" + raw + '\'' +
                 ", args=" + args +
                 ", flagMap=" + flagMap +
+                ", trigger=" + trigger +
                 '}';
     }
 }

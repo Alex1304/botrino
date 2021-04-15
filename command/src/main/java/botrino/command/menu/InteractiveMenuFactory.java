@@ -135,4 +135,22 @@ public final class InteractiveMenuFactory {
                 .closeAfterMessage(false)
                 .closeAfterReaction(false);
     }
+
+    /**
+     * Gets the pagination controls used by the interactive menus created by this factory.
+     *
+     * @return the pagination controls
+     */
+    public PaginationControls getPaginationControls() {
+        return controls;
+    }
+
+    /**
+     * Gets the default timeout value applied to interactive menus created by this factory.
+     *
+     * @return the default timeout
+     */
+    public Duration getDefaultTimeout() {
+        return defaultTimeout;
+    }
 }

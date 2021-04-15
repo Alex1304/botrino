@@ -222,20 +222,26 @@ public final class CommandService {
         return event.getMessage().getChannel()
                 .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
                         "for message create event " + event, e)))
-                .flatMap(channel -> Mono.justOrEmpty(commandTree.findForInput(input))
-                        .filter(command -> command.scope().isInScope(channel))
-                        .flatMap(command -> {
-                            var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
-                            return command.privilege().checkGranted(ctx)
-                                    .then(Mono.defer(() -> {
-                                        cooldownPerCommand.computeIfAbsent(command, Command::cooldown).fire(authorId);
-                                        return command.run(ctx);
-                                    }))
-                                    .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
-                                    .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
-                                    .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
-                                            "occurred when executing a command. Context: " + ctx, t)));
-                        }));
+                .flatMap(channel -> {
+                    var initialArgs = input.getArguments();
+                    var mutableArgs = input.getMutableArgs();
+                    var cmd = commandTree.getCommandAt(mutableArgs);
+                    input.setTrigger(initialArgs.subList(0, initialArgs.size() - mutableArgs.size()));
+                    return Mono.justOrEmpty(cmd)
+                            .filter(command -> command.scope().isInScope(channel))
+                            .flatMap(command -> {
+                                var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
+                                return command.privilege().checkGranted(ctx)
+                                        .then(Mono.defer(() -> {
+                                            cooldownPerCommand.computeIfAbsent(command, Command::cooldown).fire(authorId);
+                                            return command.run(ctx);
+                                        }))
+                                        .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
+                                        .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
+                                        .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
+                                                "occurred when executing a command. Context: " + ctx, t)));
+                            });
+                });
     }
 
     private Mono<Void> executeErrorHandler(Throwable t, CommandErrorHandler errorHandler, CommandContext ctx) {
