@@ -290,6 +290,8 @@ Find the table below for reference regarding version dependencies:
 
 Botrino version | Discord4J version | Reactor version
 ----------------|-------------------|----------------
+v1.0.0-M3       | v3.2.0-M3         | v3.4.4
+v1.0.0-M2       | v3.2.0-M1         | v3.4.1
 v1.0.0-M1       | v3.2.0-M1         | v3.4.1
 
 ## Useful links
