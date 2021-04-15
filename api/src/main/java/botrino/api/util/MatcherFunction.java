@@ -107,7 +107,7 @@ public final class MatcherFunction<R> implements Function<Object, Optional<R>> {
     @SuppressWarnings("unchecked")
     public <U> MatcherFunction<R> matchType(Class<U> type, Predicate<? super U> predicate,
                                             Function<? super U, ? extends R> function) {
-        return match(type::isInstance, o -> function.apply((U) o));
+        return match(o -> type.isInstance(o) && predicate.test(type.cast(o)), o -> function.apply((U) o));
     }
 
     /**

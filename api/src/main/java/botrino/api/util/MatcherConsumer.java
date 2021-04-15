@@ -105,7 +105,7 @@ public final class MatcherConsumer implements Consumer<Object> {
      */
     @SuppressWarnings("unchecked")
     public <U> MatcherConsumer matchType(Class<U> type, Predicate<? super U> predicate, Consumer<? super U> consumer) {
-        return match(type::isInstance, o -> consumer.accept((U) o));
+        return match(o -> type.isInstance(o) && predicate.test(type.cast(o)), o -> consumer.accept((U) o));
     }
 
     /**
