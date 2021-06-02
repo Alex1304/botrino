@@ -288,11 +288,12 @@ public final class Main {
 Major and minor version numbers of Botrino will match with a minor and major version of Discord4J. Botrino **v1.0.x** supports Discord4J **v3.2.x**; **v1.1.x** will support **v3.3.x**, etc. The patch version number however will be independent from the patch version of Discord4J.
 Find the table below for reference regarding version dependencies:
 
-Botrino version | Discord4J version | Reactor version
-----------------|-------------------|----------------
-v1.0.0-M3       | v3.2.0-M3         | v3.4.4
-v1.0.0-M2       | v3.2.0-M1         | v3.4.1
-v1.0.0-M1       | v3.2.0-M1         | v3.4.1
+Botrino version | Discord4J version | Reactor version | RDI version
+----------------|-------------------|-----------------|-----------------
+v1.0.0-RC1      | v3.2.0-M3         | v3.4.4          | v1.1.2
+v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | v1.1.1
+v1.0.0-M2       | v3.2.0-M1         | v3.4.1          | v1.1.1
+v1.0.0-M1       | v3.2.0-M1         | v3.4.1          | v1.1.0
 
 ## Useful links
 

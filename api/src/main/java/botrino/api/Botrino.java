@@ -50,7 +50,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -193,7 +192,7 @@ public final class Botrino {
                  var resources = moduleReader.list()) {
                 classes.addAll(resources.filter(resource -> resource.endsWith(".class") && !resource.contains("-"))
                         .map(resource -> resource.substring(0, resource.length() - ".class".length())
-                                .replace(FileSystems.getDefault().getSeparator(), "."))
+                                .replace("/", "."))
                         .map(className -> {
                             try {
                                 return Class.forName(className);
