@@ -19,9 +19,10 @@
         <java.version>11</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <botrino.version>${project.version}</botrino.version>
-        <delivery.name>\${symbol_dollar}{project.parent.artifactId}-${symbol_dollar}{project.version}-${symbol_dollar}{os.name}-${symbol_dollar}{os.arch}</delivery.name>
-        <delivery.directory>\${symbol_dollar}{project.build.directory}/${symbol_dollar}{delivery.name}</delivery.directory>
+        <delivery.name>\${symbol_dollar}{project.parent.artifactId}-\${symbol_dollar}{project.version}</delivery.name>
+        <delivery.directory>\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{delivery.name}</delivery.directory>
         <app.build.directory>\${symbol_dollar}{project.basedir}/../app/target</app.build.directory>
+        <jlink.jdk>\${symbol_dollar}{java.home}</jlink.jdk>
     </properties>
 
     <build>
@@ -56,6 +57,7 @@
                             <addModule>java.desktop</addModule>
                             <addModule>jdk.crypto.ec</addModule>
                         </addModules>
+                        <sourceJdkModules>\${symbol_dollar}{jlink.jdk}</sourceJdkModules>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -106,6 +108,7 @@
                             </goals>
                             <configuration>
                                 <target>
+                                    <delete dir="\${symbol_dollar}{delivery.directory}" />
                                     <delete file="\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{project.build.finalName}.zip" />
                                     <move file="\${symbol_dollar}{project.build.directory}/maven-jlink" tofile="\${symbol_dollar}{delivery.directory}" force="true" />
                                     <copy todir="\${symbol_dollar}{delivery.directory}/modules">

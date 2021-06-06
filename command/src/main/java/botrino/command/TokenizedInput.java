@@ -142,36 +142,28 @@ public final class TokenizedInput {
     }
 
     /**
-     * Gets the argument of the command, with the size of the list adjusted to an arbitrary count.
+     * Gets the arguments of the command, with the size of the list capped to an arbitrary count.
      *
      * <ul>
-     * <li>If args.size() == count, directly returns the arguments</li>
+     * <li>If args.size() <= count, returns the arguments as-is</li>
      * <li>If args.size() &gt; count, merges the last arguments together until args.size() == count.</li>
-     * <li>If args.size() &lt; count, pads with nulls until args.size() == count</li>
      * </ul>
      *
-     * @param expectedCount the expected argument count
+     * @param maxCount the maximum argument count
      * @return the adjusted list of arguments
      */
-    public List<String> getArguments(int expectedCount) {
+    public List<String> getArguments(int maxCount) {
         var args = List.copyOf(this.args);
-        if (args.size() == expectedCount) {
-            return args;
-        }
-        if (args.size() > expectedCount) {
+        if (args.size() > maxCount) {
             var mergedTokens = new ArrayDeque<>(args);
-            while (mergedTokens.size() > 1 && mergedTokens.size() > expectedCount) {
+            while (mergedTokens.size() > 1 && mergedTokens.size() > maxCount) {
                 var lastArg = mergedTokens.removeLast();
                 var beforeLastArg = mergedTokens.removeLast();
                 mergedTokens.addLast(beforeLastArg + " " + lastArg);
             }
             return List.copyOf(mergedTokens);
         }
-        var padded = new ArrayList<>(args);
-        while (padded.size() < expectedCount) {
-            padded.add(null);
-        }
-        return List.copyOf(padded);
+        return args;
     }
 
     ArrayDeque<String> getMutableArgs() {

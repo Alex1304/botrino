@@ -8,7 +8,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Factory that is capable of creating {@link InteractiveMenu} instances.
@@ -42,7 +41,7 @@ public final class InteractiveMenuFactory {
      * @param messageCreateSpec the spec to build the menu message
      * @return a new {@link InteractiveMenu}
      */
-    public InteractiveMenu create(Consumer<MessageCreateSpec> messageCreateSpec) {
+    public InteractiveMenu create(MessageCreateSpec messageCreateSpec) {
         Objects.requireNonNull(messageCreateSpec);
         return createAsync((CommandContext ctx) -> Mono.just(messageCreateSpec));
     }
@@ -55,7 +54,7 @@ public final class InteractiveMenuFactory {
      */
     public InteractiveMenu create(String message) {
         Objects.requireNonNull(message);
-        return create((MessageCreateSpec mcs) -> mcs.setContent(message));
+        return create(MessageCreateSpec.create().withContent(message));
     }
 
     /**

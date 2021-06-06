@@ -23,10 +23,11 @@
  */
 package botrino.api.util;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateFields.File;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
+import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import reactor.util.annotation.Nullable;
 
@@ -34,24 +35,24 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Allows to build a message template that can be easily converted to {@link MessageCreateSpec} and {@link
- * MessageEditSpec} consumers.
+ * MessageEditSpec}.
  */
 public final class MessageTemplate {
 
     private final String messageContent;
-    private final Consumer<EmbedCreateSpec> embedSpec;
+    private final EmbedCreateSpec embedSpec;
     private final AllowedMentions allowedMentions;
     private final Map<String, InputStream> files;
-    private final Snowflake nonce;
+    private final String nonce;
     private final boolean tts;
 
-    private MessageTemplate(String messageContent, Consumer<EmbedCreateSpec> embedSpec,
-                            AllowedMentions allowedMentions, Map<String, InputStream> files, Snowflake nonce,
-                            boolean tts) {
+    private MessageTemplate(@Nullable String messageContent, @Nullable EmbedCreateSpec embedSpec,
+                            @Nullable AllowedMentions allowedMentions, Map<String, InputStream> files,
+                            @Nullable String nonce, boolean tts) {
         this.messageContent = messageContent;
         this.embedSpec = embedSpec;
         this.allowedMentions = allowedMentions;
@@ -70,53 +71,41 @@ public final class MessageTemplate {
     }
 
     /**
-     * Converts this template to a consumer of {@link MessageCreateSpec}.
+     * Converts this template to a {@link MessageCreateSpec}.
      *
-     * @return a create spec consumer
+     * @return a create spec
      */
-    public Consumer<MessageCreateSpec> toCreateSpec() {
-        return spec -> {
-            if (messageContent != null) {
-                spec.setContent(messageContent);
-            }
-            if (embedSpec != null) {
-                spec.setEmbed(embedSpec);
-            }
-            if (allowedMentions != null) {
-                spec.setAllowedMentions(allowedMentions);
-            }
-            files.forEach(spec::addFile);
-            if (nonce != null) {
-                spec.setNonce(nonce);
-            }
-            spec.setTts(tts);
-        };
+    public MessageCreateSpec toCreateSpec() {
+        return MessageCreateSpec.create()
+                .withContent(messageContent != null ? Possible.of(messageContent) : Possible.absent())
+                .withEmbed(embedSpec != null ? Possible.of(embedSpec) : Possible.absent())
+                .withAllowedMentions(allowedMentions != null ? Possible.of(allowedMentions) : Possible.absent())
+                .withFiles(files.entrySet().stream()
+                        .map(entry -> File.of(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toList()))
+                .withNonce(nonce != null ? Possible.of(nonce) : Possible.absent())
+                .withTts(tts);
     }
 
 
     /**
-     * Converts this template to a consumer of {@link MessageEditSpec}.
+     * Converts this template to a {@link MessageEditSpec}.
      *
-     * @return an edit spec consumer
+     * @return an edit spec
      */
-    public Consumer<MessageEditSpec> toEditSpec() {
-        return spec -> {
-            if (messageContent != null) {
-                spec.setContent(messageContent);
-            }
-            if (embedSpec != null) {
-                spec.setEmbed(embedSpec);
-            }
-        };
+    public MessageEditSpec toEditSpec() {
+        return MessageEditSpec.create()
+                .withContentOrNull(messageContent)
+                .withEmbedOrNull(embedSpec);
     }
 
     public static class Builder {
 
         private final Map<String, InputStream> files = new HashMap<>();
         private String messageContent;
-        private Consumer<EmbedCreateSpec> embedSpec;
+        private EmbedCreateSpec embedSpec;
         private AllowedMentions allowedMentions;
-        private Snowflake nonce;
+        private String nonce;
         private boolean tts;
 
         private Builder() {
@@ -139,7 +128,7 @@ public final class MessageTemplate {
          * @param embedSpec the embed spec
          * @return this builder
          */
-        public Builder setEmbed(@Nullable Consumer<EmbedCreateSpec> embedSpec) {
+        public Builder setEmbed(@Nullable EmbedCreateSpec embedSpec) {
             this.embedSpec = embedSpec;
             return this;
         }
@@ -188,7 +177,7 @@ public final class MessageTemplate {
          * @param nonce the nonce
          * @return this builder
          */
-        public Builder setNonce(@Nullable Snowflake nonce) {
+        public Builder setNonce(@Nullable String nonce) {
             this.nonce = nonce;
             return this;
         }

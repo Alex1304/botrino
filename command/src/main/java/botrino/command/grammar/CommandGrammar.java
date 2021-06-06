@@ -187,7 +187,7 @@ public final class CommandGrammar<T> {
                             }
                             monos.add(Flux.concat(vars).collectList().defaultIfEmpty(List.of()));
                             break;
-                        } else {
+                        } else if (args.size() > tokens.size()) {
                             args = ctx.input().getArguments(tokens.size());
                         }
                     }

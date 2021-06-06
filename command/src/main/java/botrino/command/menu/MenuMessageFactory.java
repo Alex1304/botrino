@@ -27,8 +27,6 @@ import botrino.command.CommandContext;
 import discord4j.core.spec.MessageCreateSpec;
 import reactor.core.publisher.Mono;
 
-import java.util.function.Consumer;
-
 /**
  * Functional interface to generate a message create spec for an interactive menu.
  */
@@ -41,5 +39,5 @@ public interface MenuMessageFactory {
      * @param ctx the context of the command that is creating the menu
      * @return a Mono emitting the message spec for the menu message
      */
-    Mono<? extends Consumer<MessageCreateSpec>> create(CommandContext ctx);
+    Mono<? extends MessageCreateSpec> create(CommandContext ctx);
 }

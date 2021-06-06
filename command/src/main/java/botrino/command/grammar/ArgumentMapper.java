@@ -147,5 +147,5 @@ public interface ArgumentMapper<T> {
      * @param arg the argument to transform
      * @return a {@link Mono} emitting the result of the transformation
      */
-    Mono<T> map(CommandContext ctx, String arg);
+    Mono<? extends T> map(CommandContext ctx, String arg);
 }
