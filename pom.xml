@@ -80,7 +80,7 @@
         <java.version>11</java.version>
         <immutables.version>2.9.0-beta2</immutables.version>
         <jackson.version>2.12.2</jackson.version>
-        <discord4j.version>3.2.0-SNAPSHOT</discord4j.version>
+        <discord4j.version>3.2.0-RC1</discord4j.version>
         <rdi.version>1.1.2</rdi.version>
     </properties>
 
@@ -274,6 +274,11 @@
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_annotations</artifactId>
                 <version>2.4.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>3.0.2</version>
             </dependency>
 
             <!-- Test dependencies -->

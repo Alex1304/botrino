@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -44,17 +45,23 @@ import java.util.stream.Collectors;
 public final class MessageTemplate {
 
     private final String messageContent;
+    private final boolean messageContentPresent;
     private final EmbedCreateSpec embedSpec;
+    private final boolean embedSpecPresent;
     private final AllowedMentions allowedMentions;
     private final Map<String, InputStream> files;
     private final String nonce;
     private final boolean tts;
 
-    private MessageTemplate(@Nullable String messageContent, @Nullable EmbedCreateSpec embedSpec,
-                            @Nullable AllowedMentions allowedMentions, Map<String, InputStream> files,
+    private MessageTemplate(@Nullable String messageContent, boolean messageContentPresent,
+                            @Nullable EmbedCreateSpec embedSpec,
+                            boolean embedSpecPresent, @Nullable AllowedMentions allowedMentions,
+                            Map<String, InputStream> files,
                             @Nullable String nonce, boolean tts) {
         this.messageContent = messageContent;
+        this.messageContentPresent = messageContentPresent;
         this.embedSpec = embedSpec;
+        this.embedSpecPresent = embedSpecPresent;
         this.allowedMentions = allowedMentions;
         this.files = files;
         this.nonce = nonce;
@@ -95,15 +102,18 @@ public final class MessageTemplate {
      */
     public MessageEditSpec toEditSpec() {
         return MessageEditSpec.create()
-                .withContentOrNull(messageContent)
-                .withEmbedOrNull(embedSpec);
+                .withContent(messageContentPresent ? Possible.of(Optional.ofNullable(messageContent))
+                        : Possible.absent())
+                .withEmbed(embedSpecPresent ? Possible.of(Optional.ofNullable(embedSpec)) : Possible.absent());
     }
 
-    public static class Builder {
+    public static final class Builder {
 
         private final Map<String, InputStream> files = new HashMap<>();
         private String messageContent;
+        private boolean messageContentPresent;
         private EmbedCreateSpec embedSpec;
+        private boolean embedSpecPresent;
         private AllowedMentions allowedMentions;
         private String nonce;
         private boolean tts;
@@ -112,24 +122,59 @@ public final class MessageTemplate {
         }
 
         /**
-         * Sets the message content for this template.
+         * Sets the message content for this template. In case of message edit, passing <code>null</code> here will
+         * remove the message content if one exists in the original message. To keep the old message content, use this
+         * instead:
+         * <pre>
+         *      setMessageContent(Possible.absent())
+         * </pre>
          *
          * @param messageContent the message content
          * @return this builder
          */
         public Builder setMessageContent(@Nullable String messageContent) {
-            this.messageContent = messageContent;
+            return setMessageContent(Possible.of(Optional.ofNullable(messageContent)));
+        }
+
+        /**
+         * Sets the message content for this template. In case of message edit, <code>Possible.absent()</code> will
+         * leave the old message content unchanged, while <code>Possible.of(Optional.empty())</code> will effectively
+         * remove the existing message content. Both are equivalent in case of message creation.
+         *
+         * @param messageContent the message content
+         * @return this builder
+         */
+        public Builder setMessageContent(Possible<Optional<String>> messageContent) {
+            this.messageContent = Possible.flatOpt(messageContent).orElse(null);
+            this.messageContentPresent = !messageContent.isAbsent();
             return this;
         }
 
         /**
-         * Sets the embed for this template.
+         * Sets the embed for this template. In case of message edit, passing <code>null</code> here will remove the
+         * embed if one exists in the original message. To keep the old embed, use this instead:
+         * <pre>
+         *      setEmbed(Possible.absent())
+         * </pre>
          *
          * @param embedSpec the embed spec
          * @return this builder
          */
         public Builder setEmbed(@Nullable EmbedCreateSpec embedSpec) {
-            this.embedSpec = embedSpec;
+            return setEmbed(Possible.of(Optional.ofNullable(embedSpec)));
+        }
+
+        /**
+         * Sets the embed for this template. In case of message edit, <code>Possible.absent()</code> will leave the old
+         * embed unchanged, while <code>Possible.of(Optional.empty())</code> will effectively remove the existing embed.
+         * Both are equivalent in case of message creation.
+         *
+         * @param embedSpec the embed spec
+         * @return this builder
+         */
+        public Builder setEmbed(Possible<Optional<EmbedCreateSpec>> embedSpec) {
+            this.embedSpec = Possible.flatOpt(embedSpec).orElse(null);
+            this.embedSpecPresent = !embedSpec.isAbsent();
             return this;
         }
 
@@ -200,7 +245,8 @@ public final class MessageTemplate {
          * @return a new {@link MessageTemplate}
          */
         public MessageTemplate build() {
-            return new MessageTemplate(messageContent, embedSpec, allowedMentions, files, nonce, tts);
+            return new MessageTemplate(messageContent, messageContentPresent, embedSpec, embedSpecPresent,
+                    allowedMentions, files, nonce, tts);
         }
     }
 }
