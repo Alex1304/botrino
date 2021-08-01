@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.menu;
+package botrino.command.context;
 
-public final class PageInputException extends RuntimeException {
+import botrino.command.CommandService;
+import discord4j.core.event.domain.interaction.SlashCommandEvent;
+import discord4j.core.object.entity.channel.MessageChannel;
 
+import java.util.Locale;
 
+public final class SlashCommandContext extends AbstractInteractionCommandContext<SlashCommandEvent> {
+
+    public SlashCommandContext(CommandService commandService, Locale locale, SlashCommandEvent event,
+                               MessageChannel channel) {
+        super(commandService, locale, event, channel);
+    }
+
+    @Override
+    public String toString() {
+        return "SlashCommandContext{" +
+                "locale=" + getLocale() + ", " +
+                "event=" + event() + ", " +
+                "channel=" + channel() + ", " +
+                "user=" + user() +
+                "}";
+    }
 }

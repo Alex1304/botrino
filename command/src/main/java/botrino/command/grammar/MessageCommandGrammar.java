@@ -24,8 +24,8 @@
 package botrino.command.grammar;
 
 import botrino.api.util.ConfigUtils;
-import botrino.command.CommandContext;
 import botrino.command.InvalidSyntaxException;
+import botrino.command.context.MessageCommandContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -43,15 +43,15 @@ import java.util.function.Function;
  *
  * @param <T> the type of the internal class that receives the resolved arguments
  */
-public final class CommandGrammar<T> {
+public final class MessageCommandGrammar<T> {
 
     private static final Object NULL = new Object();
     private final List<Token> tokens;
     private final boolean varargs;
-    private final Function<CommandContext, Mono<T>> resolver;
+    private final Function<MessageCommandContext, Mono<T>> resolver;
     private String format;
 
-    private CommandGrammar(List<Token> tokens, boolean varargs, Function<CommandContext, Mono<T>> resolver) {
+    private MessageCommandGrammar(List<Token> tokens, boolean varargs, Function<MessageCommandContext, Mono<T>> resolver) {
         this.tokens = tokens;
         this.varargs = varargs;
         this.resolver = resolver;
@@ -67,13 +67,13 @@ public final class CommandGrammar<T> {
     }
 
     /**
-     * Resolves this grammar against the given {@link CommandContext}. It will convert all arguments and construct an
+     * Resolves this grammar against the given {@link MessageCommandContext}. It will convert all arguments and construct an
      * instance of the internal class with the parsed arguments.
      *
      * @param ctx the command context
      * @return a {@link Mono} emitting the instance of the internal class with the parsed arguments
      */
-    public Mono<T> resolve(CommandContext ctx) {
+    public Mono<T> resolve(MessageCommandContext ctx) {
         return resolver.apply(ctx);
     }
 
@@ -165,14 +165,14 @@ public final class CommandGrammar<T> {
         }
 
         /**
-         * Finalizes the construction of the {@link CommandGrammar} based on the current state of this builder.
+         * Finalizes the construction of the {@link MessageCommandGrammar} based on the current state of this builder.
          *
          * @param valueClass the internal class to be instantiated when the constructed grammar will be resolved
          * @param <T>        the type of the internal class
          * @return this builder
          */
-        public <T> CommandGrammar<T> build(Class<T> valueClass) {
-            return new CommandGrammar<>(tokens, varargs, ctx -> {
+        public <T> MessageCommandGrammar<T> build(Class<T> valueClass) {
+            return new MessageCommandGrammar<>(tokens, varargs, ctx -> {
                 var args = ctx.input().getArguments();
                 var monos = new ArrayList<Mono<?>>();
                 for (var i = 0; i < tokens.size(); i++) {

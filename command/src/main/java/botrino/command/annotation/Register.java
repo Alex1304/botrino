@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2021 Alexandre Miranda
+ * Copyright (c) 2020 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command;
+package botrino.command.annotation;
 
-import botrino.command.cooldown.Cooldown;
-import botrino.command.privilege.Privilege;
-import botrino.command.privilege.Privileges;
+import botrino.command.Command;
 
-public interface Command {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-    /**
-     * Defines the privilege that must be granted for a user to execute this command.
-     *
-     * @return the privilege
-     */
-    default Privilege privilege() {
-        return Privileges.allowed();
-    }
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    /**
-     * Defines the cooldown of the command on a per user basis. In other words, the number of times a user can execute
-     * this command within a certain timeframe.
-     *
-     * @return the cooldown
-     */
-    default Cooldown cooldown() {
-        return Cooldown.none();
-    }
-
-    void register(CommandService commandService);
+/**
+ * A class implementing {@link Command} and annotated with this annotation will automatically be registered into the
+ * command service.
+ */
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface Register {
 }

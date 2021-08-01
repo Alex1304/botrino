@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.menu;
+package botrino.command;
 
-import botrino.command.CommandContext;
-import discord4j.core.spec.MessageCreateSpec;
+import botrino.command.annotation.Alias;
+import botrino.command.context.MessageCommandContext;
 import reactor.core.publisher.Mono;
 
-/**
- * Functional interface to generate a message create spec for an interactive menu.
- */
-@FunctionalInterface
-public interface MenuMessageFactory {
+import java.util.Set;
+
+public interface MessageCommand extends Command {
+
+    Mono<Void> run(MessageCommandContext ctx);
 
     /**
-     * Asynchronously generate a message spec for an interactive menu according to the given context.
+     * Defines the aliases for this command.
      *
-     * @param ctx the context of the command that is creating the menu
-     * @return a Mono emitting the message spec for the menu message
+     * @return the set of aliases. If empty, the command will not be registered.
      */
-    Mono<? extends MessageCreateSpec> create(CommandContext ctx);
+    default Set<String> aliases() {
+        var topLevelAnnot = getClass().getAnnotation(Alias.class);
+        if (topLevelAnnot != null) {
+            return Set.of(topLevelAnnot.value());
+        }
+        return Set.of();
+    }
+
+    /**
+     * Defines the scope of this command.
+     *
+     * @return the scope
+     */
+    default Scope scope() {
+        return Scope.ANYWHERE;
+    }
+
+    /**
+     * Defines the subcommands for this command.
+     *
+     * @return the subcommands, may be empty
+     */
+    default Set<MessageCommand> subcommands() {
+        return Set.of();
+    }
+
+    @Override
+    default void register(CommandService commandService) {
+        commandService.register(this);
+    }
 }

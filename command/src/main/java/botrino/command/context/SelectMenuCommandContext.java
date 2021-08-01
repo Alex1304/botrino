@@ -21,32 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command;
+package botrino.command.context;
 
-import botrino.command.cooldown.Cooldown;
-import botrino.command.privilege.Privilege;
-import botrino.command.privilege.Privileges;
+import botrino.command.CommandService;
+import discord4j.core.event.domain.interaction.SelectMenuInteractEvent;
+import discord4j.core.object.entity.channel.MessageChannel;
 
-public interface Command {
+import java.util.Locale;
 
-    /**
-     * Defines the privilege that must be granted for a user to execute this command.
-     *
-     * @return the privilege
-     */
-    default Privilege privilege() {
-        return Privileges.allowed();
+public final class SelectMenuCommandContext extends AbstractInteractionCommandContext<SelectMenuInteractEvent> {
+
+    public SelectMenuCommandContext(CommandService commandService, Locale locale, SelectMenuInteractEvent event,
+                                MessageChannel channel) {
+        super(commandService, locale, event, channel);
     }
 
-    /**
-     * Defines the cooldown of the command on a per user basis. In other words, the number of times a user can execute
-     * this command within a certain timeframe.
-     *
-     * @return the cooldown
-     */
-    default Cooldown cooldown() {
-        return Cooldown.none();
+    @Override
+    public String toString() {
+        return "SelectMenuCommandContext{" +
+                "locale=" + getLocale() + ", " +
+                "event=" + event() + ", " +
+                "channel=" + channel() + ", " +
+                "user=" + user() +
+                "}";
     }
-
-    void register(CommandService commandService);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package botrino.command;
 
-/**
- * Allows to conveniently set up interactive menus in commands.
- */
-@NonNullApi
-package botrino.command.menu;
+import botrino.command.context.CommandContext;
 
-import reactor.util.annotation.NonNullApi;
+public interface InteractionCommand extends Command {
+
+    void registerAsInteraction(CommandService commandService, CommandContext parentContext);
+}

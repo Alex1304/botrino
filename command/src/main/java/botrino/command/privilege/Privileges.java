@@ -23,10 +23,9 @@
  */
 package botrino.command.privilege;
 
-import botrino.command.CommandContext;
+import botrino.command.context.CommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.PermissionSet;
 import reactor.core.publisher.Mono;
@@ -92,10 +91,8 @@ public final class Privileges {
         return ctx -> Mono.just(ctx.channel())
                 .ofType(GuildMessageChannel.class)
                 .switchIfEmpty(Mono.error(PrivilegeException::new))
-                .filterWhen(channel -> Mono.justOrEmpty(ctx.event().getMessage().getAuthor())
-                        .switchIfEmpty(Mono.error(PrivilegeException::new))
-                        .map(User::getId)
-                        .flatMap(id -> channel.getEffectivePermissions(id).map(permissionPredicate::test)))
+                .filterWhen(channel -> channel.getEffectivePermissions(ctx.user().getId())
+                        .map(permissionPredicate::test))
                 .switchIfEmpty(Mono.error(() -> exception.apply(ctx)))
                 .then();
     }
@@ -124,7 +121,9 @@ public final class Privileges {
      */
     public static Privilege checkRoles(Function<? super CommandContext, ? extends PrivilegeException> exception,
                                        Predicate<? super Set<Snowflake>> rolePredicate) {
-        return ctx -> Mono.justOrEmpty(ctx.event().getMember())
+        return ctx -> Mono.justOrEmpty(ctx.channel())
+                .ofType(GuildMessageChannel.class)
+                .flatMap(channel -> channel.getClient().getMemberById(channel.getGuildId(), ctx.user().getId()))
                 .switchIfEmpty(Mono.error(PrivilegeException::new))
                 .map(Member::getRoleIds)
                 .filter(rolePredicate)
@@ -154,7 +153,9 @@ public final class Privileges {
      * @return a {@link Privilege}
      */
     public static Privilege guildOwner(Function<? super CommandContext, ? extends PrivilegeException> exception) {
-        return ctx -> Mono.justOrEmpty(ctx.event().getMember())
+        return ctx -> Mono.justOrEmpty(ctx.channel())
+                .ofType(GuildMessageChannel.class)
+                .flatMap(channel -> channel.getClient().getMemberById(channel.getGuildId(), ctx.user().getId()))
                 .switchIfEmpty(Mono.error(PrivilegeException::new))
                 .filterWhen(member -> member.getGuild()
                         .map(guild -> guild.getOwnerId().equals(member.getId()))

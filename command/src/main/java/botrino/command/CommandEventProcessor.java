@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,10 @@ package botrino.command;
 
 import botrino.api.config.object.I18nConfig;
 import botrino.command.config.CommandConfig;
+import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 
 import java.util.Locale;
@@ -49,28 +51,28 @@ public interface CommandEventProcessor {
     };
 
     /**
-     * Allows to filter {@link MessageCreateEvent} instances to prevent the execution of commands in some arbitrary
-     * situations. If the filter doesn't pass, the event is effectively dropped. The filter is applied before any
-     * processing on the event is performed (tokenization, localization, privilege/scope checks...). By default, the
-     * filter is set to drop events from bot accounts and webhooks, and allow everything else.
+     * Allows to ignore events in some arbitrary situations. If the filter doesn't pass, the event is effectively
+     * dropped and no command will be executed.
      *
      * @param event the event to filter
+     * @param channel the channel where the event comes from
+     * @param user the user who triggered the event
      * @return a {@link Mono} emitting {@code true} if the event should be accepted, and either {@code false} or empty
-     * if the event should be dropped. If an error occurs, it will be logged then the event will be dropped.
+     * if the event should be dropped. If an error occurs, it will be logged then the context will be dropped.
      */
-    default Mono<Boolean> filter(MessageCreateEvent event) {
-        return Mono.just(!event.getMessage().getAuthor().map(User::isBot).orElse(true));
+    default Mono<Boolean> filter(Event event, MessageChannel channel, User user) {
+        return Mono.just(true);
     }
 
     /**
-     * Determines the prefix to use in order for the given event to be recognized as a command. By default, it completes
-     * empty which indicates to use the default prefix as defined by {@link CommandConfig#prefix()}.
+     * Determines the prefix to use in order for the given message event to be recognized as a command. By default, it
+     * completes empty which indicates to use the default prefix as defined by {@link CommandConfig#prefix()}.
      *
      * @param event the event to find the prefix for
-     * @return a {@link Mono} emitting the prefix appropriate for the event. Empty will use the default prefix. If an
-     * error occurs, it will be logged then the event will be dropped.
+     * @return a {@link Mono} emitting the prefix appropriate for the message event. Empty will use the default prefix.
+     * If an error occurs, it will be logged then the event will be dropped.
      */
-    default Mono<String> prefixForEvent(MessageCreateEvent event) {
+    default Mono<String> prefixForMessageEvent(MessageCreateEvent event) {
         return Mono.empty();
     }
 
@@ -79,10 +81,12 @@ public interface CommandEventProcessor {
      * indicates to use the default locale as defined by {@link I18nConfig#defaultLocale()}.
      *
      * @param event the event to find the locale for
+     * @param channel the channel where the event comes from
+     * @param user the user who triggered the event
      * @return a {@link Mono} emitting the locale appropriate for the event. Empty will use the default locale. If an
      * error occurs, it will be logged then the event will be dropped.
      */
-    default Mono<Locale> localeForEvent(MessageCreateEvent event) {
+    default Mono<Locale> localeForEvent(Event event, MessageChannel channel, User user) {
         return Mono.empty();
     }
 }

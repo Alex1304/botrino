@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.menu;
+package botrino.command;
 
-import botrino.api.util.MessageTemplate;
-import botrino.command.CommandContext;
+import botrino.command.context.SlashCommandContext;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
-/**
- * Allows to make a pagination system by building a message that changes according to the page number.
- */
-@FunctionalInterface
-public interface MessagePaginator {
+public interface SlashCommand extends Command {
 
-    /**
-     * Generates a message template based on the current context and the current page number.
-     *
-     * @param ctx        the context of the command that created this paginator
-     * @param pageNumber the current page number
-     * @return a Mono emitting a {@link MessageTemplate} corresponding to the output at this specific page. If the page
-     * number is out of range, {@link PageNumberOutOfRangeException} is expected to be emitted.
-     */
-    Mono<MessageTemplate> renderPage(CommandContext ctx, int pageNumber);
+    Mono<Void> run(SlashCommandContext ctx);
+
+    ApplicationCommandRequest data();
+
+    @Override
+    default void register(CommandService commandService) {
+        commandService.register(this);
+    }
 }

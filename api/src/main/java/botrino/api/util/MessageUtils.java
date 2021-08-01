@@ -23,6 +23,10 @@
  */
 package botrino.api.util;
 
+import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.core.spec.MessageEditSpec;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -76,5 +80,36 @@ public final class MessageUtils {
      */
     public static List<String> chunk(String superLongMessage) {
         return chunk(superLongMessage, 1000);
+    }
+
+    /**
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link MessageEditSpec}.
+     *
+     * @param spec the spec to convert
+     * @return a {@link MessageEditSpec}
+     */
+    public static MessageEditSpec createToEditSpec(MessageCreateSpec spec) {
+        return MessageEditSpec.builder()
+                .contentOrNull(spec.content().toOptional().orElse(null))
+                .embedsOrNull(spec.embeds().toOptional().orElse(null))
+                .componentsOrNull(spec.components().toOptional().orElse(null))
+                .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
+                .build();
+    }
+
+    /**
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link MessageEditSpec}.
+     *
+     * @param spec the spec to convert
+     * @return a {@link MessageEditSpec}
+     */
+    public static InteractionApplicationCommandCallbackSpec createToInteractionCallbackSpec(MessageCreateSpec spec) {
+        return InteractionApplicationCommandCallbackSpec.builder()
+                .content(spec.content())
+                .embeds(spec.embeds())
+                .components(spec.components())
+                .allowedMentions(spec.allowedMentions())
+                .tts(spec.tts())
+                .build();
     }
 }

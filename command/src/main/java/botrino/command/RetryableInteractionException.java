@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package botrino.command;
 
-/**
- * Contains classes to define the documentation for a command.
- */
-@NonNullApi
-package botrino.command.doc;
+public final class RetryableInteractionException extends RuntimeException {
 
-import reactor.util.annotation.NonNullApi;
+    public RetryableInteractionException() {
+    }
+
+    public RetryableInteractionException(String message) {
+        super(message);
+    }
+
+    public RetryableInteractionException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public RetryableInteractionException(Throwable cause) {
+        super(cause);
+    }
+
+    public RetryableInteractionException(String message, Throwable cause, boolean enableSuppression,
+                                         boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
+}

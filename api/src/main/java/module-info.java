@@ -31,8 +31,6 @@ module botrino.api {
     requires transitive rdi;
     requires transitive reactor.core;
     requires transitive reactor.extra;
-    requires transitive reactor.netty.core;
-    requires transitive reactor.netty.http;
 
     uses BotrinoExtension;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,49 +24,49 @@
 package botrino.command;
 
 import botrino.api.config.ConfigContainer;
-import botrino.api.config.ConfigException;
 import botrino.api.config.object.I18nConfig;
 import botrino.api.util.MatcherFunction;
 import botrino.command.config.CommandConfig;
+import botrino.command.context.*;
 import botrino.command.cooldown.Cooldown;
 import botrino.command.cooldown.CooldownException;
-import botrino.command.menu.InteractiveMenuFactory;
-import botrino.command.menu.PaginationControls;
 import botrino.command.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
-import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.ReactiveEventAdapter;
+import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.interaction.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.reaction.ReactionEmoji;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import java.time.Duration;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static reactor.function.TupleUtils.function;
 
-/**
- * Service that centralizes the management of commands.
- */
 @RdiService
-public final class CommandService {
+public class CommandService {
 
     private static final Logger LOGGER = Loggers.getLogger(CommandService.class);
 
     private final CommandConfig commandConfig;
     private final GatewayDiscordClient gateway;
-    private final InteractiveMenuFactory interactiveMenuFactory;
     private final Locale defaultLocale;
-    private final CommandTree commandTree = new CommandTree();
-    private final ConcurrentHashMap<Command, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
+
+    private final MessageCommandTree messageCommands = new MessageCommandTree();
+    private final Map<String, SlashCommand> slashCommands = new ConcurrentHashMap<>();
+    private final Map<String, ButtonCommand> buttonCommands = new ConcurrentHashMap<>();
+    private final Map<ContextKey, Map<String, ButtonCommand>> buttonCommandInteractions = new ConcurrentHashMap<>();
+    private final Map<String, SelectMenuCommand> selectMenuCommands = new ConcurrentHashMap<>();
+    private final Map<ContextKey, Map<String, SelectMenuCommand>> selectMenuCommandInteractions =
+            new ConcurrentHashMap<>();
+
+    private final Map<Command, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
     private CommandErrorHandler errorHandler;
     private CommandEventProcessor eventProcessor;
 
@@ -74,65 +74,11 @@ public final class CommandService {
     public CommandService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
         this.commandConfig = configContainer.get(CommandConfig.class);
         this.gateway = gateway;
-        this.interactiveMenuFactory = InteractiveMenuFactory.of(
-                commandConfig.paginationControls()
-                        .map(paginationControlsConfig -> PaginationControls.of(
-                                paginationControlsConfig.nextEmoji()
-                                        .map(CommandService::configToEmoji)
-                                        .orElse(PaginationControls.DEFAULT_NEXT_EMOJI),
-                                paginationControlsConfig.previousEmoji()
-                                        .map(CommandService::configToEmoji)
-                                        .orElse(PaginationControls.DEFAULT_PREVIOUS_EMOJI),
-                                paginationControlsConfig.closeEmoji()
-                                        .map(CommandService::configToEmoji)
-                                        .orElse(PaginationControls.DEFAULT_CLOSE_EMOJI)
-                        ))
-                        .orElse(PaginationControls.getDefault()),
-                Duration.ofSeconds(commandConfig.menuTimeoutSeconds().orElse(600L)));
         this.defaultLocale = Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale());
     }
 
-    private static ReactionEmoji configToEmoji(CommandConfig.EmojiConfig config) {
-        if (config.id().isPresent() && config.name().isPresent()) {
-            return ReactionEmoji.custom(
-                    Snowflake.of(config.id().getAsLong()),
-                    config.name().get(),
-                    config.animated().orElse(false));
-        }
-        if (config.unicode().isEmpty()) {
-            throw new ConfigException(config + " does not correspond to a valid emoji type (custom or unicode)");
-        }
-        return ReactionEmoji.unicode(config.unicode().get());
-    }
-
     /**
-     * Obtain an {@link InteractiveMenuFactory} instance based on the configuration of this command service.
-     *
-     * @return an {@link InteractiveMenuFactory}
-     */
-    public InteractiveMenuFactory interactiveMenuFactory() {
-        return interactiveMenuFactory;
-    }
-
-    /**
-     * Adds a command to this command service at the top level. The subcommand tree is resolved and the root is
-     * registered in the service so that it can be invoked via message create events. It is generally not necessary to
-     * use this method as classes within bot modules implementing {@link Command} are automatically added, but it can be
-     * useful when adding commands built with {@link Command#of(Set, Function)} or {@link Command#builder(Set,
-     * Function)}.
-     *
-     * @param command the command to add
-     * @throws IllegalStateException if one of the aliases defined by the command conflicts with a command already
-     *                               added, or if there is an alias conflict within the nested subcommands.
-     */
-    public void addTopLevelCommand(Command command) {
-        Objects.requireNonNull(command);
-        commandTree.addCommand(command);
-        LOGGER.debug("Added command {}", command);
-    }
-
-    /**
-     * Get the command instance for the given top level alias and subcommand aliases.
+     * Get the message command instance for the given top level alias and subcommand aliases.
      *
      * <p>
      * For example, if a top-level command {@code foo} defines a subcommand {@code bar}, which itself defines a
@@ -148,15 +94,15 @@ public final class CommandService {
      *                          subcommand
      * @return the command instance, if found
      */
-    public Optional<Command> getCommandAt(String topLevelAlias, String... subcommandAliases) {
+    public Optional<MessageCommand> getCommandAt(String topLevelAlias, String... subcommandAliases) {
         Objects.requireNonNull(topLevelAlias);
         Objects.requireNonNull(subcommandAliases);
-        return commandTree.getCommandAt(topLevelAlias, subcommandAliases);
+        return messageCommands.getCommandAt(topLevelAlias, subcommandAliases);
     }
 
     /**
-     * Lists the commands at the given path. A path is defined as a sequence of aliases identifying the command for
-     * which subcommands should be listed. An empty path is equivalent to listing all commands at top level.
+     * Lists the message commands at the given path. A path is defined as a sequence of aliases identifying the command
+     * for which subcommands should be listed. An empty path is equivalent to listing all commands at top level.
      * <p>
      * For example, if a top-level command {@code foo} defines a subcommand {@code bar}, which itself defines a
      * subcommand {@code baz}:
@@ -166,14 +112,14 @@ public final class CommandService {
      *     <li>{@code listCommands("foo", "bar")} will list the {@code baz} command</li>
      * </ul>
      *
-     * @param path a sequence of aliases identifying the command for which subcommands should be listed, empty for
-     *             listing top-level commands
+     * @param path a sequence of aliases identifying the message command for which subcommands should be listed, empty
+     *             for listing top-level commands
      * @return a set of commands corresponding to the list result
      * @throws InvalidSyntaxException if {@code path} refers to a non-existing subcommand
      */
-    public Set<Command> listCommands(String... path) {
+    public Set<MessageCommand> listMessageCommands(String... path) {
         Objects.requireNonNull(path);
-        return commandTree.listCommands(path);
+        return messageCommands.listCommands(path);
     }
 
     void setErrorHandler(CommandErrorHandler errorHandler) {
@@ -186,62 +132,160 @@ public final class CommandService {
         this.eventProcessor = eventProcessor;
     }
 
-    Mono<Void> listenToCommands() {
-        return gateway.on(MessageCreateEvent.class, event ->
-                Mono.just(event)
-                        .filterWhen(eventProcessor::filter)
-                        .zipWhen(ev -> Mono.zip(
-                                eventProcessor.prefixForEvent(ev).defaultIfEmpty(commandConfig.prefix()),
-                                eventProcessor.localeForEvent(ev).defaultIfEmpty(defaultLocale)))
-                        .flatMap(function((ev, t) -> processEvent(ev, t.getT1(), t.getT2()))))
-                .then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed")));
+    public void register(MessageCommand command) {
+        Objects.requireNonNull(command);
+        messageCommands.addCommand(command);
+        LOGGER.debug("Registered message command {}", command);
     }
 
-    private Mono<Void> processEvent(MessageCreateEvent event, String prefix, Locale locale) {
-        var botId = event.getClient().getSelfId().asLong();
-        var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefix);
-        var messageContent = event.getMessage().getContent();
-        // Extracting prefix
-        String prefixUsed = null;
-        for (var p : prefixes) {
-            if (messageContent.toLowerCase().startsWith(p.toLowerCase())) {
-                messageContent = messageContent.substring(p.length());
-                prefixUsed = p;
-                break;
+    public void register(SlashCommand command) {
+        Objects.requireNonNull(command);
+        slashCommands.put(command.data().name(), command);
+        LOGGER.debug("Registered slash command {}", command);
+    }
+
+    public void register(ButtonCommand command) {
+        Objects.requireNonNull(command);
+        buttonCommands.put(command.customId(), command);
+        LOGGER.debug("Registered button command {}", command);
+    }
+
+    public void register(SelectMenuCommand command) {
+        Objects.requireNonNull(command);
+        selectMenuCommands.put(command.customId(), command);
+        LOGGER.debug("Registered select menu command {}", command);
+    }
+
+    public void registerAsInteraction(ButtonCommand command, CommandContext parentContext) {
+        Objects.requireNonNull(command);
+        Objects.requireNonNull(parentContext);
+        buttonCommandInteractions.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
+                .put(command.customId(), command);
+        LOGGER.debug("Registered button command as interaction {}", command);
+    }
+
+    public void registerAsInteraction(SelectMenuCommand command, CommandContext parentContext) {
+        Objects.requireNonNull(command);
+        Objects.requireNonNull(parentContext);
+        selectMenuCommandInteractions.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
+                .put(command.customId(), command);
+        LOGGER.debug("Registered select menu command as interaction {}", command);
+    }
+
+    Mono<Void> handleCommands() {
+        final var uploadSlashCommands = gateway.rest().getApplicationId()
+                .flatMap(id -> Mono.justOrEmpty(commandConfig.slashCommandsGuildId())
+                        .flatMap(guildId -> gateway.rest().getApplicationService()
+                                .bulkOverwriteGuildApplicationCommand(id, guildId, slashCommands.values().stream()
+                                        .map(SlashCommand::data)
+                                        .collect(Collectors.toList()))
+                                .then()
+                                .thenReturn(guildId))
+                        .switchIfEmpty(gateway.rest().getApplicationService()
+                                .bulkOverwriteGlobalApplicationCommand(id, slashCommands.values().stream()
+                                        .map(SlashCommand::data)
+                                        .collect(Collectors.toList()))
+                                .then()
+                                .thenReturn(0L)));
+        return uploadSlashCommands.then(gateway.on(new ReactiveEventAdapter() {
+            @Override
+            public Publisher<?> onMessageCreate(MessageCreateEvent event) {
+                final var user = event.getMessage().getAuthor().orElse(null);
+                if (user == null || user.isBot()) {
+                    return Mono.empty();
+                }
+                return event.getMessage().getChannel().flatMap(channel -> eventProcessor.filter(event, channel, user)
+                        .filter(Boolean::booleanValue)
+                        .flatMap(__ -> Mono.zip(
+                                eventProcessor.prefixForMessageEvent(event)
+                                        .defaultIfEmpty(commandConfig.prefix()),
+                                eventProcessor.localeForEvent(event, channel, user)
+                                        .defaultIfEmpty(defaultLocale)))
+                        .flatMap(function((prefix, locale) -> {
+                            var botId = event.getClient().getSelfId().asLong();
+                            var prefixes = Set.of("<@" + botId + ">", "<@!" + botId + ">", prefix);
+                            var messageContent = event.getMessage().getContent();
+                            // Extracting prefix
+                            String prefixUsed = null;
+                            for (var p : prefixes) {
+                                if (messageContent.toLowerCase().startsWith(p.toLowerCase())) {
+                                    messageContent = messageContent.substring(p.length());
+                                    prefixUsed = p;
+                                    break;
+                                }
+                            }
+                            if (prefixUsed == null) {
+                                return Mono.empty();
+                            }
+                            var input = TokenizedInput.tokenize(messageContent);
+                            if (input.getArguments().isEmpty()) {
+                                return Mono.empty();
+                            }
+                            var initialArgs = input.getArguments();
+                            var mutableArgs = input.getMutableArgs();
+                            input.setTrigger(initialArgs.subList(0, initialArgs.size() - mutableArgs.size()));
+                            var ctx = new MessageCommandContext(CommandService.this, locale, channel, event,
+                                    prefixUsed, input);
+                            final var cmd = messageCommands.getCommandAt(mutableArgs);
+                            return Mono.justOrEmpty(cmd)
+                                    .filter(command -> command.scope().isInScope(channel))
+                                    .flatMap(command -> preCheckCommand(ctx, command)
+                                            .then(Mono.defer(() -> command.run(ctx)))
+                                            .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
+                                            .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled " +
+                                                    "error occurred when executing a command. Context: " + ctx, t))));
+                        })));
             }
-        }
-        if (prefixUsed == null) {
-            return Mono.empty();
-        }
-        final var f_prefixUsed = prefixUsed;
-        var input = TokenizedInput.tokenize(messageContent);
-        if (input.getArguments().isEmpty()) {
-            return Mono.empty();
-        }
-        var authorId = Snowflake.asLong(event.getMessage().getUserData().id());
-        return event.getMessage().getChannel()
-                .onErrorResume(e -> Mono.fromRunnable(() -> LOGGER.warn("Error when retrieving channel instance " +
-                        "for message create event " + event, e)))
-                .flatMap(channel -> {
-                    var initialArgs = input.getArguments();
-                    var mutableArgs = input.getMutableArgs();
-                    var cmd = commandTree.getCommandAt(mutableArgs);
-                    input.setTrigger(initialArgs.subList(0, initialArgs.size() - mutableArgs.size()));
-                    return Mono.justOrEmpty(cmd)
-                            .filter(command -> command.scope().isInScope(channel))
-                            .flatMap(command -> {
-                                var ctx = new CommandContext(event, f_prefixUsed, input, locale, channel);
-                                return command.privilege().checkGranted(ctx)
-                                        .then(Mono.defer(() -> {
-                                            cooldownPerCommand.computeIfAbsent(command, Command::cooldown).fire(authorId);
-                                            return command.run(ctx);
-                                        }))
-                                        .onErrorResume(t -> executeErrorHandler(t, command.errorHandler(), ctx))
-                                        .onErrorResume(t -> executeErrorHandler(t, errorHandler, ctx))
-                                        .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled error " +
-                                                "occurred when executing a command. Context: " + ctx, t)));
-                            });
-                });
+
+            @Override
+            public Publisher<?> onInteractionCreate(InteractionCreateEvent event) {
+                final var user = event.getInteraction().getUser();
+                return event.getInteraction().getChannel().flatMap(channel -> eventProcessor
+                        .filter(event, channel, user)
+                        .filter(Boolean::booleanValue)
+                        .flatMap(__ -> eventProcessor.localeForEvent(event, channel, user)
+                                .defaultIfEmpty(defaultLocale))
+                        .map(locale -> MatcherFunction.<CommandRunner>create()
+                                .matchType(SlashCommandEvent.class, ev -> new SlashCommandRunner(
+                                        new SlashCommandContext(CommandService.this, locale, ev, channel)))
+                                .matchType(ButtonInteractEvent.class, ev -> new ButtonCommandRunner(
+                                        new ButtonCommandContext(CommandService.this, locale, ev, channel)))
+                                .matchType(SelectMenuInteractEvent.class, ev -> new SelectMenuCommandRunner(
+                                        new SelectMenuCommandContext(CommandService.this, locale, ev, channel)))
+                                .apply(event))
+                        .flatMap(Mono::justOrEmpty)
+                        .flatMap(runner -> runner.run()
+                                .onErrorResume(t -> executeErrorHandler(t, errorHandler, runner.ctx()))
+                                .onErrorResume(t -> Mono.fromRunnable(() -> LOGGER.error("An unhandled " +
+                                        "error occurred when executing a command. Context: " + runner.ctx(), t)))));
+            }
+
+            @Override
+            public Publisher<?> hookOnEvent(Event event) {
+                if (event instanceof MessageCreateEvent) {
+                    return onMessageCreate((MessageCreateEvent) event);
+                }
+                if (event instanceof InteractionCreateEvent) {
+                    return onInteractionCreate((InteractionCreateEvent) event);
+                }
+                return Mono.empty();
+            }
+        }).then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed"))));
+    }
+
+    private <C extends InteractionCommand> Mono<C> findInteractionCommand(Map<ContextKey, Map<String, C>> interactions,
+                                                                          Map<String, C> regularMap,
+                                                                          ContextKey key,
+                                                                          ComponentInteractEvent event) {
+        return Mono.justOrEmpty(interactions.getOrDefault(key, new ConcurrentHashMap<>()).remove(event.getCustomId()))
+                .doOnNext(__ -> interactions.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v))
+                .switchIfEmpty(Mono.justOrEmpty(regularMap.get(event.getCustomId())));
+    }
+
+    private Mono<Void> preCheckCommand(CommandContext ctx, Command command) {
+        return command.privilege().checkGranted(ctx)
+                .then(Mono.fromRunnable(() -> cooldownPerCommand.computeIfAbsent(command, Command::cooldown)
+                        .fire(ctx.user().getId().asLong())));
     }
 
     private Mono<Void> executeErrorHandler(Throwable t, CommandErrorHandler errorHandler, CommandContext ctx) {
@@ -252,5 +296,101 @@ public final class CommandService {
                 .matchType(CooldownException.class, e -> errorHandler.handleCooldown(e, ctx))
                 .apply(t)
                 .orElseGet(() -> errorHandler.handleDefault(t, ctx));
+    }
+
+    private interface CommandRunner {
+
+        Mono<Void> run();
+
+        CommandContext ctx();
+    }
+
+    private final static class ContextKey {
+
+        private final long channelId;
+        private final long userId;
+
+        private ContextKey(long channelId, long userId) {
+            this.channelId = channelId;
+            this.userId = userId;
+        }
+
+        private static ContextKey from(CommandContext ctx) {
+            return new ContextKey(ctx.channel().getId().asLong(), ctx.user().getId().asLong());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ContextKey that = (ContextKey) o;
+            return channelId == that.channelId && userId == that.userId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(channelId, userId);
+        }
+    }
+
+    private final class SlashCommandRunner implements CommandRunner {
+
+        private final SlashCommandContext ctx;
+
+        private SlashCommandRunner(SlashCommandContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public Mono<Void> run() {
+            return Mono.justOrEmpty(slashCommands.get(ctx.event().getCommandName()))
+                    .flatMap(command -> preCheckCommand(ctx, command).then(Mono.defer(() -> command.run(ctx))));
+        }
+
+        @Override
+        public CommandContext ctx() {
+            return ctx;
+        }
+    }
+
+    private final class ButtonCommandRunner implements CommandRunner {
+
+        private final ButtonCommandContext ctx;
+
+        private ButtonCommandRunner(ButtonCommandContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public Mono<Void> run() {
+            return findInteractionCommand(buttonCommandInteractions, buttonCommands, ContextKey.from(ctx), ctx.event())
+                    .flatMap(command -> preCheckCommand(ctx, command).then(Mono.defer(() -> command.run(ctx))));
+        }
+
+        @Override
+        public CommandContext ctx() {
+            return ctx;
+        }
+    }
+
+    private final class SelectMenuCommandRunner implements CommandRunner {
+
+        private final SelectMenuCommandContext ctx;
+
+        private SelectMenuCommandRunner(SelectMenuCommandContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public Mono<Void> run() {
+            return findInteractionCommand(selectMenuCommandInteractions, selectMenuCommands,
+                    ContextKey.from(ctx), ctx.event())
+                    .flatMap(command -> preCheckCommand(ctx, command).then(Mono.defer(() -> command.run(ctx))));
+        }
+
+        @Override
+        public CommandContext ctx() {
+            return ctx;
+        }
     }
 }

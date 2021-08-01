@@ -5,14 +5,14 @@ module botrino.command {
     exports botrino.command;
     exports botrino.command.annotation;
     exports botrino.command.config;
+    exports botrino.command.context;
     exports botrino.command.cooldown;
-    exports botrino.command.doc;
     exports botrino.command.grammar;
-    exports botrino.command.menu;
     exports botrino.command.privilege;
 
     opens botrino.command;
     opens botrino.command.config;
+    opens botrino.command.context;
 
     provides BotrinoExtension with CommandExtension;
 

@@ -24,7 +24,7 @@
 package botrino.command.grammar;
 
 import botrino.api.util.DiscordParser;
-import botrino.command.CommandContext;
+import botrino.command.context.MessageCommandContext;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildChannel;
@@ -33,10 +33,10 @@ import reactor.core.publisher.Mono;
 import java.util.function.Function;
 
 /**
- * Transforms an argument of a command into a type that can be manipulated more conveniently in the code of a command .
- * Typically used in {@link CommandGrammar}, it is possible to define a reusable mapping for each argument, which can be
- * as simple as a string-to-integer conversion to a more complex retrieval operation such as a Discord role or a
- * channel.
+ * Transforms an argument of a message command into a type that can be manipulated more conveniently in the code of a
+ * command. Typically used in {@link MessageCommandGrammar}, it is possible to define a reusable mapping for each
+ * argument, which can be as simple as a string-to-integer conversion to a more complex retrieval operation such as a
+ * Discord role or a channel.
  *
  * @param <T> the target type of the transformation
  */
@@ -44,9 +44,9 @@ import java.util.function.Function;
 public interface ArgumentMapper<T> {
 
     /**
-     * An {@link ArgumentMapper} that maps a string argument to another target type via the given function. For basic
-     * context-insensitive and synchronous transformations, this may be more convenient than implementing the lambda of
-     * {@link ArgumentMapper} directly.
+     * An {@link ArgumentMapper} that maps a string argument to another target type via the given function. For
+     * basic context-insensitive and synchronous transformations, this may be more convenient than implementing the
+     * lambda of {@link ArgumentMapper} directly.
      *
      * @param transformer the function to transform the string
      * @param <T>         the target type of the transformation
@@ -118,8 +118,8 @@ public interface ArgumentMapper<T> {
     }
 
     /**
-     * An {@link ArgumentMapper} that attempts to retrieve a Discord {@link Role} that corresponds to the original
-     * string, either via its ID, its name or its tag.
+     * An {@link ArgumentMapper} that attempts to retrieve a Discord {@link Role} that corresponds to the
+     * original string, either via its ID, its name or its tag.
      *
      * @return an {@link ArgumentMapper}
      */
@@ -130,8 +130,8 @@ public interface ArgumentMapper<T> {
     }
 
     /**
-     * An {@link ArgumentMapper} that attempts to retrieve a Discord {@link User} that corresponds to the original
-     * string, either via its ID, its name or its tag.
+     * An {@link ArgumentMapper} that attempts to retrieve a Discord {@link User} that corresponds to the
+     * original string, either via its ID, its name or its tag.
      *
      * @return an {@link ArgumentMapper}
      */
@@ -147,5 +147,5 @@ public interface ArgumentMapper<T> {
      * @param arg the argument to transform
      * @return a {@link Mono} emitting the result of the transformation
      */
-    Mono<? extends T> map(CommandContext ctx, String arg);
+    Mono<? extends T> map(MessageCommandContext ctx, String arg);
 }

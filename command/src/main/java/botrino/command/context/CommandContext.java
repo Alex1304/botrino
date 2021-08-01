@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,36 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command;
+package botrino.command.context;
 
+import botrino.api.i18n.Translator;
+import botrino.command.InteractionCommand;
+import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
-import java.util.Set;
+import java.util.function.Function;
 
-/**
- * Represents a bot command that is intended for use exclusively via its subcommands.
- */
-public interface ParentCommand extends Command {
+public interface CommandContext extends Translator {
 
-    /**
-     * A {@link ParentCommand} by default throws an exception if it isn't used without a subcommand.
-     *
-     * @param ctx the context
-     * @return A {@link Mono} emitting {@link InvalidSyntaxException} if the command is used without subcommand,
-     * although this behavior can always be overriden for specific commands.
-     */
-    @Override
-    default Mono<Void> run(CommandContext ctx) {
-        return Mono.error(new InvalidSyntaxException(null,
-                ctx.input().getArguments().stream().findFirst().orElse(null), null));
-    }
+    MessageChannel channel();
 
-    /**
-     * Gets the subcommands for this command. In the case of a {@link ParentCommand}, the returned set is typically
-     * non-empty.
-     *
-     * @return a set of subcommands
-     */
-    @Override
-    Set<Command> subcommands();
+    User user();
+
+    <T> Mono<T> awaitInteraction(Function<? super Sinks.One<T>, ? extends InteractionCommand> interruption);
 }

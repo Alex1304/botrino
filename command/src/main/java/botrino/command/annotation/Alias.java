@@ -23,7 +23,7 @@
  */
 package botrino.command.annotation;
 
-import botrino.command.Command;
+import botrino.command.MessageCommand;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -32,15 +32,16 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link Command} and annotated with this annotation will automatically have its aliases defined
- * as the value of this annotation, unless the implementation class overrides the {@link Command#aliases()} method.
+ * A class implementing {@link MessageCommand} and annotated with this annotation will automatically have its aliases
+ * defined as the value of this annotation, unless the implementation class overrides the {@link
+ * MessageCommand#aliases()} method.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface Alias {
 
     /**
-     * The aliases for the command, if {@link Command#aliases()} isn't overriden.
+     * The aliases for the command, if {@link MessageCommand#aliases()} isn't overriden.
      *
      * @return the command aliases
      */

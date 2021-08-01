@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.annotation;
+package botrino.command.context;
 
-import botrino.command.Command;
+import botrino.command.CommandService;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.MessageChannel;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.util.Locale;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+abstract class AbstractInteractionCommandContext<E extends InteractionCreateEvent> extends AbstractCommandContext<E> {
 
-/**
- * A class implementing {@link Command} and annotated with this annotation will automatically be registered as a
- * top-level command.
- */
-@Retention(RUNTIME)
-@Target(TYPE)
-public @interface TopLevelCommand {
+    private final MessageChannel channel;
+
+    public AbstractInteractionCommandContext(CommandService commandService, Locale locale, E event,
+                                             MessageChannel channel) {
+        super(commandService, locale, event);
+        this.channel = channel;
+    }
+
+    @Override
+    public final MessageChannel channel() {
+        return channel;
+    }
+
+    @Override
+    public final User user() {
+        return event().getInteraction().getUser();
+    }
 }

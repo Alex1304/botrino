@@ -32,7 +32,7 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
-class CommandTree {
+class MessageCommandTree {
 
     private final Map<String, Node> rootCommands = new ConcurrentHashMap<>();
 
@@ -47,19 +47,19 @@ class CommandTree {
         return in;
     }
 
-    void addCommand(Command command) {
+    void addCommand(MessageCommand command) {
         if (command.subcommands().isEmpty()) {
             putAllCheckDuplicates(rootCommands, Node.leaf(command).explode());
             return;
         }
-        var parentLifo = Collections.asLifoQueue(new ArrayDeque<Command>());
-        var childrenLifo = Collections.asLifoQueue(new ArrayDeque<Command>());
+        var parentLifo = Collections.asLifoQueue(new ArrayDeque<MessageCommand>());
+        var childrenLifo = Collections.asLifoQueue(new ArrayDeque<MessageCommand>());
         var nodeAssembly = new HashMap<Integer, List<Node>>(); // key = depth, value = children of current node
         parentLifo.add(command);
         childrenLifo.add(command);
         childrenLifo.addAll(command.subcommands());
         while (!parentLifo.isEmpty()) {
-            Command head;
+            MessageCommand head;
             while ((head = childrenLifo.element()) != parentLifo.element()) {
                 parentLifo.add(head);
                 childrenLifo.addAll(head.subcommands());
@@ -73,14 +73,14 @@ class CommandTree {
         putAllCheckDuplicates(rootCommands, nodeAssembly.get(0).get(0).explode());
     }
 
-    Optional<Command> getCommandAt(String topLevelAlias, String... subcommandAliases) {
+    Optional<MessageCommand> getCommandAt(String topLevelAlias, String... subcommandAliases) {
         var args = new ArrayDeque<String>();
         args.add(topLevelAlias);
         args.addAll(Arrays.asList(subcommandAliases));
         return Optional.ofNullable(getCommandAt(args)).filter(__ -> args.isEmpty());
     }
 
-    Set<Command> listCommands(String... path) {
+    Set<MessageCommand> listCommands(String... path) {
         var map = rootCommands;
         for (var p : path) {
             Node n = map.get(p);
@@ -96,7 +96,7 @@ class CommandTree {
     }
 
     @Nullable
-    Command getCommandAt(ArrayDeque<String> args) {
+    MessageCommand getCommandAt(ArrayDeque<String> args) {
         Node found = null;
         var map = rootCommands;
         while (!args.isEmpty() && map.containsKey(args.element())) {
@@ -108,24 +108,24 @@ class CommandTree {
 
     private static class Node {
 
-        private final Command command;
+        private final MessageCommand command;
         private final Map<String, Node> subcommands;
 
-        private Node(Command command, Map<String, Node> subcommands) {
+        private Node(MessageCommand command, Map<String, Node> subcommands) {
             this.command = command;
             this.subcommands = subcommands;
         }
 
-        private static Node of(Command command, @Nullable List<Node> children) {
+        private static Node of(MessageCommand command, @Nullable List<Node> children) {
             if (children == null) {
                 return leaf(command);
             }
             return new Node(command, children.stream()
                     .map(Node::explode)
-                    .reduce(new HashMap<>(), CommandTree::putAllCheckDuplicates));
+                    .reduce(new HashMap<>(), MessageCommandTree::putAllCheckDuplicates));
         }
 
-        private static Node leaf(Command command) {
+        private static Node leaf(MessageCommand command) {
             return new Node(command, new HashMap<>());
         }
 

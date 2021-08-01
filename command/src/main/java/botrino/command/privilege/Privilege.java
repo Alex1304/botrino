@@ -23,7 +23,7 @@
  */
 package botrino.command.privilege;
 
-import botrino.command.CommandContext;
+import botrino.command.context.CommandContext;
 import reactor.core.publisher.Mono;
 
 import java.util.function.BinaryOperator;

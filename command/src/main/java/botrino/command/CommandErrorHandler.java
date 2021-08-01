@@ -23,8 +23,9 @@
  */
 package botrino.command;
 
-import botrino.command.privilege.PrivilegeException;
+import botrino.command.context.CommandContext;
 import botrino.command.cooldown.CooldownException;
+import botrino.command.privilege.PrivilegeException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -56,7 +57,7 @@ public interface CommandErrorHandler {
 
     /**
      * Recover from a {@link InvalidSyntaxException}, typically occurring when a user makes a mistake when specifying
-     * the arguments or the subcommand for a command.
+     * the arguments or the subcommand for a message command.
      *
      * @param e   the exception
      * @param ctx the context of the command that failed

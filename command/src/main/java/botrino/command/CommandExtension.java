@@ -27,7 +27,7 @@ import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
 import botrino.api.util.MatcherConsumer;
-import botrino.command.annotation.TopLevelCommand;
+import botrino.command.annotation.Register;
 import botrino.command.config.CommandConfig;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -48,7 +48,7 @@ public final class CommandExtension implements BotrinoExtension {
         if (clazz.isAnnotationPresent(RdiService.class)) {
             return;
         }
-        if (Command.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(TopLevelCommand.class)) {
+        if (Command.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(Register.class)) {
             commands.add(instanceCache.getInstance(clazz.asSubclass(Command.class)));
         }
         if (CommandErrorHandler.class.isAssignableFrom(clazz)) {
@@ -63,7 +63,7 @@ public final class CommandExtension implements BotrinoExtension {
     public void onServiceCreated(Object serviceInstance) {
         MatcherConsumer.create()
                 .matchType(CommandService.class, o -> this.commandService = o)
-                .matchType(Command.class, o -> o.getClass().isAnnotationPresent(TopLevelCommand.class), commands::add)
+                .matchType(Command.class, o -> o.getClass().isAnnotationPresent(Register.class), commands::add)
                 .matchType(CommandErrorHandler.class, errorHandlers::add)
                 .matchType(CommandEventProcessor.class, eventProcessors::add)
                 .allowMultipleMatches(true)
@@ -83,11 +83,11 @@ public final class CommandExtension implements BotrinoExtension {
     @Override
     public Mono<Void> finishAndJoin() {
         Objects.requireNonNull(commandService);
-        commands.forEach(commandService::addTopLevelCommand);
+        commands.forEach(command -> command.register(commandService));
         commandService.setErrorHandler(ConfigUtils.selectImplementation(CommandErrorHandler.class, errorHandlers)
                 .orElse(CommandErrorHandler.NO_OP));
         commandService.setEventProcessor(ConfigUtils.selectImplementation(CommandEventProcessor.class, eventProcessors)
                 .orElse(CommandEventProcessor.NO_OP));
-        return commandService.listenToCommands();
+        return commandService.handleCommands();
     }
 }
