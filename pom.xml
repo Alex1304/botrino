@@ -32,6 +32,7 @@
 
     <modules>
         <module>api</module>
+        <module>command</module>
         <module>interaction</module>
         <module>archetype</module>
     </modules>
