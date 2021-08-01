@@ -112,16 +112,15 @@ By definition, as this is an extension, it does not belong to the core framework
 ### Code examples
 
 A basic `!ping` command:
+
 ```java
 package com.example.myproject;
 
-import botrino.command.Command;
-import botrino.command.CommandContext;
-import botrino.command.annotation.Alias;
-import botrino.command.annotation.TopLevelCommand;
+import botrino.interaction.Command;
+import botrino.interaction.CommandContext;
+import botrino.interaction.annotation.Alias;
+import botrino.interaction.annotation.TopLevelCommand;
 import reactor.core.publisher.Mono;
-
-import java.util.Set;
 
 @TopLevelCommand
 @Alias("ping")
@@ -141,15 +140,15 @@ A `!sendword <word> <count> [channels...]` command that sends a word `count` tim
 ```java
 package com.example.myproject;
 
-import botrino.command.Command;
-import botrino.command.CommandContext;
-import botrino.command.annotation.Alias;
-import botrino.command.annotation.TopLevelCommand;
-import botrino.command.grammar.ArgumentMapper;
-import botrino.command.grammar.CommandGrammar;
-import botrino.command.privilege.Privilege;
-import botrino.command.privilege.Privileges;
-import botrino.command.cooldown.Cooldown;
+import botrino.interaction.Command;
+import botrino.interaction.CommandContext;
+import botrino.interaction.annotation.Alias;
+import botrino.interaction.annotation.TopLevelCommand;
+import botrino.interaction.grammar.ArgumentMapper;
+import botrino.interaction.grammar.CommandGrammar;
+import botrino.interaction.privilege.Privilege;
+import botrino.interaction.privilege.Privileges;
+import botrino.interaction.cooldown.Cooldown;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.Permission;
