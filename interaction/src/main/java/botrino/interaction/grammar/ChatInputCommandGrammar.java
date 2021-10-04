@@ -24,12 +24,13 @@
 package botrino.interaction.grammar;
 
 import botrino.api.util.ConfigUtils;
-import botrino.interaction.context.SlashCommandContext;
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
-import discord4j.rest.util.ApplicationCommandOptionType;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
@@ -40,32 +41,49 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Allows to define a grammar for a slash command. It is done by specifying a value class which fields correspond to the
- * expected options. This class is then instantiated and populated with the actual values at runtime.
+ * Allows to define a grammar for a chat input command. It is done by specifying a value class which fields
+ * correspond to the expected options. This class is then instantiated and populated with the actual values at runtime.
  */
-public final class SlashCommandGrammar<T> {
+public final class ChatInputCommandGrammar<T> {
 
     private final Class<T> valueClass;
 
-    private SlashCommandGrammar(Class<T> valueClass) {
+    private ChatInputCommandGrammar(Class<T> valueClass) {
         this.valueClass = valueClass;
     }
 
-    public static <T> SlashCommandGrammar<T> of(Class<T> valueClass) {
-        return new SlashCommandGrammar<>(valueClass);
+    public static <T> ChatInputCommandGrammar<T> of(Class<T> valueClass) {
+        return new ChatInputCommandGrammar<>(valueClass);
+    }
+
+    private static Optional<ApplicationCommandInteractionOption> getOptionByName(ChatInputInteractionEvent event,
+                                                                                 String name) {
+        return event.getOptions().stream()
+                .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND_GROUP)
+                .findAny()
+                .flatMap(gr -> gr.getOptions().stream()
+                        .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND)
+                        .findAny()
+                        .map(opt -> opt.getOption(name)))
+                .or(() -> event.getOptions().stream()
+                        .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND)
+                        .findAny()
+                        .map(opt -> opt.getOption(name)))
+                .orElseGet(() -> event.getOption(name));
     }
 
     /**
-     * Resolves this grammar against the given {@link SlashCommandContext}. It will construct an instance of the
+     * Resolves this grammar against the given {@link ChatInputInteractionEvent}. It will construct an instance of the
      * value class with the value of the options of the correct type.
      *
-     * @param ctx the command context
+     * @param event the chat input interaction event
      * @return a {@link Mono} emitting the instance of the value class with the actual option values
      */
-    public Mono<T> resolve(SlashCommandContext ctx) {
+    public Mono<T> resolve(ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
             final var instance = ConfigUtils.instantiate(valueClass);
             final var publishers = new ArrayList<Mono<?>>();
@@ -74,10 +92,10 @@ public final class SlashCommandGrammar<T> {
                 if (optionAnnot == null) {
                     continue;
                 }
-                publishers.add(Mono.justOrEmpty(ctx.event().getOption(optionAnnot.name()))
+                publishers.add(Mono.justOrEmpty(getOptionByName(event, optionAnnot.name()))
                         .flatMap(option -> Mono.justOrEmpty(option.getValue())
                                 .flatMap(value -> extractOptionValue(option.getType(), value,
-                                        ctx.event().getInteraction().getGuildId().orElse(null))))
+                                        event.getInteraction().getGuildId().orElse(null))))
                         .doOnNext(object -> {
                             try {
                                 field.setAccessible(true);
@@ -92,13 +110,15 @@ public final class SlashCommandGrammar<T> {
         });
     }
 
-    private Mono<?> extractOptionValue(ApplicationCommandOptionType type,
+    private Mono<?> extractOptionValue(ApplicationCommandOption.Type type,
                                        ApplicationCommandInteractionOptionValue option, @Nullable Snowflake guildId) {
         switch (type) {
             case STRING:
                 return Mono.just(option.asString());
             case INTEGER:
                 return Mono.just(option.asLong());
+            case NUMBER:
+                return Mono.just(option.asDouble());
             case BOOLEAN:
                 return Mono.just(option.asBoolean());
             case USER:
@@ -109,7 +129,7 @@ public final class SlashCommandGrammar<T> {
             case ROLE:
                 return option.asRole();
             case MENTIONABLE:
-                return Mono.just(Snowflake.of(option.getRaw()));
+                return Mono.just(option.asSnowflake());
             default:
                 throw new IllegalArgumentException("Unknown type");
         }
@@ -156,10 +176,14 @@ public final class SlashCommandGrammar<T> {
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Option {
-        ApplicationCommandOptionType type();
+        ApplicationCommandOption.Type type();
+
         String name();
+
         String description();
+
         boolean required() default false;
+
         Choice[] choices() default {};
     }
 
@@ -167,8 +191,11 @@ public final class SlashCommandGrammar<T> {
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Choice {
         String name();
+
         String stringValue() default "";
+
         long longValue() default 0L;
+
         double doubleValue() default 0d;
     }
 }

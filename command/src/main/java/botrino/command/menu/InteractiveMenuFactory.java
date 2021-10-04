@@ -1,6 +1,6 @@
 package botrino.command.menu;
 
-import botrino.api.util.MessageTemplate;
+import botrino.api.util.MessageUtils;
 import botrino.command.CommandContext;
 import botrino.command.CommandService;
 import discord4j.core.spec.MessageCreateSpec;
@@ -84,32 +84,32 @@ public final class InteractiveMenuFactory {
      */
     public InteractiveMenu createPaginated(MessagePaginator messagePaginator) {
         Objects.requireNonNull(messagePaginator);
-        return createAsync(ctx -> messagePaginator.renderPage(ctx, 0).map(MessageTemplate::toCreateSpec))
+        return createAsync(ctx -> messagePaginator.renderPage(ctx, 0))
                 .writeInteractionContext(context -> context.put("currentPage", 0))
                 .addReactionItem(controls.getPreviousEmoji(), interaction -> Mono.fromCallable(
                         () -> interaction.update("currentPage", x -> x - 1, -1))
                         .flatMap(targetPage -> messagePaginator
                                 .renderPage(interaction.getOriginalCommandContext(), targetPage)
-                                .map(MessageTemplate::toEditSpec))
+                                .map(MessageUtils::toMessageEditSpec))
                         .onErrorResume(PageNumberOutOfRangeException.class, e -> Mono.fromCallable(
                                 () -> interaction.update("currentPage",
                                         x -> x + e.getMaxPage() + 1, 0))
                                 .flatMap(targetPage -> messagePaginator
                                         .renderPage(interaction.getOriginalCommandContext(), targetPage)
-                                        .map(MessageTemplate::toEditSpec)))
+                                        .map(MessageUtils::toMessageEditSpec)))
                         .flatMap(interaction.getMenuMessage()::edit)
                         .then())
                 .addReactionItem(controls.getNextEmoji(), interaction -> Mono.fromCallable(
                         () -> interaction.update("currentPage", x -> x + 1, 1))
                         .flatMap(targetPage -> messagePaginator
                                 .renderPage(interaction.getOriginalCommandContext(), targetPage)
-                                .map(MessageTemplate::toEditSpec))
+                                .map(MessageUtils::toMessageEditSpec))
                         .onErrorResume(PageNumberOutOfRangeException.class, e -> Mono.fromCallable(
                                 () -> interaction.update("currentPage",
                                         x -> x - e.getMaxPage() - 1, 0))
                                 .flatMap(targetPage -> messagePaginator
                                         .renderPage(interaction.getOriginalCommandContext(), targetPage)
-                                        .map(MessageTemplate::toEditSpec)))
+                                        .map(MessageUtils::toMessageEditSpec)))
                         .flatMap(interaction.getMenuMessage()::edit)
                         .then())
                 .addMessageItem("page", interaction -> Mono
@@ -123,7 +123,7 @@ public final class InteractiveMenuFactory {
                         })
                         .flatMap(targetPage -> messagePaginator
                                 .renderPage(interaction.getOriginalCommandContext(), targetPage)
-                                .map(MessageTemplate::toEditSpec)
+                                .map(MessageUtils::toMessageEditSpec)
                                 .flatMap(interaction.getMenuMessage()::edit))
                         .onErrorMap(PageNumberOutOfRangeException.class, e -> {
                             interaction.set("currentPage", interaction.get("oldPage"));

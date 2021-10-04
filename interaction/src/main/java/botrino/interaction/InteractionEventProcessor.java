@@ -47,7 +47,7 @@ public interface InteractionEventProcessor {
 
     /**
      * Allows to ignore events in some arbitrary situations. If the filter doesn't pass, the event is effectively
-     * dropped and no interaction will be executed.
+     * dropped and no listener will be executed.
      *
      * @param event the event to filter
      * @return a {@link Mono} emitting {@code true} if the event should be accepted, and either {@code false} or empty

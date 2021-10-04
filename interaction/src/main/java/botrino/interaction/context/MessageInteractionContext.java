@@ -24,21 +24,21 @@
 package botrino.interaction.context;
 
 import botrino.interaction.InteractionService;
-import discord4j.core.event.domain.interaction.ButtonInteractEvent;
+import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
 
 import java.util.Locale;
 
-public final class ButtonContext extends AbstractInteractionContext<ButtonInteractEvent> {
+public class MessageInteractionContext extends AbstractInteractionContext<MessageInteractionEvent> {
 
-    public ButtonContext(InteractionService interactionService, Locale locale, ButtonInteractEvent event,
-                         MessageChannel channel) {
+    public MessageInteractionContext(InteractionService interactionService, Locale locale,
+                                     MessageInteractionEvent event, MessageChannel channel) {
         super(interactionService, locale, event, channel);
     }
 
     @Override
     public String toString() {
-        return "ButtonContext{" +
+        return "MessageInteractionContext{" +
                 "locale=" + getLocale() + ", " +
                 "event=" + event() + ", " +
                 "channel=" + channel() + ", " +

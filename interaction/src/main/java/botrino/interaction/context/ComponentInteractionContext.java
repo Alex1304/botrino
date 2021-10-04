@@ -21,32 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.context;
 
-import botrino.interaction.cooldown.Cooldown;
-import botrino.interaction.privilege.Privilege;
-import botrino.interaction.privilege.Privileges;
+import botrino.interaction.InteractionService;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
+import discord4j.core.object.entity.channel.MessageChannel;
 
-public interface Interaction {
+import java.util.Locale;
 
-    /**
-     * Defines the privilege that must be granted for a user to execute this interaction.
-     *
-     * @return the privilege
-     */
-    default Privilege privilege() {
-        return Privileges.allowed();
+public class ComponentInteractionContext extends AbstractInteractionContext<ComponentInteractionEvent> {
+
+    public ComponentInteractionContext(InteractionService interactionService, Locale locale,
+                                       ComponentInteractionEvent event, MessageChannel channel) {
+        super(interactionService, locale, event, channel);
     }
 
-    /**
-     * Defines the cooldown of the interaction on a per-user basis. In other words, the number of times a user can
-     * execute this interaction within a certain timeframe.
-     *
-     * @return the cooldown
-     */
-    default Cooldown cooldown() {
-        return Cooldown.none();
+    @Override
+    public String toString() {
+        return "ComponentInteractionContext{" +
+                "locale=" + getLocale() + ", " +
+                "event=" + event() + ", " +
+                "channel=" + channel() + ", " +
+                "user=" + user() +
+                "}";
     }
-
-    void register(InteractionService interactionService);
 }

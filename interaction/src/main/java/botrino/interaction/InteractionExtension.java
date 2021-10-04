@@ -37,18 +37,40 @@ import java.util.*;
 public final class InteractionExtension implements BotrinoExtension {
 
     private final InstanceCache instanceCache = InstanceCache.create();
-    private final Set<Interaction> interactions = new HashSet<>();
     private final List<InteractionErrorHandler> errorHandlers = new ArrayList<>();
     private final List<InteractionEventProcessor> eventProcessors = new ArrayList<>();
     private InteractionService interactionService;
+
+    private final Set<Object> chatInputCommands = new HashSet<>();
+    private final Map<Class<?>, ChatInputInteractionListener> chatInputInteractionListeners = new HashMap<>();
+    private final Set<UserInteractionListener> userInteractionListeners = new HashSet<>();
+    private final Set<MessageInteractionListener> messageInteractionListeners = new HashSet<>();
+    private final Set<ComponentInteractionListener<?>> componentInteractionListeners = new HashSet<>();
 
     @Override
     public void onClassDiscovered(Class<?> clazz) {
         if (clazz.isAnnotationPresent(RdiService.class)) {
             return;
         }
-        if (Interaction.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(AutoRegister.class)) {
-            interactions.add(instanceCache.getInstance(clazz.asSubclass(Interaction.class)));
+        if (clazz.isAnnotationPresent(ChatInputCommand.class)) {
+            chatInputCommands.add(instanceCache.getInstance(clazz));
+        }
+        if (ChatInputInteractionListener.class.isAssignableFrom(clazz)) {
+            chatInputInteractionListeners.put(clazz, instanceCache.getInstance(
+                    clazz.asSubclass(ChatInputInteractionListener.class)));
+        }
+        if (UserInteractionListener.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(UserCommand.class)) {
+            userInteractionListeners.add(instanceCache.getInstance(clazz.asSubclass(UserInteractionListener.class)));
+        }
+        if (MessageInteractionListener.class.isAssignableFrom(clazz) &&
+                clazz.isAnnotationPresent(MessageCommand.class)) {
+            messageInteractionListeners.add(instanceCache.getInstance(
+                    clazz.asSubclass(MessageInteractionListener.class)));
+        }
+        if (ComponentInteractionListener.class.isAssignableFrom(clazz) &&
+                clazz.isAnnotationPresent(MessageComponent.class)) {
+            componentInteractionListeners.add(instanceCache.getInstance(
+                    clazz.asSubclass(ComponentInteractionListener.class)));
         }
         if (InteractionErrorHandler.class.isAssignableFrom(clazz)) {
             errorHandlers.add(instanceCache.getInstance(clazz.asSubclass(InteractionErrorHandler.class)));
@@ -62,7 +84,16 @@ public final class InteractionExtension implements BotrinoExtension {
     public void onServiceCreated(Object serviceInstance) {
         MatcherConsumer.create()
                 .matchType(InteractionService.class, o -> this.interactionService = o)
-                .matchType(Interaction.class, o -> o.getClass().isAnnotationPresent(AutoRegister.class), interactions::add)
+                .match(o -> o.getClass().isAnnotationPresent(ChatInputCommand.class), chatInputCommands::add)
+                .matchType(ChatInputInteractionListener.class,
+                        v -> chatInputInteractionListeners.put(serviceInstance.getClass(), v))
+                .matchType(UserInteractionListener.class,
+                        o -> o.getClass().isAnnotationPresent(UserCommand.class), userInteractionListeners::add)
+                .matchType(MessageInteractionListener.class,
+                        o -> o.getClass().isAnnotationPresent(MessageCommand.class), messageInteractionListeners::add)
+                .matchType(ComponentInteractionListener.class,
+                        o -> o.getClass().isAnnotationPresent(MessageComponent.class),
+                        componentInteractionListeners::add)
                 .matchType(InteractionErrorHandler.class, errorHandlers::add)
                 .matchType(InteractionEventProcessor.class, eventProcessors::add)
                 .allowMultipleMatches(true)
@@ -81,12 +112,19 @@ public final class InteractionExtension implements BotrinoExtension {
 
     @Override
     public Mono<Void> finishAndJoin() {
-        Objects.requireNonNull(interactionService);
-        interactions.forEach(interaction -> interaction.register(interactionService));
-        interactionService.setErrorHandler(ConfigUtils.selectImplementation(InteractionErrorHandler.class, errorHandlers)
-                .orElse(InteractionErrorHandler.NO_OP));
-        interactionService.setEventProcessor(ConfigUtils.selectImplementation(InteractionEventProcessor.class, eventProcessors)
-                .orElse(InteractionEventProcessor.NO_OP));
-        return interactionService.handleCommands();
+        return Mono.defer(() -> {
+            Objects.requireNonNull(interactionService);
+            chatInputCommands.forEach(c -> interactionService.registerCommand(c, chatInputInteractionListeners));
+            userInteractionListeners.forEach(interactionService::register);
+            messageInteractionListeners.forEach(interactionService::register);
+            componentInteractionListeners.forEach(interactionService::register);
+            interactionService.setErrorHandler(ConfigUtils
+                    .selectImplementation(InteractionErrorHandler.class, errorHandlers)
+                    .orElse(InteractionErrorHandler.NO_OP));
+            interactionService.setEventProcessor(ConfigUtils
+                    .selectImplementation(InteractionEventProcessor.class, eventProcessors)
+                    .orElse(InteractionEventProcessor.NO_OP));
+            return interactionService.handleCommands();
+        });
     }
 }

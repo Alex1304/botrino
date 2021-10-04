@@ -26,7 +26,7 @@ package botrino.interaction;
 /**
  * Thrown when something goes wrong during the execution of an interaction.
  */
-public final class InteractionFailedException extends RuntimeException {
+public class InteractionFailedException extends RuntimeException {
 
     public InteractionFailedException() {
         super();

@@ -24,21 +24,21 @@
 package botrino.interaction.context;
 
 import botrino.interaction.InteractionService;
-import discord4j.core.event.domain.interaction.SelectMenuInteractEvent;
+import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
 
 import java.util.Locale;
 
-public final class SelectMenuContext extends AbstractInteractionContext<SelectMenuInteractEvent> {
+public class UserInteractionContext extends AbstractInteractionContext<UserInteractionEvent> {
 
-    public SelectMenuContext(InteractionService interactionService, Locale locale, SelectMenuInteractEvent event,
-                             MessageChannel channel) {
+    public UserInteractionContext(InteractionService interactionService, Locale locale,
+                                  UserInteractionEvent event, MessageChannel channel) {
         super(interactionService, locale, event, channel);
     }
 
     @Override
     public String toString() {
-        return "SelectMenuContext{" +
+        return "UserInteractionContext{" +
                 "locale=" + getLocale() + ", " +
                 "event=" + event() + ", " +
                 "channel=" + channel() + ", " +

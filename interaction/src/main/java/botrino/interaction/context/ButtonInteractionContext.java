@@ -21,14 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.context;
 
-import botrino.interaction.context.InteractionContext;
-import org.reactivestreams.Publisher;
+import botrino.interaction.InteractionService;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.object.entity.channel.MessageChannel;
 
-public interface ComponentInteraction<C extends InteractionContext, R> extends Interaction {
+import java.util.Locale;
 
-    Publisher<R> run(C ctx);
+public class ButtonInteractionContext extends ComponentInteractionContext {
 
-    void registerSingleUse(InteractionService interactionService, InteractionContext parentContext);
+    public ButtonInteractionContext(InteractionService interactionService, Locale locale, ButtonInteractionEvent event,
+                                    MessageChannel channel) {
+        super(interactionService, locale, event, channel);
+    }
+
+    @Override
+    public ButtonInteractionEvent event() {
+        return (ButtonInteractionEvent) super.event();
+    }
+
+    @Override
+    public String toString() {
+        return "ButtonInteractionContext{" +
+                "locale=" + getLocale() + ", " +
+                "event=" + event() + ", " +
+                "channel=" + channel() + ", " +
+                "user=" + user() +
+                "}";
+    }
 }

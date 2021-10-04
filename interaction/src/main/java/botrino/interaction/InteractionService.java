@@ -27,26 +27,33 @@ import botrino.api.config.ConfigContainer;
 import botrino.api.config.object.I18nConfig;
 import botrino.api.util.MatcherFunction;
 import botrino.interaction.config.InteractionConfig;
-import botrino.interaction.context.ButtonContext;
-import botrino.interaction.context.InteractionContext;
-import botrino.interaction.context.SelectMenuContext;
-import botrino.interaction.context.SlashCommandContext;
+import botrino.interaction.context.*;
 import botrino.interaction.cooldown.Cooldown;
 import botrino.interaction.cooldown.CooldownException;
 import botrino.interaction.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.*;
+import discord4j.core.object.command.ApplicationCommand;
+import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandData;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuples;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static reactor.function.TupleUtils.function;
 
 @RdiService
 public class InteractionService {
@@ -57,15 +64,16 @@ public class InteractionService {
     private final GatewayDiscordClient gateway;
     private final Locale defaultLocale;
 
-    private final Map<String, SlashCommand> slashCommands = new ConcurrentHashMap<>();
-    private final Map<String, ButtonInteraction<?>> buttonInteractions = new ConcurrentHashMap<>();
-    private final Map<ContextKey, Map<String, ButtonInteraction<?>>> buttonInteractionsSingleUse =
+    private final Map<String, ApplicationCommandRequest> applicationCommandRequests = new HashMap<>();
+    private final Map<ChatInputCommandKey, ChatInputInteractionListener> chatInputCommandListeners =
             new ConcurrentHashMap<>();
-    private final Map<String, SelectMenuInteraction<?>> selectMenuInteractions = new ConcurrentHashMap<>();
-    private final Map<ContextKey, Map<String, SelectMenuInteraction<?>>> selectMenuInteractionsSingleUse =
+    private final Map<String, UserInteractionListener> userInteractionListeners = new ConcurrentHashMap<>();
+    private final Map<String, MessageInteractionListener> messageInteractionListeners = new ConcurrentHashMap<>();
+    private final Map<String, ComponentInteractionListener<?>> componentInteractions = new ConcurrentHashMap<>();
+    private final Map<ContextKey, Map<String, ComponentInteractionListener<?>>> componentInteractionsSingleUse =
             new ConcurrentHashMap<>();
 
-    private final Map<Interaction, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
+    private final Map<InteractionListener, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
     private InteractionErrorHandler errorHandler;
     private InteractionEventProcessor eventProcessor;
 
@@ -74,6 +82,23 @@ public class InteractionService {
         this.interactionConfig = configContainer.get(InteractionConfig.class);
         this.gateway = gateway;
         this.defaultLocale = Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale());
+    }
+
+    private static boolean hasCommandChanged(ApplicationCommandData oldCommand, ApplicationCommandRequest newCommand) {
+        return !oldCommand.type().toOptional().orElse(1).equals(newCommand.type().toOptional().orElse(1))
+                || !oldCommand.description().equals(newCommand.description().toOptional().orElse(""))
+                || !oldCommand.defaultPermission().toOptional().orElse(true)
+                .equals(newCommand.defaultPermission().toOptional().orElse(true)
+                        || !oldCommand.options().toOptional().orElse(List.of())
+                        .equals(newCommand.options().toOptional().orElse(List.of())));
+    }
+
+    private static <K, L extends InteractionListener> L findApplicationCommandListener(Map<K, L> listeners, K key) {
+        final var listener = listeners.get(key);
+        if (listener == null) {
+            throw new AssertionError(key + " does not match any listener");
+        }
+        return listener;
     }
 
     void setErrorHandler(InteractionErrorHandler errorHandler) {
@@ -86,93 +111,161 @@ public class InteractionService {
         this.eventProcessor = eventProcessor;
     }
 
-    public void register(SlashCommand interaction) {
-        Objects.requireNonNull(interaction);
-        slashCommands.put(interaction.data().name(), interaction);
-        LOGGER.debug("Registered slash command {}", interaction);
+    public void registerCommand(Object chatInputCommand,
+                                Map<Class<?>, ? extends ChatInputInteractionListener> listeners) {
+        final var builder = ApplicationCommandRequest.builder();
+        final var annot = chatInputCommand.getClass().getAnnotation(ChatInputCommand.class);
+        builder.name(annot.name());
+        builder.description(annot.description());
+        builder.defaultPermission(annot.defaultPermission());
+        builder.type(ApplicationCommand.Type.CHAT_INPUT.getValue());
+        if (annot.subcommandGroups().length == 0 && annot.subcommands().length == 0) {
+            if (!(chatInputCommand instanceof ChatInputInteractionListener)) {
+                throw new IllegalStateException(chatInputCommand.getClass().getName() + " is annotated with " +
+                        "@ChatInputCommand and does not declare subcommands, but doesn't implement " +
+                        "ChatInputInteractionListener.");
+            }
+            final var listener = (ChatInputInteractionListener) chatInputCommand;
+            final var key = new ChatInputCommandKey(annot.name(), null, null);
+            chatInputCommandListeners.put(key, listener);
+            LOGGER.debug("Registered chat input command listener {}", key);
+            builder.options(listener.options());
+        } else {
+            for (var i = -1; i == -1 || i < annot.subcommandGroups().length; i++) {
+                final var subcommandGroup = i == -1 ? null : annot.subcommandGroups()[i];
+                final var subcommands = subcommandGroup == null ? annot.subcommands() : subcommandGroup.subcommands();
+                final var subcommandsData = Arrays.stream(subcommands)
+                        .map(subcommand -> {
+                            final var listener = listeners.get(subcommand.listener());
+                            if (listener == null) {
+                                throw new IllegalStateException("Could not find an instance of " +
+                                        subcommand.listener().getName() + " for subcommand '" + subcommand.name() +
+                                        "' of " + chatInputCommand.getClass().getName());
+                            }
+                            final var key = new ChatInputCommandKey(
+                                    annot.name(),
+                                    subcommandGroup == null ? null : subcommandGroup.name(),
+                                    subcommand.name());
+                            chatInputCommandListeners.put(key, listener);
+                            LOGGER.debug("Registered chat input command listener {}", key);
+                            return (ApplicationCommandOptionData) ApplicationCommandOptionData.builder()
+                                    .name(subcommand.name())
+                                    .description(subcommand.description())
+                                    .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
+                                    .options(listener.options())
+                                    .build();
+                        })
+                        .collect(Collectors.toUnmodifiableList());
+                if (subcommandGroup != null) {
+                    builder.addOption(ApplicationCommandOptionData.builder()
+                            .name(subcommandGroup.name())
+                            .description(subcommandGroup.description())
+                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+                            .options(subcommandsData)
+                            .build());
+                } else {
+                    builder.addAllOptions(subcommandsData);
+                }
+            }
+        }
+        applicationCommandRequests.put(annot.name(), builder.build());
     }
 
-    public void register(ButtonInteraction<?> interaction) {
-        Objects.requireNonNull(interaction);
-        buttonInteractions.put(interaction.customId(), interaction);
-        LOGGER.debug("Registered button interaction {}", interaction);
+    public void register(UserInteractionListener listener) {
+        Objects.requireNonNull(listener);
+        final var annot = listener.getClass().getAnnotation(UserCommand.class);
+        userInteractionListeners.put(annot.value(), listener);
+        applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
+                .name(annot.value())
+                .type(ApplicationCommand.Type.USER.getValue())
+                .defaultPermission(annot.defaultPermission())
+                .build());
+        LOGGER.debug("Registered user interaction listener {}", listener);
     }
 
-    public void register(SelectMenuInteraction<?> interaction) {
-        Objects.requireNonNull(interaction);
-        selectMenuInteractions.put(interaction.customId(), interaction);
-        LOGGER.debug("Registered select menu interaction {}", interaction);
+    public void register(MessageInteractionListener listener) {
+        Objects.requireNonNull(listener);
+        final var annot = listener.getClass().getAnnotation(MessageCommand.class);
+        messageInteractionListeners.put(annot.value(), listener);
+        applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
+                .name(annot.value())
+                .type(ApplicationCommand.Type.MESSAGE.getValue())
+                .defaultPermission(annot.defaultPermission())
+                .build());
+        LOGGER.debug("Registered message interaction listener {}", listener);
     }
 
-    public void registerSingleUse(ButtonInteraction<?> interaction, InteractionContext parentContext) {
-        Objects.requireNonNull(interaction);
+    public void register(ComponentInteractionListener<?> listener) {
+        Objects.requireNonNull(listener);
+        componentInteractions.put(listener.customId(), listener);
+        LOGGER.debug("Registered component interaction listener {}", listener);
+    }
+
+    public void registerSingleUse(ComponentInteractionListener<?> listener, InteractionContext parentContext) {
+        Objects.requireNonNull(listener);
         Objects.requireNonNull(parentContext);
-        buttonInteractionsSingleUse.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
-                .put(interaction.customId(), interaction);
-        LOGGER.debug("Registered single use button interaction {}", interaction);
-    }
-
-    public void registerSingleUse(SelectMenuInteraction<?> interaction, InteractionContext parentContext) {
-        Objects.requireNonNull(interaction);
-        Objects.requireNonNull(parentContext);
-        selectMenuInteractionsSingleUse.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
-                .put(interaction.customId(), interaction);
-        LOGGER.debug("Registered single use select menu interaction {}", interaction);
+        componentInteractionsSingleUse.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
+                .put(listener.customId(), listener);
+        LOGGER.debug("Registered single use component interaction listener {}", listener);
     }
 
     Mono<Void> handleCommands() {
-        final var uploadSlashCommands = gateway.rest().getApplicationId()
-                .flatMap(id -> Mono.justOrEmpty(interactionConfig.slashCommandsGuildId())
-                        .flatMap(guildId -> gateway.rest().getApplicationService()
-                                .bulkOverwriteGuildApplicationCommand(id, guildId, slashCommands.values().stream()
-                                        .map(SlashCommand::data)
-                                        .collect(Collectors.toList()))
-                                .then()
-                                .thenReturn(guildId))
-                        .switchIfEmpty(gateway.rest().getApplicationService()
-                                .bulkOverwriteGlobalApplicationCommand(id, slashCommands.values().stream()
-                                        .map(SlashCommand::data)
-                                        .collect(Collectors.toList()))
-                                .then()
-                                .thenReturn(0L)));
-        return uploadSlashCommands.then(gateway
-                .on(InteractionCreateEvent.class, event -> event.getInteraction().getChannel()
+        return uploadCommands().then(gateway.on(InteractionCreateEvent.class, event -> event.getInteraction()
+                        .getChannel()
                         .flatMap(channel -> eventProcessor.filter(event)
                                 .filter(Boolean::booleanValue)
                                 .flatMap(__ -> eventProcessor.computeLocale(event).defaultIfEmpty(defaultLocale))
                                 .map(locale -> MatcherFunction.<CommandRunner>create()
-                                        .matchType(SlashCommandEvent.class, ev -> new SlashCommandRunner(
-                                                new SlashCommandContext(InteractionService.this, locale, ev, channel)))
-                                        .matchType(ButtonInteractEvent.class, ev -> new ButtonCommandRunner(
-                                                new ButtonContext(InteractionService.this, locale, ev, channel)))
-                                        .matchType(SelectMenuInteractEvent.class, ev -> new SelectMenuCommandRunner(
-                                                new SelectMenuContext(InteractionService.this, locale, ev, channel)))
+                                        .matchType(ChatInputInteractionEvent.class,
+                                                ev -> new ChatInputCommandRunner(
+                                                        new ChatInputInteractionContext(InteractionService.this,
+                                                                locale, ev, channel)))
+                                        .matchType(UserInteractionEvent.class,
+                                                ev -> new UserCommandRunner(
+                                                        new UserInteractionContext(InteractionService.this,
+                                                                locale, ev, channel)))
+                                        .matchType(MessageInteractionEvent.class,
+                                                ev -> new MessageCommandRunner(
+                                                        new MessageInteractionContext(InteractionService.this,
+                                                                locale, ev, channel)))
+                                        .matchType(ButtonInteractionEvent.class,
+                                                ev -> new ComponentCommandRunner(
+                                                        new ButtonInteractionContext(InteractionService.this,
+                                                                locale, ev, channel)))
+                                        .matchType(SelectMenuInteractionEvent.class,
+                                                ev -> new ComponentCommandRunner(
+                                                        new SelectMenuInteractionContext(InteractionService.this,
+                                                                locale, ev, channel)))
                                         .apply(event))
                                 .flatMap(Mono::justOrEmpty)
                                 .flatMap(runner -> runner.run()
-                                        .onErrorResume(t -> executeErrorHandler(t, errorHandler, runner.ctx()))
+                                        .onErrorResume(t -> Mono.from(
+                                                executeErrorHandler(t, errorHandler, runner.ctx())).then())
                                         .onErrorResume(t -> Mono.fromRunnable(
                                                 () -> LOGGER.error("An unhandled error occurred when executing an " +
                                                         "interaction. Context: " + runner.ctx(), t))))))
                 .then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed"))));
     }
 
-    private <C extends ComponentInteraction<?, ?>>
-    Mono<C> findSingleUseInteraction(Map<ContextKey, Map<String, C>> interactions, Map<String, C> regularMap,
-                                     ContextKey key, ComponentInteractEvent event) {
-        return Mono.justOrEmpty(interactions.getOrDefault(key, new ConcurrentHashMap<>()).remove(event.getCustomId()))
-                .doOnNext(__ -> interactions.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v))
-                .switchIfEmpty(Mono.justOrEmpty(regularMap.get(event.getCustomId())));
+    private Mono<ComponentInteractionListener<?>> findComponentListener(ContextKey key,
+                                                                        ComponentInteractionEvent event) {
+        return Mono.<ComponentInteractionListener<?>>justOrEmpty(componentInteractionsSingleUse
+                        .getOrDefault(key, new ConcurrentHashMap<>())
+                        .remove(event.getCustomId()))
+                .doOnNext(__ -> componentInteractionsSingleUse.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v))
+                .switchIfEmpty(Mono.justOrEmpty(componentInteractions.get(event.getCustomId())));
     }
 
-    private Mono<Void> preCheck(InteractionContext ctx, Interaction interaction) {
-        return interaction.privilege().checkGranted(ctx)
-                .then(Mono.fromRunnable(() -> cooldownPerCommand.computeIfAbsent(interaction, Interaction::cooldown)
+    private Mono<Void> preCheck(InteractionContext ctx, InteractionListener listener) {
+        return listener.privilege().checkGranted(ctx)
+                .then(Mono.fromRunnable(() -> cooldownPerCommand.computeIfAbsent(listener,
+                                InteractionListener::cooldown)
                         .fire(ctx.user().getId().asLong())));
     }
 
-    private Mono<Void> executeErrorHandler(Throwable t, InteractionErrorHandler errorHandler, InteractionContext ctx) {
-        return MatcherFunction.<Mono<Void>>create()
+    private Publisher<?> executeErrorHandler(Throwable t, InteractionErrorHandler errorHandler,
+                                             InteractionContext ctx) {
+        return MatcherFunction.<Publisher<?>>create()
                 .matchType(InteractionFailedException.class, e -> errorHandler.handleInteractionFailed(e, ctx))
                 .matchType(PrivilegeException.class, e -> errorHandler.handlePrivilege(e, ctx))
                 .matchType(CooldownException.class, e -> errorHandler.handleCooldown(e, ctx))
@@ -180,11 +273,112 @@ public class InteractionService {
                 .orElseGet(() -> errorHandler.handleDefault(t, ctx));
     }
 
+    private Mono<Void> uploadCommands() {
+        return gateway.rest().getApplicationId()
+                .flatMapMany(applicationId -> getExistingCommands(applicationId)
+                        .collectMap(ApplicationCommandData::name)
+                        .flatMap(existingCommands -> {
+                            final var toAdd = applicationCommandRequests.values().stream()
+                                    .filter(r -> !existingCommands.containsKey(r.name()))
+                                    .collect(Collectors.toUnmodifiableList());
+                            final var toRemove = existingCommands.values().stream()
+                                    .filter(r -> !applicationCommandRequests.containsKey(r.name()))
+                                    .map(r -> Snowflake.asLong(r.id()))
+                                    .collect(Collectors.toUnmodifiableList());
+                            final var toUpdate = existingCommands.values().stream()
+                                    .filter(r -> applicationCommandRequests.containsKey(r.name())
+                                            && hasCommandChanged(r, applicationCommandRequests.get(r.name())))
+                                    .map(r -> Tuples.of(Snowflake.asLong(r.id()),
+                                            applicationCommandRequests.get(r.name())))
+                                    .collect(Collectors.toUnmodifiableList());
+                            final var publishers = new ArrayList<Publisher<?>>();
+                            if (!toAdd.isEmpty()) {
+                                publishers.add(Flux.fromIterable(toAdd)
+                                        .flatMap(request -> createCommand(applicationId, request)));
+                            }
+                            if (!toRemove.isEmpty()) {
+                                publishers.add(Flux.fromIterable(toRemove)
+                                        .flatMap(commandId -> removeCommand(applicationId, commandId)));
+                            }
+                            if (!toUpdate.isEmpty()) {
+                                publishers.add(Flux.fromIterable(toUpdate)
+                                        .flatMap(function((commandId, request) -> editCommand(applicationId,
+                                                commandId, request))));
+                            }
+                            return Mono.when(publishers);
+                        }))
+                .then();
+    }
+
+    private Flux<ApplicationCommandData> getExistingCommands(long applicationId) {
+        return interactionConfig.applicationCommandsGuildId()
+                .map(guildId -> gateway.rest().getApplicationService()
+                        .getGuildApplicationCommands(applicationId, guildId))
+                .orElseGet(() -> gateway.rest().getApplicationService()
+                        .getGlobalApplicationCommands(applicationId));
+    }
+
+    private Mono<ApplicationCommandData> createCommand(long applicationId, ApplicationCommandRequest request) {
+        return interactionConfig.applicationCommandsGuildId()
+                .map(guildId -> gateway.rest().getApplicationService()
+                        .createGuildApplicationCommand(applicationId, guildId, request))
+                .orElseGet(() -> gateway.rest().getApplicationService()
+                        .createGlobalApplicationCommand(applicationId, request));
+    }
+
+    private Mono<Void> removeCommand(long applicationId, long commandId) {
+        return interactionConfig.applicationCommandsGuildId()
+                .map(guildId -> gateway.rest().getApplicationService()
+                        .deleteGuildApplicationCommand(applicationId, guildId, commandId))
+                .orElseGet(() -> gateway.rest().getApplicationService()
+                        .deleteGlobalApplicationCommand(applicationId, commandId));
+    }
+
+    private Mono<ApplicationCommandData> editCommand(long applicationId, long commandId,
+                                                     ApplicationCommandRequest request) {
+        return interactionConfig.applicationCommandsGuildId()
+                .map(guildId -> gateway.rest().getApplicationService()
+                        .modifyGuildApplicationCommand(applicationId, guildId, commandId, request))
+                .orElseGet(() -> gateway.rest().getApplicationService()
+                        .modifyGlobalApplicationCommand(applicationId, commandId, request));
+    }
+
     private interface CommandRunner {
 
         Mono<Void> run();
 
         InteractionContext ctx();
+    }
+
+    private final static class ChatInputCommandKey {
+
+        private final String name, subcommandGroup, subcommand;
+
+        public ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
+            this.name = name;
+            this.subcommandGroup = subcommandGroup;
+            this.subcommand = subcommand;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ChatInputCommandKey that = (ChatInputCommandKey) o;
+            return name.equals(that.name) && Objects.equals(subcommandGroup, that.subcommandGroup) &&
+                    Objects.equals(subcommand, that.subcommand);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, subcommandGroup, subcommand);
+        }
+
+        @Override
+        public String toString() {
+            return '/' + name + (subcommandGroup != null ? ' ' + subcommandGroup : "") +
+                    (subcommand != null ? ' ' + subcommand : "");
+        }
     }
 
     private final static class ContextKey {
@@ -215,19 +409,31 @@ public class InteractionService {
         }
     }
 
-    private final class SlashCommandRunner implements CommandRunner {
+    private final class ChatInputCommandRunner implements CommandRunner {
 
-        private final SlashCommandContext ctx;
+        private final ChatInputInteractionContext ctx;
 
-        private SlashCommandRunner(SlashCommandContext ctx) {
+        public ChatInputCommandRunner(ChatInputInteractionContext ctx) {
             this.ctx = ctx;
         }
 
         @Override
         public Mono<Void> run() {
-            return Mono.justOrEmpty(slashCommands.get(ctx.event().getCommandName()))
-                    .flatMap(command -> preCheck(ctx, command)
-                            .then(Mono.defer(() -> Mono.from(command.run(ctx)).then())));
+            final var name = ctx.event().getCommandName();
+            final var key = ctx.event().getOptions().stream()
+                    .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND_GROUP)
+                    .findAny()
+                    .flatMap(gr -> gr.getOptions().stream()
+                            .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND)
+                            .findAny()
+                            .map(opt -> new ChatInputCommandKey(name, gr.getName(), opt.getName())))
+                    .or(() -> ctx.event().getOptions().stream()
+                            .filter(opt -> opt.getType() == ApplicationCommandOption.Type.SUB_COMMAND)
+                            .findAny()
+                            .map(opt -> new ChatInputCommandKey(name, null, opt.getName())))
+                    .orElseGet(() -> new ChatInputCommandKey(name, null, null));
+            final var listener = findApplicationCommandListener(chatInputCommandListeners, key);
+            return preCheck(ctx, listener).then(Mono.defer(() -> Mono.from(listener.run(ctx)).then()));
         }
 
         @Override
@@ -236,20 +442,18 @@ public class InteractionService {
         }
     }
 
-    private final class ButtonCommandRunner implements CommandRunner {
+    private final class UserCommandRunner implements CommandRunner {
 
-        private final ButtonContext ctx;
+        private final UserInteractionContext ctx;
 
-        private ButtonCommandRunner(ButtonContext ctx) {
+        public UserCommandRunner(UserInteractionContext ctx) {
             this.ctx = ctx;
         }
 
         @Override
         public Mono<Void> run() {
-            return findSingleUseInteraction(buttonInteractionsSingleUse, buttonInteractions,
-                    ContextKey.from(ctx), ctx.event())
-                    .flatMap(interaction -> preCheck(ctx, interaction)
-                            .then(Mono.defer(() -> Mono.from(interaction.run(ctx)).then())));
+            final var listener = findApplicationCommandListener(userInteractionListeners, ctx.event().getCommandName());
+            return preCheck(ctx, listener).then(Mono.defer(() -> Mono.from(listener.run(ctx)).then()));
         }
 
         @Override
@@ -258,20 +462,41 @@ public class InteractionService {
         }
     }
 
-    private final class SelectMenuCommandRunner implements CommandRunner {
+    private final class MessageCommandRunner implements CommandRunner {
 
-        private final SelectMenuContext ctx;
+        private final MessageInteractionContext ctx;
 
-        private SelectMenuCommandRunner(SelectMenuContext ctx) {
+        private MessageCommandRunner(MessageInteractionContext ctx) {
             this.ctx = ctx;
         }
 
         @Override
         public Mono<Void> run() {
-            return findSingleUseInteraction(selectMenuInteractionsSingleUse, selectMenuInteractions,
-                    ContextKey.from(ctx), ctx.event())
-                    .flatMap(interaction -> preCheck(ctx, interaction)
-                            .then(Mono.defer(() -> Mono.from(interaction.run(ctx)).then())));
+            final var listener = findApplicationCommandListener(messageInteractionListeners,
+                    ctx.event().getCommandName());
+            return preCheck(ctx, listener).then(Mono.defer(() -> Mono.from(listener.run(ctx)).then()));
+        }
+
+        @Override
+        public InteractionContext ctx() {
+            return ctx;
+        }
+    }
+
+    private final class ComponentCommandRunner implements CommandRunner {
+
+        private final ComponentInteractionContext ctx;
+
+        private ComponentCommandRunner(ComponentInteractionContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public Mono<Void> run() {
+            final var key = ContextKey.from(ctx);
+            return findComponentListener(key, ctx.event())
+                    .flatMap(listener -> preCheck(ctx, listener)
+                            .then(Mono.defer(() -> Mono.from(listener.run(ctx)).then())));
         }
 
         @Override

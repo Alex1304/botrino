@@ -23,20 +23,26 @@
  */
 package botrino.interaction.context;
 
-import botrino.api.i18n.Translator;
-import botrino.interaction.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
-import discord4j.core.object.entity.User;
+import botrino.interaction.InteractionService;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
-import reactor.core.publisher.Mono;
 
-public interface InteractionContext extends Translator {
+import java.util.Locale;
 
-    InteractionCreateEvent event();
+public class ChatInputInteractionContext extends AbstractInteractionContext<ChatInputInteractionEvent> {
 
-    MessageChannel channel();
+    public ChatInputInteractionContext(InteractionService interactionService, Locale locale,
+                                       ChatInputInteractionEvent event, MessageChannel channel) {
+        super(interactionService, locale, event, channel);
+    }
 
-    User user();
-
-    <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction);
+    @Override
+    public String toString() {
+        return "ChatInputInteractionContext{" +
+                "locale=" + getLocale() + ", " +
+                "event=" + event() + ", " +
+                "channel=" + channel() + ", " +
+                "user=" + user() +
+                "}";
+    }
 }

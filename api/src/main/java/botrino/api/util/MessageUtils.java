@@ -23,9 +23,10 @@
  */
 package botrino.api.util;
 
-import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.core.spec.MessageEditSpec;
+import discord4j.core.object.component.LayoutComponent;
+import discord4j.core.spec.*;
+import discord4j.discordjson.json.WebhookMessageEditRequest;
+import discord4j.rest.util.AllowedMentions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +89,7 @@ public final class MessageUtils {
      * @param spec the spec to convert
      * @return a {@link MessageEditSpec}
      */
-    public static MessageEditSpec createToEditSpec(MessageCreateSpec spec) {
+    public static MessageEditSpec toMessageEditSpec(MessageCreateSpec spec) {
         return MessageEditSpec.builder()
                 .contentOrNull(spec.content().toOptional().orElse(null))
                 .embedsOrNull(spec.embeds().toOptional().orElse(null))
@@ -98,18 +99,61 @@ public final class MessageUtils {
     }
 
     /**
-     * Converts a {@link MessageCreateSpec} to an equivalent {@link MessageEditSpec}.
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link InteractionApplicationCommandCallbackSpec}.
      *
      * @param spec the spec to convert
-     * @return a {@link MessageEditSpec}
+     * @return a {@link InteractionApplicationCommandCallbackSpec}
      */
-    public static InteractionApplicationCommandCallbackSpec createToInteractionCallbackSpec(MessageCreateSpec spec) {
+    public static InteractionApplicationCommandCallbackSpec toInteractionCallbackSpec(MessageCreateSpec spec) {
         return InteractionApplicationCommandCallbackSpec.builder()
                 .content(spec.content())
                 .embeds(spec.embeds())
                 .components(spec.components())
                 .allowedMentions(spec.allowedMentions())
                 .tts(spec.tts())
+                .build();
+    }
+
+    /**
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link WebhookMessageEditRequest}.
+     *
+     * @param spec the spec to convert
+     * @return a {@link WebhookMessageEditRequest}
+     */
+    public static WebhookMessageEditRequest toWebhookMessageEditRequest(MessageCreateSpec spec) {
+        return WebhookMessageEditRequest.builder()
+                .contentOrNull(spec.content().toOptional().orElse(null))
+                .embedsOrNull(spec.embeds().toOptional()
+                        .map(l -> l.stream()
+                                .map(EmbedCreateSpec::asRequest)
+                                .collect(Collectors.toList()))
+                        .orElse(null))
+                .components(spec.components().toOptional()
+                        .map(l -> l.stream()
+                                .map(LayoutComponent::getData)
+                                .collect(Collectors.toList()))
+                        .orElse(List.of()))
+                .allowedMentionsOrNull(spec.allowedMentions().toOptional()
+                        .map(AllowedMentions::toData)
+                        .orElse(null))
+                .build();
+    }
+
+    /**
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link WebhookExecuteSpec}.
+     *
+     * @param spec the spec to convert
+     * @return a {@link WebhookExecuteSpec}
+     */
+    public static WebhookExecuteSpec toWebhookExecuteSpec(MessageCreateSpec spec) {
+        return WebhookExecuteSpec.builder()
+                .content(spec.content())
+                .embeds(spec.embeds().toOptional().orElse(List.of()))
+                .components(spec.components().toOptional().orElse(List.of()))
+                .allowedMentions(spec.allowedMentions())
+                .tts(spec.tts().toOptional().orElse(false))
+                .files(spec.files())
+                .fileSpoilers(spec.fileSpoilers())
                 .build();
     }
 }

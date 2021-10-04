@@ -30,7 +30,7 @@ import java.time.Duration;
 /**
  * Thrown when an action is on cooldown.
  */
-public final class CooldownException extends RuntimeException {
+public class CooldownException extends RuntimeException {
 
     private final long permits;
     private final Duration resetInterval;
@@ -48,7 +48,7 @@ public final class CooldownException extends RuntimeException {
      *
      * @return the permits
      */
-    public long getPermits() {
+    public final long getPermits() {
         return permits;
     }
 
@@ -57,7 +57,7 @@ public final class CooldownException extends RuntimeException {
      *
      * @return the reset interval
      */
-    public Duration getResetInterval() {
+    public final Duration getResetInterval() {
         return resetInterval;
     }
 
@@ -66,7 +66,7 @@ public final class CooldownException extends RuntimeException {
      *
      * @return a {@link Duration}
      */
-    public Duration getRetryAfter() {
+    public final Duration getRetryAfter() {
         return retryAfter;
     }
 }

@@ -21,22 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction.context;
+package botrino.interaction;
 
-import botrino.api.i18n.Translator;
-import botrino.interaction.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
-import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.MessageChannel;
-import reactor.core.publisher.Mono;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public interface InteractionContext extends Translator {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    InteractionCreateEvent event();
+/**
+ * A class implementing {@link ComponentInteractionListener} and annotated with this annotation will automatically be
+ * registered into the interaction service. It also allows to specify a customId without having to override {@link
+ * ComponentInteractionListener#customId()}.
+ */
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface MessageComponent {
 
-    MessageChannel channel();
-
-    User user();
-
-    <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction);
+    /**
+     * The custom ID of the message component.
+     *
+     * @return a String
+     */
+    String value() default "";
 }

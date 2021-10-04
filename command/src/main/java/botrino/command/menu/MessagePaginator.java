@@ -23,8 +23,8 @@
  */
 package botrino.command.menu;
 
-import botrino.api.util.MessageTemplate;
 import botrino.command.CommandContext;
+import discord4j.core.spec.MessageCreateSpec;
 import reactor.core.publisher.Mono;
 
 /**
@@ -38,8 +38,8 @@ public interface MessagePaginator {
      *
      * @param ctx        the context of the command that created this paginator
      * @param pageNumber the current page number
-     * @return a Mono emitting a {@link MessageTemplate} corresponding to the output at this specific page. If the page
+     * @return a Mono emitting a {@link MessageCreateSpec} corresponding to the output at this specific page. If the page
      * number is out of range, {@link PageNumberOutOfRangeException} is expected to be emitted.
      */
-    Mono<MessageTemplate> renderPage(CommandContext ctx, int pageNumber);
+    Mono<MessageCreateSpec> renderPage(CommandContext ctx, int pageNumber);
 }

@@ -7,5 +7,5 @@ import botrino.api.annotation.BotModule;
 open module ${package} {
 
     requires botrino.api;
-    requires botrino.command;
+    requires botrino.interaction;
 }

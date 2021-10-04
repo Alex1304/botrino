@@ -38,7 +38,7 @@
         </dependency>
         <dependency>
             <groupId>com.alex1304.botrino</groupId>
-            <artifactId>botrino-command</artifactId>
+            <artifactId>botrino-interaction</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

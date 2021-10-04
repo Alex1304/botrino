@@ -17,7 +17,7 @@
             "en"
         ]
     },
-    "command": {
-        "prefix": "!"
+    "interaction": {
+        "application_commands_guild_id": null
     }
 }

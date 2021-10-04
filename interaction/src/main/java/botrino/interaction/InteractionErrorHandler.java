@@ -26,6 +26,7 @@ package botrino.interaction;
 import botrino.interaction.context.InteractionContext;
 import botrino.interaction.cooldown.CooldownException;
 import botrino.interaction.privilege.PrivilegeException;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 /**
@@ -39,7 +40,7 @@ public interface InteractionErrorHandler {
     InteractionErrorHandler NO_OP = new InteractionErrorHandler() {
         @Override
         public String toString() {
-            return "CommandErrorHandler.NO_OP";
+            return "InteractionErrorHandler.NO_OP";
         }
     };
 
@@ -49,10 +50,10 @@ public interface InteractionErrorHandler {
      *
      * @param e   the exception
      * @param ctx the context of the interaction that failed
-     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
-     * level.
+     * @return a Publisher completing when handling is done. Rethrowing an exception there will drop it and log it at
+     * error level.
      */
-    default Mono<Void> handleInteractionFailed(InteractionFailedException e, InteractionContext ctx) {
+    default Publisher<?> handleInteractionFailed(InteractionFailedException e, InteractionContext ctx) {
         return Mono.error(e);
     }
 
@@ -62,10 +63,10 @@ public interface InteractionErrorHandler {
      *
      * @param e   the exception
      * @param ctx the context of the interaction that failed
-     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
-     * level.
+     * @return a Publisher completing when handling is done. Rethrowing an exception there will drop it and log it at
+     * error level.
      */
-    default Mono<Void> handlePrivilege(PrivilegeException e, InteractionContext ctx) {
+    default Publisher<?> handlePrivilege(PrivilegeException e, InteractionContext ctx) {
         return Mono.error(e);
     }
 
@@ -75,10 +76,10 @@ public interface InteractionErrorHandler {
      *
      * @param e   the exception
      * @param ctx the context of the interaction that failed
-     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
-     * level.
+     * @return a Publisher completing when handling is done. Rethrowing an exception there will drop it and log it at
+     * error level.
      */
-    default Mono<Void> handleCooldown(CooldownException e, InteractionContext ctx) {
+    default Publisher<?> handleCooldown(CooldownException e, InteractionContext ctx) {
         return Mono.error(e);
     }
 
@@ -88,10 +89,10 @@ public interface InteractionErrorHandler {
      *
      * @param t   the throwable
      * @param ctx the context of the interaction that failed
-     * @return a Mono completing when handling is done. Rethrowing an exception there will drop it and log it at error
-     * level.
+     * @return a Publisher completing when handling is done. Rethrowing an exception there will drop it and log it at
+     * error level.
      */
-    default Mono<Void> handleDefault(Throwable t, InteractionContext ctx) {
+    default Publisher<?> handleDefault(Throwable t, InteractionContext ctx) {
         return Mono.error(t);
     }
 }

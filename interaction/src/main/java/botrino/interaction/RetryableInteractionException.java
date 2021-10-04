@@ -23,7 +23,7 @@
  */
 package botrino.interaction;
 
-public final class RetryableInteractionException extends RuntimeException {
+public class RetryableInteractionException extends RuntimeException {
 
     public RetryableInteractionException() {
     }

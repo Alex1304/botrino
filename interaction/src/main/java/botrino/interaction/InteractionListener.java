@@ -21,22 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction.context;
+package botrino.interaction;
 
-import botrino.api.i18n.Translator;
-import botrino.interaction.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
-import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.MessageChannel;
-import reactor.core.publisher.Mono;
+import botrino.interaction.cooldown.Cooldown;
+import botrino.interaction.privilege.Privilege;
+import botrino.interaction.privilege.Privileges;
 
-public interface InteractionContext extends Translator {
+public interface InteractionListener {
 
-    InteractionCreateEvent event();
+    /**
+     * Defines the privilege that must be granted for a user to execute this interaction.
+     *
+     * @return the privilege
+     */
+    default Privilege privilege() {
+        return Privileges.allowed();
+    }
 
-    MessageChannel channel();
-
-    User user();
-
-    <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction);
+    /**
+     * Defines the cooldown of the interaction on a per-user basis. In other words, the number of times a user can
+     * execute this interaction within a certain timeframe.
+     *
+     * @return the cooldown
+     */
+    default Cooldown cooldown() {
+        return Cooldown.none();
+    }
 }

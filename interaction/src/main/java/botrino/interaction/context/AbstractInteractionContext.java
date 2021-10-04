@@ -23,7 +23,7 @@
  */
 package botrino.interaction.context;
 
-import botrino.interaction.ComponentInteraction;
+import botrino.interaction.ComponentInteractionListener;
 import botrino.interaction.InteractionService;
 import botrino.interaction.RetryableInteractionException;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
@@ -57,17 +57,16 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
     }
 
     @Override
-    public final <R> Mono<R> awaitComponentInteraction(ComponentInteraction<?, R> componentInteraction) {
+    public final <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction) {
         return Mono.defer(() -> {
             final var sink = Sinks.<R>one();
-            new ValueCapturingComponentInteraction<>(componentInteraction, sink)
-                    .registerSingleUse(interactionService, this);
+            interactionService.registerSingleUse(new ComponentInteractionProxy<>(componentInteraction, sink), this);
             return sink.asMono();
         }).retryWhen(Retry.indefinitely().filter(RetryableInteractionException.class::isInstance));
     }
 
     @Override
-    public final E event() {
+    public E event() {
         return event;
     }
 
@@ -81,19 +80,23 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
         return event().getInteraction().getUser();
     }
 
-    private static class ValueCapturingComponentInteraction<C extends InteractionContext, R>
-            implements ComponentInteraction<C, R> {
+    private static class ComponentInteractionProxy<R> implements ComponentInteractionListener<R> {
 
-        private final ComponentInteraction<C, R> delegate;
+        private final ComponentInteractionListener<R> delegate;
         private final Sinks.One<R> sink;
 
-        private ValueCapturingComponentInteraction(ComponentInteraction<C, R> delegate, Sinks.One<R> sink) {
+        private ComponentInteractionProxy(ComponentInteractionListener<R> delegate, Sinks.One<R> sink) {
             this.delegate = delegate;
             this.sink = sink;
         }
 
         @Override
-        public Publisher<R> run(C ctx) {
+        public String customId() {
+            return delegate.customId();
+        }
+
+        @Override
+        public Publisher<R> run(ComponentInteractionContext ctx) {
             return Mono.from(delegate.run(ctx))
                     .doOnSuccess(value -> {
                         if (value == null) {
@@ -106,18 +109,8 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
         }
 
         @Override
-        public void registerSingleUse(InteractionService interactionService, InteractionContext parentContext) {
-            delegate.registerSingleUse(interactionService, parentContext);
-        }
-
-        @Override
-        public void register(InteractionService interactionService) {
-            delegate.register(interactionService);
-        }
-
-        @Override
         public String toString() {
-            return "ValueCapturingComponentInteraction{" +
+            return "ComponentInteractionProxy{" +
                     "delegate=" + delegate +
                     '}';
         }

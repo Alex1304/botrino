@@ -21,22 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction.context;
+package botrino.interaction;
 
-import botrino.api.i18n.Translator;
-import botrino.interaction.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
-import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.MessageChannel;
-import reactor.core.publisher.Mono;
+import botrino.interaction.context.ChatInputInteractionContext;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import org.reactivestreams.Publisher;
 
-public interface InteractionContext extends Translator {
+import java.util.List;
 
-    InteractionCreateEvent event();
+public interface ChatInputInteractionListener extends InteractionListener {
 
-    MessageChannel channel();
+    Publisher<?> run(ChatInputInteractionContext ctx);
 
-    User user();
-
-    <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction);
+    default List<ApplicationCommandOptionData> options() {
+        return List.of();
+    }
 }

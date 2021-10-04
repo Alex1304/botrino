@@ -35,6 +35,6 @@ import java.util.Optional;
 @ConfigEntry("interaction")
 public interface InteractionConfig {
 
-    @JsonProperty("slash_commands_guild_id")
-    Optional<Long> slashCommandsGuildId();
+    @JsonProperty("application_commands_guild_id")
+    Optional<Long> applicationCommandsGuildId();
 }

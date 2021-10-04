@@ -23,18 +23,19 @@
  */
 package botrino.interaction;
 
-import botrino.interaction.context.SlashCommandContext;
-import discord4j.discordjson.json.ApplicationCommandRequest;
-import org.reactivestreams.Publisher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public interface SlashCommand extends Interaction {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    Publisher<?> run(SlashCommandContext ctx);
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface SubcommandGroup {
 
-    ApplicationCommandRequest data();
+    String name();
 
-    @Override
-    default void register(InteractionService interactionService) {
-        interactionService.register(this);
-    }
+    String description();
+
+    Subcommand[] subcommands();
 }

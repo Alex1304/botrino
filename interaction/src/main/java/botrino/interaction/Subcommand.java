@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2021 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.command.menu;
+package botrino.interaction;
 
-public final class PageInputException extends RuntimeException {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface Subcommand {
+
+    String name();
+
+    String description();
+
+    Class<? extends ChatInputInteractionListener> listener();
 }

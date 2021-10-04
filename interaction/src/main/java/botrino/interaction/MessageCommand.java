@@ -30,10 +30,24 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link Interaction} and annotated with this annotation will automatically be registered into the
- * interaction service.
+ * A class implementing {@link MessageInteractionListener} and annotated with this annotation will automatically be
+ * registered into the interaction service.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
-public @interface AutoRegister {
+public @interface MessageCommand {
+
+    /**
+     * The name of the message command.
+     *
+     * @return a String
+     */
+    String value();
+
+    /**
+     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
+     *
+     * @return a boolean
+     */
+    boolean defaultPermission() default true;
 }
