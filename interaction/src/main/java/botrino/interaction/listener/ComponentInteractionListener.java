@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.listener;
 
+import botrino.interaction.annotation.ComponentCommand;
 import botrino.interaction.context.ButtonInteractionContext;
 import botrino.interaction.context.ComponentInteractionContext;
 import botrino.interaction.context.SelectMenuInteractionContext;
@@ -55,9 +56,9 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
     }
 
     default String customId() {
-        final var annot = getClass().getAnnotation(MessageComponent.class);
+        final var annot = getClass().getAnnotation(ComponentCommand.class);
         if (annot == null) {
-            throw new IllegalStateException("Missing customId. Either add @MessageComponent annotation or override " +
+            throw new IllegalStateException("Missing customId. Either add @ComponentCommand annotation or override " +
                     "the customId() method.");
         }
         return annot.value();

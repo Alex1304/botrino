@@ -18,6 +18,8 @@
         ]
     },
     "interaction": {
-        "application_commands_guild_id": null
+        "application_commands_guild_id": null,
+        "default_ack": true,
+        "default_ephemeral": false
     }
 }

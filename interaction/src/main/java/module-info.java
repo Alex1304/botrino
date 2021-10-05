@@ -3,15 +3,19 @@ import botrino.interaction.InteractionExtension;
 
 module botrino.interaction {
     exports botrino.interaction;
+    exports botrino.interaction.annotation;
     exports botrino.interaction.config;
     exports botrino.interaction.context;
     exports botrino.interaction.cooldown;
     exports botrino.interaction.grammar;
+    exports botrino.interaction.listener;
     exports botrino.interaction.privilege;
 
     opens botrino.interaction;
+    opens botrino.interaction.annotation;
     opens botrino.interaction.config;
     opens botrino.interaction.context;
+    opens botrino.interaction.listener;
 
     provides BotrinoExtension with InteractionExtension;
 

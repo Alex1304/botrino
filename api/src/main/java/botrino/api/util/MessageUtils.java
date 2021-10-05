@@ -23,10 +23,7 @@
  */
 package botrino.api.util;
 
-import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.spec.*;
-import discord4j.discordjson.json.WebhookMessageEditRequest;
-import discord4j.rest.util.AllowedMentions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,6 +92,8 @@ public final class MessageUtils {
                 .embedsOrNull(spec.embeds().toOptional().orElse(null))
                 .componentsOrNull(spec.components().toOptional().orElse(null))
                 .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
+                .files(spec.files())
+                .fileSpoilers(spec.fileSpoilers())
                 .build();
     }
 
@@ -115,27 +114,37 @@ public final class MessageUtils {
     }
 
     /**
-     * Converts a {@link MessageCreateSpec} to an equivalent {@link WebhookMessageEditRequest}.
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link InteractionFollowupCreateSpec}.
      *
      * @param spec the spec to convert
-     * @return a {@link WebhookMessageEditRequest}
+     * @return a {@link InteractionFollowupCreateSpec}
      */
-    public static WebhookMessageEditRequest toWebhookMessageEditRequest(MessageCreateSpec spec) {
-        return WebhookMessageEditRequest.builder()
+    public static InteractionFollowupCreateSpec toFollowupCreateSpec(MessageCreateSpec spec) {
+        return InteractionFollowupCreateSpec.builder()
+                .content(spec.content())
+                .embeds(spec.embedsOrElse(List.of()))
+                .components(spec.components())
+                .allowedMentions(spec.allowedMentions())
+                .tts(spec.ttsOrElse(false))
+                .files(spec.files())
+                .fileSpoilers(spec.fileSpoilers())
+                .build();
+    }
+
+    /**
+     * Converts a {@link MessageCreateSpec} to an equivalent {@link InteractionReplyEditSpec}.
+     *
+     * @param spec the spec to convert
+     * @return a {@link InteractionReplyEditSpec}
+     */
+    public static InteractionReplyEditSpec toReplyEditSpec(MessageCreateSpec spec) {
+        return InteractionReplyEditSpec.builder()
                 .contentOrNull(spec.content().toOptional().orElse(null))
-                .embedsOrNull(spec.embeds().toOptional()
-                        .map(l -> l.stream()
-                                .map(EmbedCreateSpec::asRequest)
-                                .collect(Collectors.toList()))
-                        .orElse(null))
-                .components(spec.components().toOptional()
-                        .map(l -> l.stream()
-                                .map(LayoutComponent::getData)
-                                .collect(Collectors.toList()))
-                        .orElse(List.of()))
-                .allowedMentionsOrNull(spec.allowedMentions().toOptional()
-                        .map(AllowedMentions::toData)
-                        .orElse(null))
+                .embedsOrNull(spec.embeds().toOptional().orElse(null))
+                .componentsOrNull(spec.components().toOptional().orElse(null))
+                .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
+                .files(spec.files())
+                .fileSpoilers(spec.fileSpoilers())
                 .build();
     }
 

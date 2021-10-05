@@ -21,12 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.annotation;
 
-import botrino.interaction.context.UserInteractionContext;
-import org.reactivestreams.Publisher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public interface UserInteractionListener extends InteractionListener {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    Publisher<?> run(UserInteractionContext ctx);
+/**
+ * Annotation that indicates how the event should be acknowledged before running the command.
+ */
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface Acknowledge {
+
+    boolean value() default true;
+
+    boolean ephemeral() default false;
 }

@@ -23,9 +23,9 @@
  */
 package botrino.interaction.context;
 
-import botrino.interaction.ComponentInteractionListener;
 import botrino.interaction.InteractionService;
 import botrino.interaction.RetryableInteractionException;
+import botrino.interaction.listener.ComponentInteractionListener;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;

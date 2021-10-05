@@ -37,4 +37,17 @@ public interface InteractionConfig {
 
     @JsonProperty("application_commands_guild_id")
     Optional<Long> applicationCommandsGuildId();
+
+    @JsonProperty("default_ack")
+    @Value.Default
+    default boolean defaultACK() {
+        return true;
+    }
+
+    @JsonProperty("default_ephemeral")
+    @Value.Default
+    default boolean defaultEphemeral() {
+        return false;
+    }
 }
+

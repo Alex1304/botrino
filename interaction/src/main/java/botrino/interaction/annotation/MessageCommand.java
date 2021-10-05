@@ -21,7 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.annotation;
+
+import botrino.interaction.listener.MessageInteractionListener;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -29,13 +31,25 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * A class implementing {@link MessageInteractionListener} and annotated with this annotation will automatically be
+ * registered into the interaction service.
+ */
 @Retention(RUNTIME)
 @Target(TYPE)
-public @interface SubcommandGroup {
+public @interface MessageCommand {
 
-    String name();
+    /**
+     * The name of the message command.
+     *
+     * @return a String
+     */
+    String value();
 
-    String description();
-
-    Subcommand[] subcommands();
+    /**
+     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
+     *
+     * @return a boolean
+     */
+    boolean defaultPermission() default true;
 }

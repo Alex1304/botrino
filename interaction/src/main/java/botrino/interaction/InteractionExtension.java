@@ -27,7 +27,15 @@ import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
 import botrino.api.util.MatcherConsumer;
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.annotation.MessageCommand;
+import botrino.interaction.annotation.ComponentCommand;
+import botrino.interaction.annotation.UserCommand;
 import botrino.interaction.config.InteractionConfig;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import botrino.interaction.listener.ComponentInteractionListener;
+import botrino.interaction.listener.MessageInteractionListener;
+import botrino.interaction.listener.UserInteractionListener;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 import reactor.core.publisher.Mono;
@@ -68,7 +76,7 @@ public final class InteractionExtension implements BotrinoExtension {
                     clazz.asSubclass(MessageInteractionListener.class)));
         }
         if (ComponentInteractionListener.class.isAssignableFrom(clazz) &&
-                clazz.isAnnotationPresent(MessageComponent.class)) {
+                clazz.isAnnotationPresent(ComponentCommand.class)) {
             componentInteractionListeners.add(instanceCache.getInstance(
                     clazz.asSubclass(ComponentInteractionListener.class)));
         }
@@ -92,7 +100,7 @@ public final class InteractionExtension implements BotrinoExtension {
                 .matchType(MessageInteractionListener.class,
                         o -> o.getClass().isAnnotationPresent(MessageCommand.class), messageInteractionListeners::add)
                 .matchType(ComponentInteractionListener.class,
-                        o -> o.getClass().isAnnotationPresent(MessageComponent.class),
+                        o -> o.getClass().isAnnotationPresent(ComponentCommand.class),
                         componentInteractionListeners::add)
                 .matchType(InteractionErrorHandler.class, errorHandlers::add)
                 .matchType(InteractionEventProcessor.class, eventProcessors::add)

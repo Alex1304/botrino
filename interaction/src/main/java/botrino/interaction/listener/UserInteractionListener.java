@@ -21,33 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.listener;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import botrino.interaction.context.UserInteractionContext;
+import org.reactivestreams.Publisher;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public interface UserInteractionListener extends InteractionListener {
 
-/**
- * A class implementing {@link MessageInteractionListener} and annotated with this annotation will automatically be
- * registered into the interaction service.
- */
-@Retention(RUNTIME)
-@Target(TYPE)
-public @interface MessageCommand {
-
-    /**
-     * The name of the message command.
-     *
-     * @return a String
-     */
-    String value();
-
-    /**
-     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
-     *
-     * @return a boolean
-     */
-    boolean defaultPermission() default true;
+    Publisher<?> run(UserInteractionContext ctx);
 }

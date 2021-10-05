@@ -21,7 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.annotation;
+
+import botrino.interaction.listener.ComponentInteractionListener;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -30,24 +32,18 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link UserInteractionListener} and annotated with this annotation will automatically be
- * registered into the interaction service.
+ * A class implementing {@link ComponentInteractionListener} and annotated with this annotation will automatically be
+ * registered into the interaction service. It also allows to specify a customId without having to override {@link
+ * ComponentInteractionListener#customId()}.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
-public @interface UserCommand {
+public @interface ComponentCommand {
 
     /**
-     * The name of the user command.
+     * The custom ID of the message component.
      *
      * @return a String
      */
-    String value();
-
-    /**
-     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
-     *
-     * @return a boolean
-     */
-    boolean defaultPermission() default true;
+    String value() default "";
 }

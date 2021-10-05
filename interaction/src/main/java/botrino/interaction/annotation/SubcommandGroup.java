@@ -21,19 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.annotation;
 
-import botrino.interaction.context.ChatInputInteractionContext;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
-import org.reactivestreams.Publisher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import java.util.List;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public interface ChatInputInteractionListener extends InteractionListener {
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface SubcommandGroup {
 
-    Publisher<?> run(ChatInputInteractionContext ctx);
+    String name();
 
-    default List<ApplicationCommandOptionData> options() {
-        return List.of();
-    }
+    String description();
+
+    Subcommand[] subcommands();
 }

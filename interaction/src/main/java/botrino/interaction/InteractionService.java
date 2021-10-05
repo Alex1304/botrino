@@ -26,10 +26,15 @@ package botrino.interaction;
 import botrino.api.config.ConfigContainer;
 import botrino.api.config.object.I18nConfig;
 import botrino.api.util.MatcherFunction;
+import botrino.interaction.annotation.Acknowledge;
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.annotation.MessageCommand;
+import botrino.interaction.annotation.UserCommand;
 import botrino.interaction.config.InteractionConfig;
 import botrino.interaction.context.*;
 import botrino.interaction.cooldown.Cooldown;
 import botrino.interaction.cooldown.CooldownException;
+import botrino.interaction.listener.*;
 import botrino.interaction.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
@@ -47,6 +52,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.util.*;
@@ -247,20 +253,39 @@ public class InteractionService {
                 .then(Mono.fromRunnable(() -> LOGGER.info("Command listener completed"))));
     }
 
-    private Mono<ComponentInteractionListener<?>> findComponentListener(ContextKey key,
-                                                                        ComponentInteractionEvent event) {
-        return Mono.<ComponentInteractionListener<?>>justOrEmpty(componentInteractionsSingleUse
-                        .getOrDefault(key, new ConcurrentHashMap<>())
+    private Mono<Tuple2<ComponentInteractionListener<?>, Boolean>>
+    findComponentListener(ContextKey key, ComponentInteractionEvent event) {
+        return Mono.justOrEmpty(componentInteractionsSingleUse.getOrDefault(key, new ConcurrentHashMap<>())
                         .remove(event.getCustomId()))
-                .doOnNext(__ -> componentInteractionsSingleUse.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v))
-                .switchIfEmpty(Mono.justOrEmpty(componentInteractions.get(event.getCustomId())));
+                .doOnNext(listener -> {
+                    LOGGER.debug("Consumed single use component interaction listener {}", listener);
+                    componentInteractionsSingleUse.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v);
+                })
+                .<Tuple2<ComponentInteractionListener<?>, Boolean>>map(listener -> Tuples.of(listener, true))
+                .switchIfEmpty(Mono.defer(() ->
+                        Mono.justOrEmpty(Tuples.of(componentInteractions.get(event.getCustomId()), false))));
     }
 
     private Mono<Void> preCheck(InteractionContext ctx, InteractionListener listener) {
-        return listener.privilege().checkGranted(ctx)
+        return ackIfConfigured(listener, ctx.event())
+                .then(Mono.defer(() -> listener.privilege().checkGranted(ctx)))
                 .then(Mono.fromRunnable(() -> cooldownPerCommand.computeIfAbsent(listener,
                                 InteractionListener::cooldown)
                         .fire(ctx.user().getId().asLong())));
+    }
+
+    private Mono<Void> ackIfConfigured(InteractionListener listener, InteractionCreateEvent event) {
+        return Mono.defer(() -> {
+            final var annot = listener.getClass().getAnnotation(Acknowledge.class);
+            if (annot != null ? annot.value() : interactionConfig.defaultACK()) {
+                final var ephemeral = annot != null ? annot.ephemeral() : interactionConfig.defaultEphemeral();
+                if (event instanceof ComponentInteractionEvent) {
+                    return ((ComponentInteractionEvent) event).deferEdit().withEphemeral(ephemeral);
+                }
+                return event.deferReply().withEphemeral(ephemeral);
+            }
+            return Mono.empty();
+        });
     }
 
     private Publisher<?> executeErrorHandler(Throwable t, InteractionErrorHandler errorHandler,
@@ -495,8 +520,12 @@ public class InteractionService {
         public Mono<Void> run() {
             final var key = ContextKey.from(ctx);
             return findComponentListener(key, ctx.event())
-                    .flatMap(listener -> preCheck(ctx, listener)
-                            .then(Mono.defer(() -> Mono.from(listener.run(ctx)).then())));
+                    .flatMap(function((listener, isSingleUse) -> preCheck(ctx, listener)
+                            .then(Mono.defer(() -> Mono.from(listener.run(ctx)).then()))
+                            .onErrorResume(e -> isSingleUse ?
+                                    Mono.fromRunnable(
+                                            () -> LOGGER.warn("Suppressed error in single use listener", e)) :
+                                    Mono.error(e))));
         }
 
         @Override

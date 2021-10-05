@@ -21,21 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction;
+package botrino.interaction.listener;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import botrino.interaction.cooldown.Cooldown;
+import botrino.interaction.privilege.Privilege;
+import botrino.interaction.privilege.Privileges;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public interface InteractionListener {
 
-@Retention(RUNTIME)
-@Target(TYPE)
-public @interface Subcommand {
+    /**
+     * Defines the privilege that must be granted for a user to execute this interaction.
+     *
+     * @return the privilege
+     */
+    default Privilege privilege() {
+        return Privileges.allowed();
+    }
 
-    String name();
-
-    String description();
-
-    Class<? extends ChatInputInteractionListener> listener();
+    /**
+     * Defines the cooldown of the interaction on a per-user basis. In other words, the number of times a user can
+     * execute this interaction within a certain timeframe.
+     *
+     * @return the cooldown
+     */
+    default Cooldown cooldown() {
+        return Cooldown.none();
+    }
 }

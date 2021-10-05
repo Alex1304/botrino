@@ -3,8 +3,8 @@
 #set( $symbol_escape = '\' )
 package ${package};
 
-import botrino.interaction.ChatInputCommand;
-import botrino.interaction.ChatInputInteractionListener;
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.listener.ChatInputInteractionListener;
 import botrino.interaction.context.ChatInputInteractionContext;
 import org.reactivestreams.Publisher;
 
@@ -13,6 +13,6 @@ public final class PingCommand implements ChatInputInteractionListener {
 
     @Override
     public Publisher<?> run(ChatInputInteractionContext ctx) {
-        return ctx.event().reply(ctx.translate(Strings.APP, "pong")).withEphemeral(true);
+        return ctx.event().createFollowup(ctx.translate(Strings.APP, "pong"));
     }
 }
