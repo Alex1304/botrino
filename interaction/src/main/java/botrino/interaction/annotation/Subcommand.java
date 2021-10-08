@@ -31,13 +31,31 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Specifies the meta-information on a subcommand for a {@link ChatInputCommand}.
+ */
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface Subcommand {
 
+    /**
+     * The name of the subcommand.
+     *
+     * @return the name
+     */
     String name();
 
+    /**
+     * The description of the subcommand.
+     *
+     * @return the description
+     */
     String description();
 
+    /**
+     * The listener to execute when the subcommand is triggered.
+     *
+     * @return the class of the listener
+     */
     Class<? extends ChatInputInteractionListener> listener();
 }

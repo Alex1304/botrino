@@ -24,6 +24,7 @@
 package botrino.interaction.grammar;
 
 import botrino.api.util.ConfigUtils;
+import botrino.interaction.listener.ChatInputInteractionListener;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -45,8 +46,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Allows to define a grammar for a chat input command. It is done by specifying a value class which fields
- * correspond to the expected options. This class is then instantiated and populated with the actual values at runtime.
+ * Allows to define a grammar for a chat input command. It is done by specifying a value class which fields correspond
+ * to the expected options. This class is then instantiated and populated with the actual values at runtime.
  */
 public final class ChatInputCommandGrammar<T> {
 
@@ -56,6 +57,14 @@ public final class ChatInputCommandGrammar<T> {
         this.valueClass = valueClass;
     }
 
+    /**
+     * Creates a new {@link ChatInputCommandGrammar} that will inject option values into an instance of the specified
+     * class. The class must have a public no-arg constructor.
+     *
+     * @param valueClass the class where option values are going to be injected
+     * @param <T>        the type of the class
+     * @return a new {@link ChatInputCommandGrammar}
+     */
     public static <T> ChatInputCommandGrammar<T> of(Class<T> valueClass) {
         return new ChatInputCommandGrammar<>(valueClass);
     }
@@ -78,7 +87,7 @@ public final class ChatInputCommandGrammar<T> {
 
     /**
      * Resolves this grammar against the given {@link ChatInputInteractionEvent}. It will construct an instance of the
-     * value class with the value of the options of the correct type.
+     * value class with the value of the options injected into its fields.
      *
      * @param event the chat input interaction event
      * @return a {@link Mono} emitting the instance of the value class with the actual option values
@@ -135,6 +144,12 @@ public final class ChatInputCommandGrammar<T> {
         }
     }
 
+    /**
+     * Converts the option metadata contained in this grammar into a list of {@link ApplicationCommandOptionData} that
+     * can be passed directly as a return value of {@link ChatInputInteractionListener#options()}.
+     *
+     * @return a list of {@link ApplicationCommandOptionData}
+     */
     public List<ApplicationCommandOptionData> toOptions() {
         final var list = new ArrayList<ApplicationCommandOptionData>();
         for (final var field : valueClass.getDeclaredFields()) {
@@ -170,32 +185,87 @@ public final class ChatInputCommandGrammar<T> {
         if (type == double.class || type == Double.class) {
             return choice.doubleValue();
         }
-        throw new IllegalArgumentException("@Choices annotation cannot be used on type " + type.getName());
+        throw new IllegalArgumentException("@Choice annotation cannot be used on type " + type.getName());
     }
 
+    /**
+     * Defines metadata for a command option.
+     */
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Option {
+        /**
+         * The type of option.
+         *
+         * @return the type
+         */
         ApplicationCommandOption.Type type();
 
+        /**
+         * The name of the option.
+         *
+         * @return the name
+         */
         String name();
 
+        /**
+         * The description of the option.
+         *
+         * @return the description
+         */
         String description();
 
+        /**
+         * Whether the option is required, default <code>false</code>.
+         *
+         * @return a boolean
+         */
         boolean required() default false;
 
+        /**
+         * The choices for this option, default empty.
+         *
+         * @return an array of choices.
+         */
         Choice[] choices() default {};
     }
 
+    /**
+     * Defines metadata for an option choice.
+     */
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Choice {
+
+        /**
+         * The name of the option choice.
+         *
+         * @return the name
+         */
         String name();
 
+        /**
+         * The string value for the option choice. Only applicable if the option is of type {@link
+         * ApplicationCommandOption.Type#STRING}.
+         *
+         * @return the string value
+         */
         String stringValue() default "";
 
+        /**
+         * The long value for the option choice. Only applicable if the option is of type {@link
+         * ApplicationCommandOption.Type#INTEGER}.
+         *
+         * @return the long value
+         */
         long longValue() default 0L;
 
+        /**
+         * The double value for the option choice. Only applicable if the option is of type {@link
+         * ApplicationCommandOption.Type#NUMBER}.
+         *
+         * @return the double value
+         */
         double doubleValue() default 0d;
     }
 }

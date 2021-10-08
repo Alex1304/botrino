@@ -28,5 +28,11 @@ import org.reactivestreams.Publisher;
 
 public interface UserInteractionListener extends InteractionListener {
 
+    /**
+     * The code to execute when an interaction is received.
+     *
+     * @param ctx the interaction context
+     * @return a {@link Publisher} completing when the execution of the command is complete.
+     */
     Publisher<?> run(UserInteractionContext ctx);
 }

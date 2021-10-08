@@ -24,19 +24,81 @@
 package botrino.interaction.context;
 
 import botrino.api.i18n.Translator;
+import botrino.interaction.InteractionService;
+import botrino.interaction.annotation.Acknowledge;
+import botrino.interaction.config.InteractionConfig;
 import botrino.interaction.listener.ComponentInteractionListener;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 
+import java.util.concurrent.TimeoutException;
+
+/**
+ * Provides contextual information on an interaction.
+ */
 public interface InteractionContext extends Translator {
 
+    /**
+     * The event object for this interaction.
+     *
+     * @return the event
+     */
     InteractionCreateEvent event();
 
+    /**
+     * The channel where the interaction took place.
+     *
+     * @return the channel
+     */
     MessageChannel channel();
 
+    /**
+     * The user who initiated the interaction.
+     *
+     * @return the user
+     */
     User user();
 
-    <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction);
+    /**
+     * Registers a {@link ComponentInteractionListener} via
+     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener,
+     * InteractionContext)} and waits for the listener to be executed once. When an interaction is received on the
+     * target component, the listener is executed and may return a value, which can be used downstream for further
+     * processing. It is recommended to use one of the static factories of {@link ComponentInteractionListener} in order
+     * to get an instance to pass to this method.
+     * <p>
+     * The returned Mono will error with {@link TimeoutException} if the user has not interacted with the target
+     * component after a certain time, configurable via {@link InteractionConfig#awaitComponentTimeoutSeconds()}.
+     * <p>
+     * The component interaction will automatically be acknowledged according to the default acknowledgment mode defined
+     * in {@link InteractionConfig#defaultACKMode()}. To specify an acknowledgment for this specific interaction, use
+     * the overload {@link #awaitComponentInteraction(Acknowledge.Mode, ComponentInteractionListener)}.
+     *
+     * @param componentInteraction the instance of {@link ComponentInteractionListener}
+     * @param <R>                  the return type of the listener
+     * @return a Mono emitting the return value of the listener once it has been executed.
+     */
+    default <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction) {
+        return awaitComponentInteraction(Acknowledge.Mode.DEFAULT, componentInteraction);
+    }
+
+    /**
+     * Registers a {@link ComponentInteractionListener} via
+     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener,
+     * InteractionContext)} and waits for the listener to be executed once. When an interaction is received on the
+     * target component, the listener is executed and may return a value, which can be used downstream for further
+     * processing. It is recommended to use one of the static factories of {@link ComponentInteractionListener} in order
+     * to get an instance to pass to this method.
+     * <p>
+     * The returned Mono will error with {@link TimeoutException} if the user has not interacted with the target
+     * component after a certain time, configurable via {@link InteractionConfig#awaitComponentTimeoutSeconds()}.
+     *
+     * @param ack                  the acknowledgment mode to apply for the component interaction
+     * @param componentInteraction the instance of {@link ComponentInteractionListener}
+     * @param <R>                  the return type of the listener
+     * @return a Mono emitting the return value of the listener once it has been executed.
+     */
+    <R> Mono<R> awaitComponentInteraction(Acknowledge.Mode ack, ComponentInteractionListener<R> componentInteraction);
 }

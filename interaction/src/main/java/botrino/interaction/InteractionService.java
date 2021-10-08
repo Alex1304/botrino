@@ -55,12 +55,18 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static reactor.function.TupleUtils.function;
 
+/**
+ * The interaction service is in charge of registering commands, deploying them to Discord and listening to interactions
+ * in order to propagate the events to listeners.
+ */
 @RdiService
 public class InteractionService {
 
@@ -83,11 +89,38 @@ public class InteractionService {
     private InteractionErrorHandler errorHandler;
     private InteractionEventProcessor eventProcessor;
 
+    /**
+     * @param configContainer -
+     * @param gateway         -
+     * @deprecated This is the constructor used by the Botrino framework. Not intended for direct consumption by library
+     * users. Use {@link #builder(InteractionConfig, GatewayDiscordClient)} instead.
+     */
+    @Deprecated
     @RdiFactory
     public InteractionService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
-        this.interactionConfig = configContainer.get(InteractionConfig.class);
+        this(configContainer.get(InteractionConfig.class), gateway,
+                Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale()), null, null);
+    }
+
+    private InteractionService(InteractionConfig interactionConfig, GatewayDiscordClient gateway,
+                               Locale defaultLocale, @Nullable InteractionErrorHandler errorHandler,
+                               @Nullable InteractionEventProcessor eventProcessor) {
+        this.interactionConfig = interactionConfig;
         this.gateway = gateway;
-        this.defaultLocale = Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale());
+        this.defaultLocale = defaultLocale;
+        this.errorHandler = errorHandler;
+        this.eventProcessor = eventProcessor;
+    }
+
+    /**
+     * Initializes a new builder to create an {@link InteractionService} instance.
+     *
+     * @param config  the configuration for the service
+     * @param gateway the gateway discord client
+     * @return a new builder
+     */
+    public static Builder builder(InteractionConfig config, GatewayDiscordClient gateway) {
+        return new Builder(config, gateway);
     }
 
     private static boolean hasCommandChanged(ApplicationCommandData oldCommand, ApplicationCommandRequest newCommand) {
@@ -117,41 +150,73 @@ public class InteractionService {
         this.eventProcessor = eventProcessor;
     }
 
-    public void registerCommand(Object chatInputCommand,
-                                Map<Class<?>, ? extends ChatInputInteractionListener> listeners) {
+    /**
+     * Registers a new chat input command. This variant is suited for commands that don't have subcommands and that
+     * directly define a @{@link ChatInputCommand} annotation. To register chat input commands with
+     * subcommands/subcommand groups, use the overload {@link #registerChatInputCommand(Object, Collection)} instead.
+     *
+     * @param listener the listener to register as a chat input command
+     * @throws IllegalArgumentException if the given listener does not have a @{@link ChatInputCommand} annotation.
+     */
+    public void registerChatInputCommand(ChatInputInteractionListener listener) {
+        registerChatInputCommand(listener, List.of());
+    }
+
+    /**
+     * Registers a new chat input command. This variant is suited for commands that have subcommands or subcommand
+     * groups, which define separate listeners for each. To register chat input commands without subcommands/subcommand
+     * groups, it may be more straightforward to use the overload
+     * {@link #registerChatInputCommand(ChatInputInteractionListener)}
+     * instead.
+     *
+     * @param annotatedObject the object which class is annotated with @{@link ChatInputCommand}
+     * @param listeners       if the command defines subcommands, this list is expected to contain the instances of the
+     *                        listeners for each subcommand. It may contain at most one instance per concrete type.
+     * @throws IllegalArgumentException if the given object does not have a @{@link ChatInputCommand} annotation
+     * @throws IllegalStateException    if the given object doesn't have subcommands AND doesn't implement {@link
+     *                                  ChatInputInteractionListener}. Also thrown if more than one instance with the
+     *                                  same concrete type is given in the listeners list, or if an instance is missing
+     *                                  from that list.
+     */
+    public void registerChatInputCommand(Object annotatedObject,
+                                         Collection<? extends ChatInputInteractionListener> listeners) {
         final var builder = ApplicationCommandRequest.builder();
-        final var annot = chatInputCommand.getClass().getAnnotation(ChatInputCommand.class);
+        final var annot = annotatedObject.getClass().getAnnotation(ChatInputCommand.class);
+        if (annot == null) {
+            throw new IllegalArgumentException("Missing @ChatInputCommand annotation");
+        }
         builder.name(annot.name());
         builder.description(annot.description());
         builder.defaultPermission(annot.defaultPermission());
         builder.type(ApplicationCommand.Type.CHAT_INPUT.getValue());
         if (annot.subcommandGroups().length == 0 && annot.subcommands().length == 0) {
-            if (!(chatInputCommand instanceof ChatInputInteractionListener)) {
-                throw new IllegalStateException(chatInputCommand.getClass().getName() + " is annotated with " +
+            if (!(annotatedObject instanceof ChatInputInteractionListener)) {
+                throw new IllegalStateException(annotatedObject.getClass().getName() + " is annotated with " +
                         "@ChatInputCommand and does not declare subcommands, but doesn't implement " +
                         "ChatInputInteractionListener.");
             }
-            final var listener = (ChatInputInteractionListener) chatInputCommand;
+            final var listener = (ChatInputInteractionListener) annotatedObject;
             final var key = new ChatInputCommandKey(annot.name(), null, null);
             chatInputCommandListeners.put(key, listener);
             LOGGER.debug("Registered chat input command listener {}", key);
             builder.options(listener.options());
         } else {
+            final var listenerMap = listeners.stream()
+                    .collect(Collectors.toMap(Object::getClass, Function.identity()));
             for (var i = -1; i == -1 || i < annot.subcommandGroups().length; i++) {
                 final var subcommandGroup = i == -1 ? null : annot.subcommandGroups()[i];
                 final var subcommands = subcommandGroup == null ? annot.subcommands() : subcommandGroup.subcommands();
                 final var subcommandsData = Arrays.stream(subcommands)
                         .map(subcommand -> {
-                            final var listener = listeners.get(subcommand.listener());
-                            if (listener == null) {
-                                throw new IllegalStateException("Could not find an instance of " +
-                                        subcommand.listener().getName() + " for subcommand '" + subcommand.name() +
-                                        "' of " + chatInputCommand.getClass().getName());
-                            }
+                            final var listener = listenerMap.get(subcommand.listener());
                             final var key = new ChatInputCommandKey(
                                     annot.name(),
                                     subcommandGroup == null ? null : subcommandGroup.name(),
                                     subcommand.name());
+                            if (listener == null) {
+                                throw new IllegalStateException("No instance of " + subcommand.listener().getName() +
+                                        " was provided for subcommand '" + key + "'");
+                            }
                             chatInputCommandListeners.put(key, listener);
                             LOGGER.debug("Registered chat input command listener {}", key);
                             return (ApplicationCommandOptionData) ApplicationCommandOptionData.builder()
@@ -177,9 +242,18 @@ public class InteractionService {
         applicationCommandRequests.put(annot.name(), builder.build());
     }
 
-    public void register(UserInteractionListener listener) {
+    /**
+     * Registers a new user context menu command.
+     *
+     * @param listener the listener to register. Must have a @{@link UserCommand} annotation.
+     * @throws IllegalArgumentException if the given listener does not have a @{@link UserCommand} annotation.
+     */
+    public void registerUserCommand(UserInteractionListener listener) {
         Objects.requireNonNull(listener);
         final var annot = listener.getClass().getAnnotation(UserCommand.class);
+        if (annot == null) {
+            throw new IllegalArgumentException("Missing @UserCommand annotation");
+        }
         userInteractionListeners.put(annot.value(), listener);
         applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
@@ -189,9 +263,18 @@ public class InteractionService {
         LOGGER.debug("Registered user interaction listener {}", listener);
     }
 
-    public void register(MessageInteractionListener listener) {
+    /**
+     * Registers a new message context menu command.
+     *
+     * @param listener the listener to register. Must have a @{@link MessageCommand} annotation.
+     * @throws IllegalArgumentException if the given listener does not have a @{@link MessageCommand} annotation.
+     */
+    public void registerMessageCommand(MessageInteractionListener listener) {
         Objects.requireNonNull(listener);
         final var annot = listener.getClass().getAnnotation(MessageCommand.class);
+        if (annot == null) {
+            throw new IllegalArgumentException("Missing @MessageCommand annotation");
+        }
         messageInteractionListeners.put(annot.value(), listener);
         applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
@@ -201,13 +284,27 @@ public class InteractionService {
         LOGGER.debug("Registered message interaction listener {}", listener);
     }
 
-    public void register(ComponentInteractionListener<?> listener) {
+    /**
+     * Registers a new component listener as a command.
+     *
+     * @param listener the listener to register
+     */
+    public void registerComponentCommand(ComponentInteractionListener<?> listener) {
         Objects.requireNonNull(listener);
         componentInteractions.put(listener.customId(), listener);
         LOGGER.debug("Registered component interaction listener {}", listener);
     }
 
-    public void registerSingleUse(ComponentInteractionListener<?> listener, InteractionContext parentContext) {
+    /**
+     * Registers a new component listener that is going to be executed only once. It can only be executed by the same
+     * user in the same channel as a previous interaction which context is specified. This is generally called
+     * indirectly via {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}.
+     *
+     * @param listener      the listener to register
+     * @param parentContext the context for the parent interaction
+     */
+    public void registerSingleUseComponentListener(ComponentInteractionListener<?> listener,
+                                                   InteractionContext parentContext) {
         Objects.requireNonNull(listener);
         Objects.requireNonNull(parentContext);
         componentInteractionsSingleUse.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
@@ -215,33 +312,39 @@ public class InteractionService {
         LOGGER.debug("Registered single use component interaction listener {}", listener);
     }
 
-    Mono<Void> handleCommands() {
-        return uploadCommands().then(gateway.on(InteractionCreateEvent.class, event -> event.getInteraction()
-                        .getChannel()
+    /**
+     * Gets the "await component timeout" value from the underlying {@link InteractionConfig}.
+     *
+     * @return a {@link Duration}
+     */
+    public Duration getAwaitComponentTimeout() {
+        return Duration.ofSeconds(interactionConfig.awaitComponentTimeoutSeconds());
+    }
+
+    /**
+     * Runs the service. Upon subscription, it will start by deploying the commands to Discord, either globally or in a
+     * specific guild according to the config, then it will start listening to the interaction events coming from
+     * gateway. It never completes until the underlying {@link GatewayDiscordClient#getEventDispatcher()} terminates.
+     *
+     * @return a Mono that completes when the event dispatcher terminates.
+     */
+    public Mono<Void> run() {
+        return uploadCommands().then(gateway
+                .on(InteractionCreateEvent.class, event -> event.getInteraction().getChannel()
                         .flatMap(channel -> eventProcessor.filter(event)
                                 .filter(Boolean::booleanValue)
                                 .flatMap(__ -> eventProcessor.computeLocale(event).defaultIfEmpty(defaultLocale))
                                 .map(locale -> MatcherFunction.<CommandRunner>create()
-                                        .matchType(ChatInputInteractionEvent.class,
-                                                ev -> new ChatInputCommandRunner(
-                                                        new ChatInputInteractionContext(InteractionService.this,
-                                                                locale, ev, channel)))
-                                        .matchType(UserInteractionEvent.class,
-                                                ev -> new UserCommandRunner(
-                                                        new UserInteractionContext(InteractionService.this,
-                                                                locale, ev, channel)))
-                                        .matchType(MessageInteractionEvent.class,
-                                                ev -> new MessageCommandRunner(
-                                                        new MessageInteractionContext(InteractionService.this,
-                                                                locale, ev, channel)))
-                                        .matchType(ButtonInteractionEvent.class,
-                                                ev -> new ComponentCommandRunner(
-                                                        new ButtonInteractionContext(InteractionService.this,
-                                                                locale, ev, channel)))
-                                        .matchType(SelectMenuInteractionEvent.class,
-                                                ev -> new ComponentCommandRunner(
-                                                        new SelectMenuInteractionContext(InteractionService.this,
-                                                                locale, ev, channel)))
+                                        .matchType(ChatInputInteractionEvent.class, ev -> new ChatInputCommandRunner(
+                                                new ChatInputInteractionContext(this, locale, ev, channel)))
+                                        .matchType(UserInteractionEvent.class, ev -> new UserCommandRunner(
+                                                new UserInteractionContext(this, locale, ev, channel)))
+                                        .matchType(MessageInteractionEvent.class, ev -> new MessageCommandRunner(
+                                                new MessageInteractionContext(this, locale, ev, channel)))
+                                        .matchType(ButtonInteractionEvent.class, ev -> new ComponentCommandRunner(
+                                                new ButtonInteractionContext(this, locale, ev, channel)))
+                                        .matchType(SelectMenuInteractionEvent.class, ev -> new ComponentCommandRunner(
+                                                new SelectMenuInteractionContext(this, locale, ev, channel)))
                                         .apply(event))
                                 .flatMap(Mono::justOrEmpty)
                                 .flatMap(runner -> runner.run()
@@ -277,8 +380,10 @@ public class InteractionService {
     private Mono<Void> ackIfConfigured(InteractionListener listener, InteractionCreateEvent event) {
         return Mono.defer(() -> {
             final var annot = listener.getClass().getAnnotation(Acknowledge.class);
-            if (annot != null ? annot.value() : interactionConfig.defaultACK()) {
-                final var ephemeral = annot != null ? annot.ephemeral() : interactionConfig.defaultEphemeral();
+            final var ackMode = annot != null && annot.value() != Acknowledge.Mode.DEFAULT ?
+                    annot.value() : interactionConfig.defaultACKModeEnum();
+            if (ackMode != Acknowledge.Mode.NONE) {
+                final var ephemeral = ackMode == Acknowledge.Mode.DEFER_EPHEMERAL;
                 if (event instanceof ComponentInteractionEvent) {
                     return ((ComponentInteractionEvent) event).deferEdit().withEphemeral(ephemeral);
                 }
@@ -379,7 +484,7 @@ public class InteractionService {
 
         private final String name, subcommandGroup, subcommand;
 
-        public ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
+        private ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
             this.name = name;
             this.subcommandGroup = subcommandGroup;
             this.subcommand = subcommand;
@@ -431,6 +536,65 @@ public class InteractionService {
         @Override
         public int hashCode() {
             return Objects.hash(channelId, userId);
+        }
+    }
+
+    public static final class Builder {
+
+        private final InteractionConfig config;
+        private final GatewayDiscordClient gateway;
+        private Locale defaultLocale;
+        private InteractionErrorHandler errorHandler;
+        private InteractionEventProcessor eventProcessor;
+
+        private Builder(InteractionConfig config, GatewayDiscordClient gateway) {
+            this.config = config;
+            this.gateway = gateway;
+        }
+
+        /**
+         * Sets the default locale for interaction contexts.
+         *
+         * @param defaultLocale the default locale
+         * @return this builder
+         */
+        public Builder setDefaultLocale(@Nullable Locale defaultLocale) {
+            this.defaultLocale = defaultLocale;
+            return this;
+        }
+
+        /**
+         * Sets the error handler to apply in order to handle errors from the execution of listeners.
+         *
+         * @param errorHandler the error handler
+         * @return this builder
+         */
+        public Builder setErrorHandler(@Nullable InteractionErrorHandler errorHandler) {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
+        /**
+         * Sets the event processor to apply in order to filter events or adapt the locale according to the context.
+         *
+         * @param eventProcessor the event processor
+         * @return this builder
+         */
+        public Builder setEventProcessor(@Nullable InteractionEventProcessor eventProcessor) {
+            this.eventProcessor = eventProcessor;
+            return this;
+        }
+
+        /**
+         * Builds a new {@link InteractionService} based on the context of this builder.
+         *
+         * @return a new {@link InteractionService}
+         */
+        public InteractionService build() {
+            final var defaultLocale = Objects.requireNonNullElse(this.defaultLocale, Locale.getDefault());
+            final var errorHandler = Objects.requireNonNullElse(this.errorHandler, InteractionErrorHandler.NO_OP);
+            final var eventProcessor = Objects.requireNonNullElse(this.eventProcessor, InteractionEventProcessor.NO_OP);
+            return new InteractionService(config, gateway, defaultLocale, errorHandler, eventProcessor);
         }
     }
 

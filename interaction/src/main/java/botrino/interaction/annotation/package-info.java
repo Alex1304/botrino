@@ -21,33 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.interaction.listener;
-
-import botrino.interaction.cooldown.Cooldown;
-import botrino.interaction.privilege.Privilege;
-import botrino.interaction.privilege.Privileges;
 
 /**
- * Supertype for all kind of interaction listeners. Privilege and cooldown are defined at this level.
+ * Contains annotations to describe and configure application commands.
  */
-public interface InteractionListener {
+@NonNullApi
+package botrino.interaction.annotation;
 
-    /**
-     * Defines the privilege that must be granted for a user to execute this interaction.
-     *
-     * @return the privilege
-     */
-    default Privilege privilege() {
-        return Privileges.allowed();
-    }
-
-    /**
-     * Defines the cooldown of the interaction on a per-user basis. In other words, the number of times a user can
-     * execute this interaction within a certain timeframe.
-     *
-     * @return the cooldown
-     */
-    default Cooldown cooldown() {
-        return Cooldown.none();
-    }
-}
+import reactor.util.annotation.NonNullApi;

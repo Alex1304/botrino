@@ -29,10 +29,25 @@ import org.reactivestreams.Publisher;
 
 import java.util.List;
 
+/**
+ * Interface to implement in order to listen for interactions on chat input-based commands (also called "slash
+ * commands").
+ */
 public interface ChatInputInteractionListener extends InteractionListener {
 
+    /**
+     * The code to execute when an interaction is received.
+     *
+     * @param ctx the interaction context
+     * @return a {@link Publisher} completing when the execution of the command is complete.
+     */
     Publisher<?> run(ChatInputInteractionContext ctx);
 
+    /**
+     * The list of options for the command.
+     *
+     * @return the options
+     */
     default List<ApplicationCommandOptionData> options() {
         return List.of();
     }

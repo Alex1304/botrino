@@ -23,6 +23,16 @@
  */
 package botrino.interaction;
 
+import botrino.interaction.context.ComponentInteractionContext;
+import botrino.interaction.context.InteractionContext;
+import botrino.interaction.listener.ComponentInteractionListener;
+
+/**
+ * Exception that may be thrown inside a {@link ComponentInteractionListener#run(ComponentInteractionContext)} to
+ * indicate that the user may retry a new interaction with the component. If the listener is passed into
+ * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}, the listener will be
+ * registered again upon catching this exception.
+ */
 public class RetryableInteractionException extends RuntimeException {
 
     public RetryableInteractionException() {

@@ -32,8 +32,8 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link MessageInteractionListener} and annotated with this annotation will automatically be
- * registered into the interaction service.
+ * Provides meta-information on a message context menu command. The annotated class is expected to implement {@link
+ * MessageInteractionListener}. Otherwise, this annotation has no effect.
  */
 @Retention(RUNTIME)
 @Target(TYPE)

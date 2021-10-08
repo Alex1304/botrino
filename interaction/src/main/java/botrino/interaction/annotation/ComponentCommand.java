@@ -32,9 +32,10 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link ComponentInteractionListener} and annotated with this annotation will automatically be
- * registered into the interaction service. It also allows to specify a customId without having to override {@link
- * ComponentInteractionListener#customId()}.
+ * Specifies that a {@link ComponentInteractionListener} annotated with this annotation should be registered
+ * automatically into the interaction service by the Botrino framework. It also allows to specify a customId without
+ * having to override {@link ComponentInteractionListener#customId()}. This annotation has no effect on a class that
+ * does not implement {@link ComponentInteractionListener}.
  */
 @Retention(RUNTIME)
 @Target(TYPE)

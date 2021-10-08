@@ -23,23 +23,56 @@
  */
 package botrino.interaction.annotation;
 
+import botrino.interaction.listener.ChatInputInteractionListener;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Provides meta-information on a chat input-based command (also called "slash command"). If there are no subcommands,
+ * the annotated class is expected to implement {@link ChatInputInteractionListener}. Otherwise, listeners are specified
+ * for each subcommand via the @{@link Subcommand} annotation, and the object annotated with this annotation is not
+ * required to implement any interface.
+ */
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface ChatInputCommand {
 
+    /**
+     * The name of the command.
+     *
+     * @return the name
+     */
     String name();
 
+    /**
+     * The description of the command.
+     *
+     * @return the description
+     */
     String description();
 
+    /**
+     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
+     *
+     * @return a boolean
+     */
     boolean defaultPermission() default true;
 
+    /**
+     * The list of subcommands for this command, if any.
+     *
+     * @return an array of subcommand annotations
+     */
     Subcommand[] subcommands() default {};
 
+    /**
+     * The list of subcommand groups for this command, if any.
+     *
+     * @return an array of subcommand group annotations
+     */
     SubcommandGroup[] subcommandGroups() default {};
 }

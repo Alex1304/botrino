@@ -29,6 +29,9 @@ import discord4j.core.object.entity.channel.MessageChannel;
 
 import java.util.Locale;
 
+/**
+ * Provides contextual information on an interaction with a user select menu.
+ */
 public class UserInteractionContext extends AbstractInteractionContext<UserInteractionEvent> {
 
     public UserInteractionContext(InteractionService interactionService, Locale locale,

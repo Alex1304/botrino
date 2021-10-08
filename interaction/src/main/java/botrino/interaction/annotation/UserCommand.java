@@ -32,8 +32,8 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A class implementing {@link UserInteractionListener} and annotated with this annotation will automatically be
- * registered into the interaction service.
+ * Provides meta-information on a user context menu command. The annotated class is expected to implement {@link
+ * UserInteractionListener}. Otherwise, this annotation has no effect.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
@@ -42,7 +42,7 @@ public @interface UserCommand {
     /**
      * The name of the user command.
      *
-     * @return a String
+     * @return the name
      */
     String value();
 

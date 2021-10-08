@@ -29,6 +29,9 @@ import discord4j.core.object.entity.channel.MessageChannel;
 
 import java.util.Locale;
 
+/**
+ * Provides contextual information on an interaction with a chat input-based command (also called "slash command").
+ */
 public class ChatInputInteractionContext extends AbstractInteractionContext<ChatInputInteractionEvent> {
 
     public ChatInputInteractionContext(InteractionService interactionService, Locale locale,

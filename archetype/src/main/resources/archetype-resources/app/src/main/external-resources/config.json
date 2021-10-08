@@ -19,7 +19,6 @@
     },
     "interaction": {
         "application_commands_guild_id": null,
-        "default_ack": true,
-        "default_ephemeral": false
+        "default_ack_mode": "default",
     }
 }

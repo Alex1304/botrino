@@ -30,13 +30,23 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Annotation that indicates how the event should be acknowledged before running the command.
+ * Annotation that indicates how the interaction event should be acknowledged before running the command.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface Acknowledge {
 
-    boolean value() default true;
+    /**
+     * The mode of acknowledgement to apply.
+     *
+     * @return the mode
+     */
+    Mode value();
 
-    boolean ephemeral() default false;
+    enum Mode {
+        DEFAULT,
+        NONE,
+        DEFER,
+        DEFER_EPHEMERAL
+    }
 }

@@ -50,7 +50,7 @@ public final class InteractionExtension implements BotrinoExtension {
     private InteractionService interactionService;
 
     private final Set<Object> chatInputCommands = new HashSet<>();
-    private final Map<Class<?>, ChatInputInteractionListener> chatInputInteractionListeners = new HashMap<>();
+    private final Set<ChatInputInteractionListener> chatInputInteractionListeners = new HashSet<>();
     private final Set<UserInteractionListener> userInteractionListeners = new HashSet<>();
     private final Set<MessageInteractionListener> messageInteractionListeners = new HashSet<>();
     private final Set<ComponentInteractionListener<?>> componentInteractionListeners = new HashSet<>();
@@ -64,7 +64,7 @@ public final class InteractionExtension implements BotrinoExtension {
             chatInputCommands.add(instanceCache.getInstance(clazz));
         }
         if (ChatInputInteractionListener.class.isAssignableFrom(clazz)) {
-            chatInputInteractionListeners.put(clazz, instanceCache.getInstance(
+            chatInputInteractionListeners.add(instanceCache.getInstance(
                     clazz.asSubclass(ChatInputInteractionListener.class)));
         }
         if (UserInteractionListener.class.isAssignableFrom(clazz) && clazz.isAnnotationPresent(UserCommand.class)) {
@@ -93,8 +93,7 @@ public final class InteractionExtension implements BotrinoExtension {
         MatcherConsumer.create()
                 .matchType(InteractionService.class, o -> this.interactionService = o)
                 .match(o -> o.getClass().isAnnotationPresent(ChatInputCommand.class), chatInputCommands::add)
-                .matchType(ChatInputInteractionListener.class,
-                        v -> chatInputInteractionListeners.put(serviceInstance.getClass(), v))
+                .matchType(ChatInputInteractionListener.class, chatInputInteractionListeners::add)
                 .matchType(UserInteractionListener.class,
                         o -> o.getClass().isAnnotationPresent(UserCommand.class), userInteractionListeners::add)
                 .matchType(MessageInteractionListener.class,
@@ -122,17 +121,17 @@ public final class InteractionExtension implements BotrinoExtension {
     public Mono<Void> finishAndJoin() {
         return Mono.defer(() -> {
             Objects.requireNonNull(interactionService);
-            chatInputCommands.forEach(c -> interactionService.registerCommand(c, chatInputInteractionListeners));
-            userInteractionListeners.forEach(interactionService::register);
-            messageInteractionListeners.forEach(interactionService::register);
-            componentInteractionListeners.forEach(interactionService::register);
+            chatInputCommands.forEach(c -> interactionService.registerChatInputCommand(c, chatInputInteractionListeners));
+            userInteractionListeners.forEach(interactionService::registerUserCommand);
+            messageInteractionListeners.forEach(interactionService::registerMessageCommand);
+            componentInteractionListeners.forEach(interactionService::registerComponentCommand);
             interactionService.setErrorHandler(ConfigUtils
                     .selectImplementation(InteractionErrorHandler.class, errorHandlers)
                     .orElse(InteractionErrorHandler.NO_OP));
             interactionService.setEventProcessor(ConfigUtils
                     .selectImplementation(InteractionEventProcessor.class, eventProcessors)
                     .orElse(InteractionEventProcessor.NO_OP));
-            return interactionService.handleCommands();
+            return interactionService.run();
         });
     }
 }

@@ -26,7 +26,16 @@ package botrino.interaction.listener;
 import botrino.interaction.context.MessageInteractionContext;
 import org.reactivestreams.Publisher;
 
+/**
+ * Interface to implement in order to listen for interactions on message context menu commands.
+ */
 public interface MessageInteractionListener extends InteractionListener {
 
+    /**
+     * The code to execute when an interaction is received.
+     *
+     * @param ctx the interaction context
+     * @return a {@link Publisher} completing when the execution of the command is complete.
+     */
     Publisher<?> run(MessageInteractionContext ctx);
 }

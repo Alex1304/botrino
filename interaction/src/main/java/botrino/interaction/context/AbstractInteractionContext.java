@@ -25,6 +25,7 @@ package botrino.interaction.context;
 
 import botrino.interaction.InteractionService;
 import botrino.interaction.RetryableInteractionException;
+import botrino.interaction.annotation.Acknowledge;
 import botrino.interaction.listener.ComponentInteractionListener;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.entity.User;
@@ -57,12 +58,28 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
     }
 
     @Override
-    public final <R> Mono<R> awaitComponentInteraction(ComponentInteractionListener<R> componentInteraction) {
+    public final <R> Mono<R> awaitComponentInteraction(Acknowledge.Mode ack,
+                                                       ComponentInteractionListener<R> componentInteraction) {
         return Mono.defer(() -> {
             final var sink = Sinks.<R>one();
-            interactionService.registerSingleUse(new ComponentInteractionProxy<>(componentInteraction, sink), this);
+            ComponentInteractionProxy<R> proxy;
+            switch (ack) {
+                case NONE:
+                    proxy = new NoAckComponentInteractionProxy<>(componentInteraction, sink);
+                    break;
+                case DEFER:
+                    proxy = new AckComponentInteractionProxy<>(componentInteraction, sink);
+                    break;
+                case DEFER_EPHEMERAL:
+                    proxy = new AckEphemeralComponentInteractionProxy<>(componentInteraction, sink);
+                    break;
+                default:
+                    proxy = new ComponentInteractionProxy<>(componentInteraction, sink);
+            }
+            interactionService.registerSingleUseComponentListener(proxy, this);
             return sink.asMono();
-        }).retryWhen(Retry.indefinitely().filter(RetryableInteractionException.class::isInstance));
+        }).retryWhen(Retry.indefinitely().filter(RetryableInteractionException.class::isInstance))
+                .timeout(interactionService.getAwaitComponentTimeout());
     }
 
     @Override
@@ -113,6 +130,30 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
             return "ComponentInteractionProxy{" +
                     "delegate=" + delegate +
                     '}';
+        }
+    }
+
+    @Acknowledge(Acknowledge.Mode.DEFER)
+    private final static class AckComponentInteractionProxy<R> extends ComponentInteractionProxy<R> {
+
+        private AckComponentInteractionProxy(ComponentInteractionListener<R> delegate, Sinks.One<R> sink) {
+            super(delegate, sink);
+        }
+    }
+
+    @Acknowledge(Acknowledge.Mode.NONE)
+    private final static class NoAckComponentInteractionProxy<R> extends ComponentInteractionProxy<R> {
+
+        private NoAckComponentInteractionProxy(ComponentInteractionListener<R> delegate, Sinks.One<R> sink) {
+            super(delegate, sink);
+        }
+    }
+
+    @Acknowledge(Acknowledge.Mode.DEFER_EPHEMERAL)
+    private final static class AckEphemeralComponentInteractionProxy<R> extends ComponentInteractionProxy<R> {
+
+        private AckEphemeralComponentInteractionProxy(ComponentInteractionListener<R> delegate, Sinks.One<R> sink) {
+            super(delegate, sink);
         }
     }
 }

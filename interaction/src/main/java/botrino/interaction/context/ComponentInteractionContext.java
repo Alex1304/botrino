@@ -29,6 +29,9 @@ import discord4j.core.object.entity.channel.MessageChannel;
 
 import java.util.Locale;
 
+/**
+ * Provides contextual information on an interaction with a message component.
+ */
 public class ComponentInteractionContext extends AbstractInteractionContext<ComponentInteractionEvent> {
 
     public ComponentInteractionContext(InteractionService interactionService, Locale locale,
