@@ -10,6 +10,7 @@ module botrino.interaction {
     exports botrino.interaction.grammar;
     exports botrino.interaction.listener;
     exports botrino.interaction.privilege;
+    exports botrino.interaction.util;
 
     opens botrino.interaction;
     opens botrino.interaction.annotation;

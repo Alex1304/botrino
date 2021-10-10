@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.Locale;
 
 abstract class AbstractInteractionContext<E extends InteractionCreateEvent> implements InteractionContext {
@@ -95,6 +96,11 @@ abstract class AbstractInteractionContext<E extends InteractionCreateEvent> impl
     @Override
     public final User user() {
         return event().getInteraction().getUser();
+    }
+
+    @Override
+    public Duration getAwaitComponentTimeout() {
+        return interactionService.getAwaitComponentTimeout();
     }
 
     private static class ComponentInteractionProxy<R> implements ComponentInteractionListener<R> {

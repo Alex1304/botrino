@@ -313,7 +313,8 @@ public class InteractionService {
     }
 
     /**
-     * Gets the "await component timeout" value from the underlying {@link InteractionConfig}.
+     * Gets the timeout value that is applied when calling
+     * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}.
      *
      * @return a {@link Duration}
      */

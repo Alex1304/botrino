@@ -33,6 +33,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -101,4 +102,12 @@ public interface InteractionContext extends Translator {
      * @return a Mono emitting the return value of the listener once it has been executed.
      */
     <R> Mono<R> awaitComponentInteraction(Acknowledge.Mode ack, ComponentInteractionListener<R> componentInteraction);
+
+    /**
+     * Gets the timeout value that is applied when calling
+     * {@link #awaitComponentInteraction(ComponentInteractionListener)}.
+     *
+     * @return a {@link Duration}
+     */
+    Duration getAwaitComponentTimeout();
 }
