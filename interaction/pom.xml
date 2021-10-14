@@ -33,7 +33,7 @@
     <artifactId>botrino-interaction</artifactId>
 
     <name>Botrino Interaction</name>
-    <description>Interaction framework for bots built using the Botrino API.</description>
+    <description>Powerful library to deal with Discord interactions, part of the Botrino project.</description>
 
     <build>
         <plugins>

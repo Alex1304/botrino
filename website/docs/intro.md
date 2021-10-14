@@ -17,7 +17,7 @@ Starting the development of a Discord bot follows most of the time the same patt
 
 This is how came the idea of this project: have something that can handle for you all the initial workflow of setting up a project with a solid structure, at the only cost of letting the framework choose some libraries for you, so that you can focus on what matters. Botrino is born.
 
-It also aims at providing a [command extension](command-extension/overview.md) that integrates well with the structure of Botrino, while still letting you the choice of using your own.
+It also aims at providing a [library for Discord's Interaction API](interaction-library/overview.md) that integrates well with the structure of Botrino, while still being decoupled from it.
 
 ## Overview
 

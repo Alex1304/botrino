@@ -6,6 +6,5 @@ import botrino.api.annotation.BotModule;
 @BotModule
 open module ${package} {
 
-    requires botrino.api;
     requires botrino.interaction;
 }

@@ -38,6 +38,8 @@ import botrino.interaction.listener.*;
 import botrino.interaction.privilege.PrivilegeException;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.*;
@@ -82,8 +84,7 @@ public class InteractionService {
     private final Map<String, UserInteractionListener> userInteractionListeners = new ConcurrentHashMap<>();
     private final Map<String, MessageInteractionListener> messageInteractionListeners = new ConcurrentHashMap<>();
     private final Map<String, ComponentInteractionListener<?>> componentInteractions = new ConcurrentHashMap<>();
-    private final Map<ContextKey, Map<String, ComponentInteractionListener<?>>> componentInteractionsSingleUse =
-            new ConcurrentHashMap<>();
+    private final Cache<ContextKey, Map<String, ComponentInteractionListener<?>>> componentInteractionsSingleUse;
 
     private final Map<InteractionListener, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
     private InteractionErrorHandler errorHandler;
@@ -110,6 +111,9 @@ public class InteractionService {
         this.defaultLocale = defaultLocale;
         this.errorHandler = errorHandler;
         this.eventProcessor = eventProcessor;
+        this.componentInteractionsSingleUse = Caffeine.newBuilder()
+                .expireAfterWrite(getAwaitComponentTimeout())
+                .build();
     }
 
     /**
@@ -121,6 +125,19 @@ public class InteractionService {
      */
     public static Builder builder(InteractionConfig config, GatewayDiscordClient gateway) {
         return new Builder(config, gateway);
+    }
+
+    /**
+     * Creates a new {@link InteractionService} without error handler or event processor, and with {@link
+     * Locale#getDefault()} as default locale. To customize them, see {@link #builder(InteractionConfig,
+     * GatewayDiscordClient)}.
+     *
+     * @param config  the configuration for the service
+     * @param gateway the gateway discord client
+     * @return a new {@link InteractionService}
+     */
+    public static InteractionService create(InteractionConfig config, GatewayDiscordClient gateway) {
+        return builder(config, gateway).build();
     }
 
     private static boolean hasCommandChanged(ApplicationCommandData oldCommand, ApplicationCommandRequest newCommand) {
@@ -307,7 +324,8 @@ public class InteractionService {
                                                    InteractionContext parentContext) {
         Objects.requireNonNull(listener);
         Objects.requireNonNull(parentContext);
-        componentInteractionsSingleUse.computeIfAbsent(ContextKey.from(parentContext), k -> new ConcurrentHashMap<>())
+        componentInteractionsSingleUse.asMap().computeIfAbsent(ContextKey.from(parentContext),
+                        k -> new ConcurrentHashMap<>())
                 .put(listener.customId(), listener);
         LOGGER.debug("Registered single use component interaction listener {}", listener);
     }
@@ -359,11 +377,11 @@ public class InteractionService {
 
     private Mono<Tuple2<ComponentInteractionListener<?>, Boolean>>
     findComponentListener(ContextKey key, ComponentInteractionEvent event) {
-        return Mono.justOrEmpty(componentInteractionsSingleUse.getOrDefault(key, new ConcurrentHashMap<>())
+        return Mono.justOrEmpty(componentInteractionsSingleUse.asMap().getOrDefault(key, new ConcurrentHashMap<>())
                         .remove(event.getCustomId()))
                 .doOnNext(listener -> {
                     LOGGER.debug("Consumed single use component interaction listener {}", listener);
-                    componentInteractionsSingleUse.computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v);
+                    componentInteractionsSingleUse.asMap().computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v);
                 })
                 .<Tuple2<ComponentInteractionListener<?>, Boolean>>map(listener -> Tuples.of(listener, true))
                 .switchIfEmpty(Mono.defer(() ->
@@ -481,65 +499,6 @@ public class InteractionService {
         InteractionContext ctx();
     }
 
-    private final static class ChatInputCommandKey {
-
-        private final String name, subcommandGroup, subcommand;
-
-        private ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
-            this.name = name;
-            this.subcommandGroup = subcommandGroup;
-            this.subcommand = subcommand;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ChatInputCommandKey that = (ChatInputCommandKey) o;
-            return name.equals(that.name) && Objects.equals(subcommandGroup, that.subcommandGroup) &&
-                    Objects.equals(subcommand, that.subcommand);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name, subcommandGroup, subcommand);
-        }
-
-        @Override
-        public String toString() {
-            return '/' + name + (subcommandGroup != null ? ' ' + subcommandGroup : "") +
-                    (subcommand != null ? ' ' + subcommand : "");
-        }
-    }
-
-    private final static class ContextKey {
-
-        private final long channelId;
-        private final long userId;
-
-        private ContextKey(long channelId, long userId) {
-            this.channelId = channelId;
-            this.userId = userId;
-        }
-
-        private static ContextKey from(InteractionContext ctx) {
-            return new ContextKey(ctx.channel().getId().asLong(), ctx.user().getId().asLong());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ContextKey that = (ContextKey) o;
-            return channelId == that.channelId && userId == that.userId;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(channelId, userId);
-        }
-    }
-
     public static final class Builder {
 
         private final InteractionConfig config;
@@ -596,6 +555,65 @@ public class InteractionService {
             final var errorHandler = Objects.requireNonNullElse(this.errorHandler, InteractionErrorHandler.NO_OP);
             final var eventProcessor = Objects.requireNonNullElse(this.eventProcessor, InteractionEventProcessor.NO_OP);
             return new InteractionService(config, gateway, defaultLocale, errorHandler, eventProcessor);
+        }
+    }
+
+    private final static class ChatInputCommandKey {
+
+        private final String name, subcommandGroup, subcommand;
+
+        private ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
+            this.name = name;
+            this.subcommandGroup = subcommandGroup;
+            this.subcommand = subcommand;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ChatInputCommandKey that = (ChatInputCommandKey) o;
+            return name.equals(that.name) && Objects.equals(subcommandGroup, that.subcommandGroup) &&
+                    Objects.equals(subcommand, that.subcommand);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, subcommandGroup, subcommand);
+        }
+
+        @Override
+        public String toString() {
+            return '/' + name + (subcommandGroup != null ? ' ' + subcommandGroup : "") +
+                    (subcommand != null ? ' ' + subcommand : "");
+        }
+    }
+
+    private static final class ContextKey {
+
+        private final long channelId;
+        private final long userId;
+
+        private ContextKey(long channelId, long userId) {
+            this.channelId = channelId;
+            this.userId = userId;
+        }
+
+        private static ContextKey from(InteractionContext ctx) {
+            return new ContextKey(ctx.channel().getId().asLong(), ctx.user().getId().asLong());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ContextKey that = (ContextKey) o;
+            return channelId == that.channelId && userId == that.userId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(channelId, userId);
         }
     }
 

@@ -1,0 +1,58 @@
+---
+title: Configuration
+---
+
+This page will cover the configuration part of the interaction library.
+
+## Configuring the library for the Botrino framework
+
+For the library to work with the Botrino framework, you just need to make sure that your bot module `requires botrino.interaction`, and that the `interaction` entry is present in your `config.json`. The entry has the following structure:
+```json
+{
+    "interaction": {
+        "application_commands_guild_id": null,
+        "default_ack_mode": "default",
+        "await_component_timeout_seconds": 600
+    }
+}
+```
+
+| Field | Type | Description | Required? |
+|-------|------|-------------|-----------|
+| application_commands_guild_id | long | The ID of the guild in which commands will be deployed. Specifying `null` or completely omitting the field will deploy them globally. | No, default `null` |
+| default_ack_mode | string | How interactions should be acknowledged by default. Possible values (case insensitive): <ul><li>`default`: equivalent to `defer`.</li><li>`defer`: automatically acknowledges all interactions with defer reply or defer edit as appropriate. This is the default behavior.</li><li>`defer_ephemeral`: similar to `defer` except the EPHEMERAL flag is set, meaning the next reply/edit will only be visible to the user who initiated the interaction.</li><li>`none`: won't acknowledge any interaction automatically. In that case, you will be in charge of acknowledging interactions manually.</li></ul> | No, default `default` |
+| await_component_timeout_seconds | integer | The time in seconds after which `InteractionContext::awaitComponentInteraction` automatically times out. | No, default `600` |
+
+## Configuring the library manually
+
+If you don't use the framework, the configuration is done via the `InteractionConfig` object, which is used to construct `InteractionService`:
+
+```java
+// Use default values
+final var config = InteractionConfig.withDefaults();
+// Use custom values
+final var config = InteractionConfig.builder()
+        .applicationCommandsGuildId(123456L)
+        .defaultACKMode("default")
+        .awaitComponentTimeoutSeconds(600)
+        .build();
+// Login to Discord using the token passed as program argument
+final var gateway = DiscordClient.create(args[0]).login().block();
+// Initialize the interaction service
+final var interactionService = InteractionService.create(config, gateway);
+```
+
+The methods available in `InteractionConfig::builder` are the same as the ones in the JSON described previously.
+
+Once you have the `InteractionService` instance, you can register your commands and subscribe to its `run()` method:
+
+```java
+// Register your commands
+interactionService.registerChatInputCommand(new PingCommand());
+// Listen for interaction events until the bot disconnects
+interactionService.run().takeUntilOther(gateway.onDisconnect()).block();
+```
+
+:::info
+None of this is necessary when using the Botrino framework. Creation of `InteractionConfig` and `InteractionService`, registration of commands and execution of the `run()` method are all done automatically.
+:::

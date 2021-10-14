@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 * JDK 11 or above. You can download the OpenJDK [here](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot)
 * Apache Maven 3, preferably the latest version available [here](https://maven.apache.org/download.cgi).
 
-This documentation assumes you have decent knowledge of the Java programming language. Being familiar with Discord4J and reactive programming is recommended, but not required. The [Discord4J documentation](https://wiki.discord4j.com) provides great guides to get started with [reactive programming](https://wiki.discord4j.com/en/latest/Reactive-(Reactor)-Tutorial/) and [advanced Java features](https://wiki.discord4j.com/en/latest/Lambda-Tutorial/).
+This documentation assumes you have decent knowledge of the Java programming language. Being familiar with Discord4J and reactive programming is not required, although recommended. The [Discord4J documentation](https://wiki.discord4j.com) provides great guides to get started with [reactive programming](https://wiki.discord4j.com/en/latest/Reactive-(Reactor)-Tutorial/) and [advanced Java features](https://wiki.discord4j.com/en/latest/Lambda-Tutorial/).
 
 ## From the Maven archetype
 
@@ -64,7 +64,9 @@ myproject
 * The `launcher` directory contains the module used by `delivery` to create a basic launcher for the runtime image.
 * The `pom.xml` which configures the project by importing the libraries and configuring the multi-module build.
 
-Note that the archetype will automatically include the [command extension](command-extension/overview.md) in your project dependencies. If you do not want to use the command extension and use your own instead, you can remove the Maven dependency to `botrino-command` in both the root `pom.xml` and `app/pom.xml`, remove the `"command"` object from `app/src/main/external-resources/config.json`, and remove the `requires botrino.command;` line from `app/module-info.java`.
+:::info
+The archetype will automatically include the [interaction library](interaction-library/overview.md) in your project dependencies.
+:::
 
 This project is ready to be opened in your favorite IDE (Eclipse, IntelliJ...), and you can directly jump to the [Running your bot](#running-your-bot) section.
 
@@ -72,7 +74,7 @@ This project is ready to be opened in your favorite IDE (Eclipse, IntelliJ...), 
 
 If you don't want the JLink runtime image, or if you want to use a build tool other than Maven, you may as well start from a blank project and import Botrino yourself. Be aware that it will require a bit more effort to set up than using the archetype.
 
-Import the following dependencies (if you don't want the command extension you can omit `botrino-command`):
+Import the following dependency:
 
 <Tabs
     groupId="build-tools"
@@ -89,11 +91,6 @@ Import the following dependencies (if you don't want the command extension you c
     <artifactId>botrino-api</artifactId>
     <version>[VERSION]</version>
 </dependency>
-<dependency>
-    <groupId>com.alex1304.botrino</groupId>
-    <artifactId>botrino-command</artifactId>
-    <version>[VERSION]</version>
-</dependency>
 ```
 
 </TabItem>
@@ -106,7 +103,6 @@ repositories {
 
 dependencies {
     implementation 'com.alex1304.botrino:botrino-api:[VERSION]'
-    implementation 'com.alex1304.botrino:botrino-command:[VERSION]'
 }
 ```
 
@@ -115,7 +111,7 @@ dependencies {
 
 As usual, replace `[VERSION]` with the latest version available: [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-api)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-api)
 
-Create a `module-info.java` annotated with `@BotModule`, with the `open` modifier and that requires the Botrino API module:
+Create a `module-info.java` annotated with `@BotModule`, with the `open` modifier and that requires the `botrino.api` module:
 
 ```java
 import botrino.api.annotation.BotModule;
@@ -124,11 +120,10 @@ import botrino.api.annotation.BotModule;
 open module com.example.myproject {
 
     requires botrino.api;
-    requires botrino.command; // if using command extension
 }
 ```
 
-The module `botrino.api` transitively requires all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries.
+The module transitively requires all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries.
 
 :::caution
 If you get compilation errors, remember to configure your project to use JDK 11 or above.
@@ -149,13 +144,17 @@ public final class Main {
 }
 ```
 
+:::info
+If you want to include the interaction library in your project, refer to [this page](interaction-library/overview.md#option-1-using-botrino-framework).
+:::
+
 ## Running your bot
 
 ### During development
 
-When you are developing your bot, you may prefer to run the bot directly in your IDE rather than package your application every time.
+When you are developing your bot, you may prefer running the bot directly in your IDE rather than package your application every time.
 
-If you used the archetype, copy the contents of `app/src/main/external-resources` in a new directory on your hard drive, **outside of the project workspace**. If you aren't using the archetype, create a directory outside of your project and add a `config.json` file with the following contents (insert your bot token in the `"token"` field, and remove the `"command"` field if you aren't using the command extension):
+If you used the archetype, copy the contents of `app/src/main/external-resources` in a new directory on your hard drive, **outside of the project workspace**. If you aren't using the archetype, create a directory outside of your project and add a `config.json` file with the following contents (insert your bot token in the `"token"` field, and remove the `"interaction"` field if you aren't using the interaction library):
 
 ```json
 {
@@ -172,9 +171,7 @@ If you used the archetype, copy the contents of `app/src/main/external-resources
         "default_locale": "en",
         "supported_locales": ["en"]
     },
-    "command": {
-        "prefix": "!"
-    }
+    "interaction": {}
 }
 ```
 
@@ -199,7 +196,7 @@ Use the tabs below depending on whether you use Eclipse or IntelliJ. If you use 
 
 5. In the "Main class" field, enter the fully qualified name of the class containing the main method
 
-6. In the "VM options" field, copy and paste the following: `--add-modules=ALL-MODULE-PATH -cp .`
+6. In the "VM options" field, copy and paste the following: `--add-modules=ALL-MODULE-PATH -cp . -p $MODULE_DIR$/target/dependency:$MODULE_DIR$/target/classes`
 
 7. In the "Working directory" field, enter the absolute path (or click the folder icon to browse) to the directory where you copied/created the configuration files earlier
 
@@ -239,15 +236,10 @@ If you aren't using the archetype, you would need to configure yourself the pack
 mvn package -Dtoken=<BOT_TOKEN>
 ```
 
-The bot token property is not required, but saves you from manually editing the json file to insert the token later on. This command will produce a `.zip` file found in `delivery/target` directory. You can unzip it in your production environment, and just run `./bin/<launcher name>`. The launcher will find a file named `launcher.cmd` in the working directory from which the command is launched. If you run the launcher from a different directory, you can specify the location to `launcher.cmd` in the arguments:
-
-```
-./bin/<launcher name> /path/to/launcher/cmd
-```
-`<launcher name>` by default corresponds to the `artifactId` of your project.
+The bot token property is not required, but saves you from manually editing the json file to insert the token later on. This command will produce a `.zip` file found in `delivery/target` directory. You can unzip it in your production environment, and just run `./bin/<launcher name>`. `<launcher name>` by default corresponds to the `artifactId` of your project.
 
 :::info
-Running the bot via the launcher will start the process in the background, so it is not attached to the current command line window. The background process' working directory will be set to the location of the `launcher.cmd` file. If you want to run the bot itself directly within the command line window, you can just execute the command line found in the `launcher.cmd` file directly.
+By default, the application will be attached to the current command line window, meaning the bot would disconnect if you close the terminal. You can run the application with the `--detached` flag to launch the bot in the background. You can combine it with the `--batch-mode` flag so that it won't ask you to press a key to exit.
 :::
 
 ### Adding system modules to the JLink runtime image
@@ -265,4 +257,4 @@ If you build the bot using the JLink runtime image generated by the archetype, t
 </addModules>
 ```
 
-If your application needs another module from the JDK, all you need to do is to edit this configuration and add more `<addModule>` tags.
+If your application needs another module from the JDK, for example `java.sql`, all you need to do is to edit this configuration and add more `<addModule>` tags.
