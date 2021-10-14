@@ -24,4 +24,5 @@ module botrino.interaction {
     requires com.github.benmanes.caffeine;
 
     requires static org.immutables.value;
+    requires static org.checkerframework.checker.qual; // Javadoc fails to build if not included https://issues.apache.org/jira/browse/MJAVADOC-677
 }
