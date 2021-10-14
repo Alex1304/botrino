@@ -2,11 +2,9 @@
 title: Overview
 ---
 
-Botrino comes with an extension that allows to easily create commands based on message create events. Although Discord recently added [Slash Commands](https://discord.com/developers/docs/interactions/slash-commands) as a native way to implement commands within Discord, message create-based commands will certainly remain the most flexible solution.
-
-## Preamble
-
-By definition, as this is an extension, it does not belong to the core framework API and you are not required to use it. It aims at giving you enough flexibility to cover the majority of use cases, but for very specific ones you might need to implement your own solution. That's why feedback on this extension is more than welcome, if you feel something is missing feel free to open an issue on the [GitHub repository](https://github.com/Alex1304/botrino).
+:::caution
+This extension has been deprecated in favor of the new [interaction library](../interaction-library/overview.md), which supports the new application commands and interaction API of Discord.
+:::
 
 ## Features
 

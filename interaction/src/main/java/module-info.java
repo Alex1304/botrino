@@ -20,7 +20,8 @@ module botrino.interaction {
 
     provides BotrinoExtension with InteractionExtension;
 
-    requires botrino.api;
+    requires transitive botrino.api;
+    requires com.github.benmanes.caffeine;
 
     requires static org.immutables.value;
 }

@@ -101,12 +101,12 @@ This is the last method that is invoked during the startup sequence. It allows y
 If an exception is thrown or an error is emitted via the `Mono` from this method, the exception will propagate to the main thread, which will result in the bot to forcefully disconnect and the application to be terminated.
 :::
 
-## A concrete example: the command extension
+## A concrete example: the interaction library
 
-The [command extension](command-extension/overview.md) of Botrino provides an implementation of `BotrinoExtension`, which is in charge of collecting the classes implementing `Command`, `CommandErrorHandler` and `CommandEventProcessor` in order to register them in the `CommandService`. It also exposes a new configuration entry that defines new properties such as the command prefix.
+The [interaction library](../interaction-library/overview.md) of Botrino provides an implementation of `BotrinoExtension`, which is in charge of collecting the classes implementing `XxxInteractionListener`, `InteractionErrorHandler`, `InteractionEventProcessor` and so on, in order to register them in the `InteractionService`. It also exposes a new entry in `config.json` that allows to construct the [configuration](../interaction-library/configuration.md) object.
 
-You can check the source code of the command extension on GitHub [here](https://github.com/Alex1304/botrino/blob/main/command/src/main/java/botrino/command/CommandExtension.java). A few things to note to understand the code:
-* Classes with the `@RdiService` annotation are ignored, since we want to use the instance created by RDI in case `Command`, `CommandErrorHandler` and `CommandEventProcessor` are declared as services.
+You can check the source code of the extension class of the interaction library on GitHub [here](https://github.com/Alex1304/botrino/blob/main/interaction/src/main/java/botrino/interaction/InteractionExtension.java). A few things to note to understand the code:
+* Classes with the `@RdiService` annotation are ignored, since we want to use the instance created by RDI in case `XxxInteractionListener`, `InteractionErrorHandler` and `InteractionEventProcessor` are declared as services.
 * An `InstanceCache` is used so that the same instance can be reused in case a class implements more than one interface.
-* `CommandService` utilizes RDI annotations, so we provide it via `provideExtraDiscoverableClasses()` and not `provideExtraServices()`.
-* All implementations that were found are finally registered in the `finishAndJoin()` method, which starts the command listener at the end.
+* `InteractionService` utilizes RDI annotations, so we provide it via `provideExtraDiscoverableClasses()` and not `provideExtraServices()`.
+* All implementations that were found are finally registered in the `finishAndJoin()` method, which runs the interaction service at the end.

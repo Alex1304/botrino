@@ -1,0 +1,238 @@
+---
+title: Dealing with components
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+The library offers two ways to handle interactions with message components (buttons and select menus).
+
+## Handling component interactions as regular commands
+
+The first way is to treat component interactions as regular commands, which consists of declaring a listener that is going to be called every time a component with a specific `customId` is interacted with. The structure is similar to [creating commands](creating-commands.md):
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ComponentCommand;
+import botrino.interaction.context.ButtonInteractionContext;
+import botrino.interaction.listener.ComponentInteractionListener;
+import org.reactivestreams.Publisher;
+
+@ComponentCommand("clickme")
+public final class ClickMeButtonCommand implements ComponentInteractionListener<Void> {
+
+    @Override
+    public Publisher<Void> run(ButtonInteractionContext ctx) {
+        return ctx.event().createFollowup("Button clicked!").then();
+    }
+}
+```
+
+The class implements `ComponentInteractionListener<Void>` and overrides `run(ButtonInteractionContext)` (it has several `run()` overloads, one for each type of component, here we want a button. For select menus you're supposed to override `run(SelectMenuInteractionContext)`). The `@ComponentCommand` annotation specifies the customId to listen for. Let's make a chat input command to create the message containing the button:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.context.ChatInputInteractionContext;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import org.reactivestreams.Publisher;
+
+@ChatInputCommand(name = "create-button", description = "Create a button.")
+public final class CreateButtonCommand implements ChatInputInteractionListener {
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return ctx.event().createFollowup("Click the button:")
+                .withComponents(ActionRow.of(
+                        Button.primary("clickme", "Click me!")));
+    }
+}
+```
+
+As usual, unless you are using the Botrino framework, you need to register them manually:
+```java
+interactionService.registerComponentCommand(new ClickMeButtonCommand());
+interactionService.registerChatInputCommand(new CreateButtonCommand());
+```
+
+Result:
+
+<img src={useBaseUrl('img/clickme.png')} alt="" />
+
+:::info
+The `@ComponentCommand` annotation is in fact not required if you aren't using the Botrino framework. You may as well override the `customId()` method from `ComponentInteractionListener`. The annotation is still required when using the Botrino framework, as it will only auto-register listeners containing that annotation, but if you are already overriding `customId()` you can use `@ComponentCommand` alone without the value. An example might be more clear:
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ComponentCommand;
+import botrino.interaction.context.ButtonInteractionContext;
+import botrino.interaction.listener.ComponentInteractionListener;
+import org.reactivestreams.Publisher;
+
+@ComponentCommand // You may omit the customId here...
+public final class ClickMeButtonCommand implements ComponentInteractionListener<Void> {
+    
+    @Override
+    public String customId() {
+        return "clickme"; // ...if you specify it here instead
+    }
+
+    @Override
+    public Publisher<Void> run(ButtonInteractionContext ctx) {
+        return ctx.event().createFollowup("Button clicked!").then();
+    }
+}
+```
+:::
+
+## Waiting for component interactions inside a command
+
+In many cases, you want to use components as a way to make your commands more interactive, for example if you need confirmation from the user to perform an action. You would need some way to "pause" the execution of your command and resume when the user has given a response by clicking a button or a select menu. This is made easy with the `awaitButtonClick(customId)` and `awaitSelectMenuItems(customId)` methods. Here's an example of a simple command waiting for the user to select an item and display the value clicked:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.context.ChatInputInteractionContext;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.SelectMenu;
+import discord4j.core.object.entity.Message;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
+
+import java.util.UUID;
+
+import static botrino.interaction.listener.ComponentInteractionListener.selectMenu;
+
+@ChatInputCommand(name = "select", description = "Command for testing select menus")
+public class SelectCommand implements ChatInputInteractionListener {
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        final var customId = UUID.randomUUID().toString();
+        return ctx.event().createFollowup("Select an option:")
+                .withComponents(ActionRow.of(SelectMenu.of(customId,
+                        SelectMenu.Option.of("option 1", "foo"),
+                        SelectMenu.Option.of("option 2", "bar"),
+                        SelectMenu.Option.of("option 3", "baz"))))
+                .map(Message::getId)
+                // Wait until the select menu is interacted with and return the value clicked
+                .flatMap(messageId -> ctx.awaitSelectMenuItems(customId)
+                        .flatMap(items -> ctx.event().createFollowup("You clicked: " + items.get(0))
+                                .then(ctx.event().deleteFollowup(messageId))));
+    }
+}
+```
+
+1. Since you want to listen for one specific select menu (and not all select menus with some customId), you generate a customId that is unique for each invocation of the `/select` command. You can easily generate a random string via `java.util.UUID`.
+2. A first followup is sent with the message containing the select menu.
+3. Once the message has been sent, call `awaitSelectMenuItems(customId)` with the same customId generated previously. It will wait for the user to interact with the menu and will emit the value clicked.
+4. The value received is then displayed via a new followup message.
+
+:::warning
+If you don't make the customId unique on each run, there will be conflicts when the `/select` command is run several times consecutively by the same user in the same channel.
+:::
+
+Here is another example with `awaitButtonClick(customId)` that asks the user to confirm when resetting a user's nickname:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.UserCommand;
+import botrino.interaction.context.UserInteractionContext;
+import botrino.interaction.listener.UserInteractionListener;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Message;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
+
+import java.util.UUID;
+
+import static botrino.interaction.listener.ComponentInteractionListener.button;
+
+@UserCommand("Reset Nickname")
+public class ResetNickCommand implements UserInteractionListener {
+
+    @Override
+    public Publisher<?> run(UserInteractionContext ctx) {
+        final var guildId = ctx.event().getInteraction().getGuildId().orElse(null);
+        if (guildId == null) {
+            return ctx.event().createFollowup("Cannot use outside of a guild");
+        }
+        final var yesId = UUID.randomUUID().toString();
+        final var noId = UUID.randomUUID().toString();
+        return ctx.event().createFollowup("Reset the nickname of that user?")
+                .withComponents(ActionRow.of(
+                        Button.primary(yesId, "Yes"),
+                        Button.secondary(noId, "No")))
+                .map(Message::getId)
+                .flatMap(messageId -> Mono.firstWithValue(
+                                ctx.awaitButtonClick(yesId),
+                                ctx.awaitButtonClick(noId))
+                        .flatMap(buttonClicked -> buttonClicked.equals(yesId) ? ctx.event()
+                                .getClient()
+                                .getMemberById(guildId, ctx.event().getTargetId())
+                                .flatMap(member -> member.edit().withNicknameOrNull(null))
+                                .then(ctx.event().createFollowup("Nickname reset successful!"))
+                                : ctx.event().createFollowup("Action cancelled"))
+                        .then(ctx.event().deleteFollowup(messageId)));
+    }
+}
+```
+
+The code is quite self-explanatory: we display two buttons, one for "yes" and one for "no". We use `Mono.firstWithValue` to only wait for the first click on either of the two buttons, and depending on which button was clicked, we execute one or the other action.
+
+:::tip
+There exists a more generic method `awaitComponentInteraction` that lets you manipulate the underlying interaction context before returning a value. It accepts a `ComponentInteractionListener<R>` that you can construct via its static methods `button(String, Function)` and `selectMenu(String, Function)`, each accepting the customId and a function receiving a `ButtonInteractionContext` or `SelectMenuInteractionContext` and producing a value of any type.
+:::
+
+## Pagination system with components
+
+Making a pagination system is one of the most obvious use cases for message components. The library provides a static method `MessagePaginator::paginate` to build paginated messages easily. See the example below:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.context.ChatInputInteractionContext;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import botrino.interaction.util.MessagePaginator;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import discord4j.core.spec.MessageCreateSpec;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
+
+@ChatInputCommand(name = "paginate", description = "Pagination testing")
+public final class PaginateCommand implements ChatInputInteractionListener {
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return MessagePaginator.paginate(ctx, 5, state -> Mono.just(MessageCreateSpec.create()
+                .withContent("Page " + (state.getPage() + 1) + "/" + state.getPageCount())
+                .withComponents(ActionRow.of(
+                        state.previousButton(customId -> Button.secondary(customId, "<< Previous")),
+                        state.nextButton(customId -> Button.secondary(customId, "Next >>")),
+                        state.closeButton(customId -> Button.danger(customId, "Close"))
+                ))));
+    }
+}
+```
+
+<img src={useBaseUrl('img/paginate.png')} alt="" />
+
+* The `paginate` method takes 3 arguments. The first one is the interaction context, the second one is the total number of pages, and the last one is a function that receives a state and produces the message to display. An overload exists allowing you to specify the initial page number (by default it starts at the first page).
+* The `state` holds information on the current state of the paginator, such as the current page number and whether it is active
+* To render the buttons, the state exposes three methods to build previous, next and close buttons respectively. The state object controls whether the buttons are enabled or disabled according to whether we are at first page (in which case previous button should be disabled), at last page (in which case next button should be disabled), or if the paginator has already closed, in which case all buttons should be disabled.
+
+:::info
+The paginator automatically closes as per the `await_component_timeout_seconds` value defined in the [configuration](configuration.md).
+:::
+
+

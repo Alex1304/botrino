@@ -1,0 +1,26 @@
+---
+title: Cooldowns
+---
+
+If your commands perform costly operations or can potentially be abused, you may want to set a limit on the number of times the command can be used. The Cooldown API will allow you to deal with these situations without hassle.
+
+## Set a cooldown to a command
+
+Override the `cooldown()` method from `InteractionListener`, and specify the cooldown using `Cooldown.of(int, Duration)`:
+
+```java
+@Override
+public Cooldown cooldown() {
+    return Cooldown.of(1, Duration.ofMinutes(1));
+}
+```
+
+The integer represents the maximum number of times the command can be executed within a timeframe, and the duration represents the timeframe itself. Therefore, this example corresponds to a cooldown of **once per minute**.
+
+:::info
+Cooldowns are applied **per user**. Two different users using the same command will always have their own separate usage limits.
+:::
+
+## Handling cooldowns
+
+When a user reaches the maximum number of permits and attempts to use the command again, the command will fail with a `CooldownException`. You can handle this exception via the command error handler, which will be covered in the [next section](handling-errors.md).

@@ -1,0 +1,262 @@
+---
+title: Creating commands
+---
+
+Commands represent the main form of interaction that Discord bots have with users. Creating commands is a simple and straightforward process, with the ability to customize different aspects of them.
+
+## Chat input (aka "slash") commands
+
+### Basic command
+
+A slash command is a command that is triggered when the user sends `/command-name` in chat. In the library, they are called "chat input commands".
+
+Here is an example of a `/ping` command that makes the bot reply with "Pong!":
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import botrino.interaction.context.ChatInputInteractionContext;
+import org.reactivestreams.Publisher;
+
+@ChatInputCommand(name = "ping", description = "Pings the bot to check if it is alive.")
+public final class PingCommand implements ChatInputInteractionListener {
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return ctx.event().createFollowup("Pong!");
+    }
+}
+```
+
+* A chat input command must have a `@ChatInputCommand` annotation that contains the meta-information required by Discord (name of the command, description, defaultPermission, etc), and must implement the `ChatInputInteractionListener` interface.
+* The `run` method accepts a `ChatInputInteractionContext` that holds contextual information on the command being executed, such as the original `ChatInputInteractionEvent`, the `MessageChannel` where the interaction happened, the `User` who initiated the interaction, and a `Locale` that may have been adapted to the target user (see [Filtering and adapting events](filtering-and-adapting-events.md)).
+* Events are automatically acknowledged by default, so you can directly call `createFollowup()` without using `deferReply()` first (`reply()` will not work unless you disable automatic acknowledgment, see [Acknowledging Interactions](acknowledging-interactions.md))
+
+:::info
+If you are using the Botrino framework, you have nothing else to do, the command will be automatically recognized and registered. Otherwise, you need to manually register it into the `InteractionService` like this:
+
+```java
+interactionService.registerChatInputCommand(new PingCommand());
+```
+:::
+
+### Command options
+
+A command may accept one or many options, whether they are required or optional. The library provides `ChatInputCommandGrammar` that allows to inject the option values into the fields of a class that is going to be instantiated when the command is executed. Here is an example of a command using options:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.context.ChatInputInteractionContext;
+import botrino.interaction.grammar.ChatInputCommandGrammar;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import org.reactivestreams.Publisher;
+
+import java.util.List;
+
+@ChatInputCommand(name = "options", description = "Option testing")
+public class OptionsCommand implements ChatInputInteractionListener {
+
+    private final ChatInputCommandGrammar<Options> grammar = ChatInputCommandGrammar.of(Options.class);
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return grammar.resolve(ctx.event()).flatMap(options -> ctx.event()
+                .createFollowup("Value of `my-string`: " + options.myString));
+    }
+
+    @Override
+    public List<ApplicationCommandOptionData> options() {
+        return grammar.toOptions();
+    }
+
+    private static class Options {
+        @ChatInputCommandGrammar.Option(
+                type = ApplicationCommandOption.Type.STRING,
+                name = "my-string",
+                description = "The string argument",
+                required = true,
+                choices = {
+                        @ChatInputCommandGrammar.Choice(name = "Choice 1", stringValue = "1"),
+                        @ChatInputCommandGrammar.Choice(name = "Choice 2", stringValue = "2"),
+                        @ChatInputCommandGrammar.Choice(name = "Choice 3", stringValue = "3")
+                }
+        )
+        String myString;
+    }
+}
+```
+
+1. Create a new class that declares the fields in which you want to inject the option values. It is recommended to use an internal class for better code readability, unless you are re-using the same class for several commands. The class must have a no-arg contructor, and must be declared `static` if internal. The fields may be `private`, but you can also omit the access modifier to avoid IDE warnings about the field never being assigned a value.
+2. Use the annotation `@ChatInputCommandGrammar.Option` on the field to declare the properties of the option (the type, the name, the description, whether they are required or not, and the array of value choices, if any).
+3. Create a new `ChatInputCommandGrammar` and pass the class to the `.of()` method. You only need to instantiate once, rather than on each command execution.
+4. In the `run(ChatInputInteractionContext)` method, call the `resolve(ChatInputInteractionEvent)` method which will read the options, instantiate the class and inject the values in the annotated fields. You can then use the object to conveniently access the values, as show in the example above.
+5. Override the `options()` method from `ChatInputInteractionListener` and make it return `ChatInputCommandGrammar#toOptions()`.
+
+For reference, here is a table associating each `ApplicationCommandOption.Type` with the type of the field carrying the annotation:
+
+| Option type | Type of annotated field |
+|---|---|
+| `STRING` | `java.lang.String` |
+| `INTEGER` | `java.lang.Long` (primitive `long` may be used only if `required = true`) |
+| `NUMBER` | `java.lang.Double` (primitive `double` may be used only if `required = true`) |
+| `BOOLEAN` | `java.lang.Boolean` (primitive `boolean` may be used only if `required = true`) |
+| `USER` | `discord4j.core.object.entity.User` (or `discord4j.core.object.entity.Member` if in a guild) |
+| `CHANNEL` | `discord4j.core.object.entity.channel.Channel` |
+| `ROLE` | `discord4j.core.object.entity.Role` |
+| `MENTIONABLE` | `discord4j.common.util.Snowflake` |
+
+:::caution
+Optional options will be filled with `null` if not specified by the user, which means you cannot use primitive types for `INTEGER`, `NUMBER` and `BOOLEAN` if `required = false`, otherwise you will get `NullPointerException`s.
+:::
+
+### Subcommands and subcommand groups
+
+Discord allows to create subcommands and subcommand groups to help in organizing the logic of a complex command. Here is an example of a command using subcommands and subcommand groups:
+
+```java
+@ChatInputCommand(
+        name = "nest",
+        description = "Subcommand testing",
+        subcommands = {
+                @Subcommand(name = "sub1", description = "Subcommand 1", listener = NestCommand.Sub1.class),
+                @Subcommand(name = "sub2", description = "Subcommand 2", listener = NestCommand.Sub2.class)
+        },
+        subcommandGroups = {
+                @SubcommandGroup(name = "group1", description = "Group 1", subcommands = {
+                        @Subcommand(name = "sub", description = "Subcommand", listener = NestCommand.G1Sub.class)
+                })
+        }
+)
+public final class NestCommand {
+
+    public static final class Sub1 implements ChatInputInteractionListener {
+
+        @Override
+        public Publisher<?> run(ChatInputInteractionContext ctx) {
+            return ctx.event().createFollowup("sub1: pong!");
+        }
+    }
+
+    public static final class Sub2 implements ChatInputInteractionListener {
+
+        @Override
+        public Publisher<?> run(ChatInputInteractionContext ctx) {
+            return ctx.event().createFollowup("sub2: pong!");
+        }
+    }
+
+    public static final class G1Sub implements ChatInputInteractionListener {
+
+        @Override
+        public Publisher<?> run(ChatInputInteractionContext ctx) {
+            return ctx.event().createFollowup("group1 sub: pong!");
+        }
+    }
+}
+```
+
+Here are the notable differences:
+* The class carrying the `@ChatInputCommand` annotation no longer implements `ChatInputInteractionListener`. Indeed, as per Discord's documentation a base command becomes unusable if subcommands are present.
+* The `@ChatInputCommand` specifies an array of `@Subcommand` and `@SubcommandGroup` with their own name and description.
+* Subcommands specify the class implementing `ChatInputInteractionListener` that is going to handle them. In this example they are internal classes, but they can as well be external.
+
+:::info
+Here is how you manually register a command containing subcommands when you control the instance of `InteractionService`:
+
+```java
+interactionService.registerChatInputCommand(new NestCommand(), List.of(
+        new NestCommand.Sub1(),
+        new NestCommand.Sub2(),
+        new NestCommand.G1Sub()
+));
+```
+:::
+
+:::caution
+If you are using the Botrino framework, the subcommand classes must either have a public no-arg constructor or be declared as a service. If the classes are internal, they must be `static`.
+:::
+
+## Context menu commands
+
+Discord currently support two types of context menu commands, one on messages and one on users. It works the same as chat input commands, but you need to use the `@MessageCommand` and `@UserCommand` annotations with the `MessageInteractionListener` and `UserInteractionListener` interfaces, respectively.
+
+Context menu commands are actually less complex than chat input ones, since there is no description, no options, no subcommands... Only a name and a run method:
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.UserCommand;
+import botrino.interaction.context.UserInteractionContext;
+import botrino.interaction.listener.UserInteractionListener;
+import org.reactivestreams.Publisher;
+
+@UserCommand("Fight")
+public final class FightCommand implements UserInteractionListener {
+
+    @Override
+    public Publisher<?> run(UserInteractionContext ctx) {
+        return ctx.event().createFollowup("You are fighting <@" +
+                ctx.event().getTargetId().asString() + ">");
+    }
+}
+```
+
+:::info
+If you need to do manual registration, it happens via `InteractionService#registerMessageCommand(MessageInteractionListener)` and `InteractionService#registerUserCommand(MessageInteractionListener)`:
+```java
+interactionService.registerUserCommand(new FightCommand());
+```
+:::
+
+## Commands as a service
+
+:::info
+The following is only applicable if you are using the Botrino framework. See [Working with services](../api/working-with-services.md).
+:::
+
+Classes implementing commands can themselves be declared as services without any issues. For example if you need to access the `ConfigContainer` in your command, you can do this:
+
+```java
+package testbot1;
+
+import botrino.api.config.ConfigContainer;
+import botrino.api.config.object.BotConfig;
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.context.ChatInputInteractionContext;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import com.github.alex1304.rdi.finder.annotation.RdiFactory;
+import com.github.alex1304.rdi.finder.annotation.RdiService;
+import discord4j.gateway.intent.IntentSet;
+import org.reactivestreams.Publisher;
+
+@RdiService
+@ChatInputCommand(name = "intents", description = "Displays the intents enabled for this bot.")
+public final class IntentsCommand implements ChatInputInteractionListener {
+
+    private final long intents;
+
+    @RdiFactory
+    public IntentsCommand(ConfigContainer configContainer) {
+        this.intents = configContainer.get(BotConfig.class)
+                .enabledIntents()
+                .orElse(IntentSet.nonPrivileged().getRawValue());
+    }
+
+    @Override
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return ctx.event().createFollowup("Intents enabled: " + intents);
+    }
+}
+```
+
+The command above accesses the values in the `config.json` to get the gateway intents enabled for the bot. You can notice the use of `@RdiService` on top of `@ChatInputCommand`, this works totally fine! Don't forget the `@RdiFactory` to inject the configuration container, and you're ready to run the bot and try out this command.
+
+:::tip
+If you declare a command as a service this way, you are allowed to do anything with it like any other service, for example inject it in other services, or set up `@RdiFactory` to be a [reactive static method](../api/working-with-services.md#injecting-a-service-in-a-reactive-static-factory) in case the command needs to perform a reactive task in order to be initialized.
+:::

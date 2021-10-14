@@ -48,6 +48,24 @@ public interface InteractionConfig {
     Acknowledge.Mode DEFAULT_ACK_MODE = Acknowledge.Mode.DEFER;
 
     /**
+     * Initializes a new builder to create a {@link InteractionConfig} instance.
+     *
+     * @return a new builder
+     */
+    static ImmutableInteractionConfig.Builder builder() {
+        return ImmutableInteractionConfig.builder();
+    }
+
+    /**
+     * Creates an {@link InteractionConfig} with default values.
+     *
+     * @return an {@link InteractionConfig}
+     */
+    static ImmutableInteractionConfig withDefaults() {
+        return ImmutableInteractionConfig.builder().build();
+    }
+
+    /**
      * Specifies the guild ID in which application commands should be deployed. This is recommended during development.
      * Leaving empty or setting to <code>null</code> will deploy commands globally.
      *
