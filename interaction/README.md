@@ -12,7 +12,7 @@ Although it is designed to be an extension of the Botrino framework, this librar
 ## Features
 
 * Straightforward annotation-based command declaration, with full support for slash commands with subcommands/subcommand groups and context menu commands
-* Automatic registration of commands into the Discord application, with ability to choose whether to deploy them globally or in a specific guild during development
+* Automatic deployment of commands into the Discord application, with ability to choose whether to deploy them globally or in a specific guild during development
 * Inject command options into fields using annotations to conveniently access the values
 * Handle component interactions either by treating them as regular commands or by awaiting them in order to continue the execution of a parent command
 * Automatic ACK of interaction events, configurable on a per-command basis

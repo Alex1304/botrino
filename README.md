@@ -88,118 +88,51 @@ The bot is configured via a JSON configuration file with contents similar to thi
 }
 ```
 
-## Command extension
+## Botrino Interaction
 
-Botrino comes with an extension that allows to easily create commands based on message create events. Although Discord recently added [Slash Commands](https://discord.com/developers/docs/interactions/slash-commands) as a native way to implement commands within Discord, message create-based commands will certainly remain the most flexible solution.
+Botrino comes with a library that allows to easily create application commands and listeners for Discord interactions. Discord recently added [Application Commands](https://discord.com/developers/docs/interactions/application-commands) as a native way to implement commands within Discord, as well as [Message Components](https://discord.com/developers/docs/interactions/message-components) to allow for more specific and intuitive interactions with the bot.
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
+[![javadoc](https://javadoc.io/badge2/com.alex1304.botrino/botrino-interaction/javadoc.svg)](https://javadoc.io/doc/com.alex1304.botrino/botrino-interaction)
 
 ### Preamble
 
-By definition, as this is an extension, it does not belong to the core framework API and you are not required to use it. It aims at giving you enough flexibility to cover the majority of use cases, but for very specific ones you might need to implement your own solution. That's why feedback on this extension is more than welcome, if you feel something is missing feel free to open an issue on the [GitHub repository](https://github.com/Alex1304/botrino).
+Although it is designed to be an extension of the Botrino framework, this library is completely decoupled from the framework itself. As such, it is possible to add this library to your project even if you aren't using the framework. The only difference is that you won't benefit from the automatic registration of commands, but you will be able to use all features.
 
 ### Features
 
-* Register unlimited commands
-* Message tokenization into arguments and flags
-* Apply a grammar to command arguments to conveniently convert them into actual Java types, supporting required, optional, and varying arguments
-* Unlimited subcommands
-* Attach a documentation to all your commands and subcommands
+* Straightforward annotation-based command declaration, with full support for slash commands with subcommands/subcommand groups and context menu commands
+* Automatic deployment of commands into the Discord application, with ability to choose whether to deploy them globally or in a specific guild during development
+* Inject command options into fields using annotations to conveniently access the values
+* Handle component interactions either by treating them as regular commands or by awaiting them in order to continue the execution of a parent command
+* Automatic ACK of interaction events, configurable on a per-command basis
 * Define privileges for each command with your own rules
-* Cooldowns
-* Global and per-command error handling
-* Process message create events to filter them or to adapt prefix and language
-* Interactive menus
+* Cooldown per user
+* Centralized error handling
+* Pre-process interaction events by filtering them or adapting the locale to the target user
+* Utilities such as pagination system using buttons
 
-### Code examples
-
-A basic `!ping` command:
+### A basic ping command
 
 ```java
-package com.example.myproject;
+package testbot1;
 
-import botrino.interaction.Command;
-import botrino.interaction.CommandContext;
-import botrino.interaction.annotation.Alias;
-import botrino.interaction.annotation.TopLevelCommand;
-import reactor.core.publisher.Mono;
+import botrino.interaction.annotation.ChatInputCommand;
+import botrino.interaction.listener.ChatInputInteractionListener;
+import botrino.interaction.context.ChatInputInteractionContext;
+import org.reactivestreams.Publisher;
 
-@TopLevelCommand
-@Alias("ping")
-public final class PingCommand implements Command {
+@ChatInputCommand(name = "ping", description = "Pings the bot to check if it is alive.")
+public final class PingCommand implements ChatInputInteractionListener {
 
     @Override
-    public Mono<Void> run(CommandContext ctx) {
-        return ctx.channel()
-                .createMessage(ctx.translate(Strings.APP, "ping"))
-                .then();
+    public Publisher<?> run(ChatInputInteractionContext ctx) {
+        return ctx.event().createFollowup("Pong !");
     }
 }
 ```
 
-A `!sendword <word> <count> [channels...]` command that sends a word `count` times in each of the specified channels. Requires `ADMINISTRATOR` permission and may be used at most once every 1 minute:
-
-```java
-package com.example.myproject;
-
-import botrino.interaction.Command;
-import botrino.interaction.CommandContext;
-import botrino.interaction.annotation.Alias;
-import botrino.interaction.annotation.TopLevelCommand;
-import botrino.interaction.grammar.ArgumentMapper;
-import botrino.interaction.grammar.CommandGrammar;
-import botrino.interaction.privilege.Privilege;
-import botrino.interaction.privilege.Privileges;
-import botrino.interaction.cooldown.Cooldown;
-import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.rest.util.Permission;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
-import java.util.List;
-
-@TopLevelCommand
-@Alias("sendword")
-public final class SendWordCommand implements Command {
-
-    private final CommandGrammar<Args> grammar = CommandGrammar.builder()
-            .nextArgument("word")
-            .nextArgument("count", ArgumentMapper.asInteger())
-            .nextArgument("channels", ArgumentMapper.asGuildChannel())
-            .setVarargs(true)
-            .build(Args.class);
-
-    @Override
-    public Mono<Void> run(CommandContext ctx) {
-        return grammar.resolve(ctx)
-                .flatMap(args -> Flux.fromIterable(args.channels)
-                        .ofType(GuildMessageChannel.class)
-                        .flatMap(channel -> Flux.range(0, args.count)
-                                .flatMap(__ -> channel.createMessage(args.word))
-                                .then())
-                        .then());
-    }
-
-    @Override
-    public Cooldown cooldown() {
-        return Cooldown.of(1, Duration.ofMinutes(1));
-    }
-
-    @Override
-    public Privilege privilege() {
-        return Privileges.checkPermissions(
-                ctx -> new PrivilegeException(ctx.translate(Strings.APP,
-                        "error_requires_admin")),
-                perms -> perms.contains(Permission.ADMINISTRATOR));
-    }
-
-    private static final class Args {
-        private String word;
-        private int count;
-        private List<GuildChannel> channels;
-    }
-}
-```
+**More examples can be found at** https://botrino.alex1304.com/docs/interaction-library/overview
 
 ## Getting Started
 
@@ -222,18 +155,13 @@ You will be asked to enter the `groupId`, the `artifactId`, the `version` and th
 
 You may as well start from a blank project and import Botrino yourself. Be aware that it will require a bit more effort to set up than using the archetype.
 
-Import the following dependencies (if you don't want the command extension you can omit `botrino-command`):
+Import the following dependency:
 
 Maven:
 ```xml
 <dependency>
     <groupId>com.alex1304.botrino</groupId>
     <artifactId>botrino-api</artifactId>
-    <version>[VERSION]</version>
-</dependency>
-<dependency>
-    <groupId>com.alex1304.botrino</groupId>
-    <artifactId>botrino-command</artifactId>
     <version>[VERSION]</version>
 </dependency>
 ```
@@ -246,11 +174,10 @@ repositories {
 
 dependencies {
     implementation 'com.alex1304.botrino:botrino-api:[VERSION]'
-    implementation 'com.alex1304.botrino:botrino-command:[VERSION]'
 }
 ```
 
-Create a `module-info.java` annotated with `@BotModule`, with the `open` modifier and that requires the Botrino API module:
+Create a `module-info.java` annotated with `@BotModule`, with the `open` modifier and that requires the `botrino.api` module:
 
 ```java
 import botrino.api.annotation.BotModule;
@@ -259,11 +186,10 @@ import botrino.api.annotation.BotModule;
 open module com.example.myproject {
 
     requires botrino.api;
-    requires botrino.command; // if using command extension
 }
 ```
 
-The module `botrino.api` transitively requires all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries. **If you get compilation errors, remember to configure your project to use JDK 11 or above.**
+The module transitively requires all libraries necessary to work, including Discord4J, Reactor, Netty, RDI and Jackson, so you don't need to put `requires` for those libraries. **If you get compilation errors, remember to configure your project to use JDK 11 or above.**
 
 Finally, add a class with a `main` method:
 
@@ -280,15 +206,18 @@ public final class Main {
 }
 ```
 
+If you want to include the interaction library in your project, refer to [this page](interaction-library/overview.md#option-1-using-botrino-framework).
+
 **A more complete guide to get started and to run the bot can be found on the [documentation website](https://botrino.alex1304.com/docs/getting-started).**
 
 ## Discord4J version interoperability
 
-Major and minor version numbers of Botrino will match with a minor and major version of Discord4J. Botrino **v1.0.x** supports Discord4J **v3.2.x**; **v1.1.x** will support **v3.3.x**, etc. The patch version number however will be independent from the patch version of Discord4J.
+Major and minor version numbers of Botrino will match with a minor and major version of Discord4J. Botrino **v1.0.x** supports Discord4J **v3.2.x**; **v1.1.x** will support **v3.3.x**, etc. The patch version number however will be independent of the patch version of Discord4J.
 Find the table below for reference regarding version dependencies:
 
 Botrino version | Discord4J version | Reactor version | RDI version
 ----------------|-------------------|-----------------|-----------------
+v1.0.0          | v3.2.0            | v3.4.10         | v1.1.2
 v1.0.0-RC1      | v3.2.0-M3         | v3.4.4          | v1.1.2
 v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | v1.1.1
 v1.0.0-M2       | v3.2.0-M1         | v3.4.1          | v1.1.1
@@ -298,7 +227,7 @@ v1.0.0-M1       | v3.2.0-M1         | v3.4.1          | v1.1.0
 
 * [Botrino website with full documentation](https://botrino.alex1304.com)
 * [Javadoc (API)](https://www.javadoc.io/doc/com.alex1304.botrino/botrino-api/latest/index.html)
-* [Javadoc (Command extension)](https://www.javadoc.io/doc/com.alex1304.botrino/botrino-command/latest/index.html)
+* [Javadoc (Interaction library)](https://www.javadoc.io/doc/com.alex1304.botrino/botrino-interaction/latest/index.html)
 * [Discord4J website](https://discord4j.com)
 
 ## License
