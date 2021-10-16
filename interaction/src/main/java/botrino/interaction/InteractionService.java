@@ -144,9 +144,9 @@ public class InteractionService {
         return !oldCommand.type().toOptional().orElse(1).equals(newCommand.type().toOptional().orElse(1))
                 || !oldCommand.description().equals(newCommand.description().toOptional().orElse(""))
                 || !oldCommand.defaultPermission().toOptional().orElse(true)
-                .equals(newCommand.defaultPermission().toOptional().orElse(true)
-                        || !oldCommand.options().toOptional().orElse(List.of())
-                        .equals(newCommand.options().toOptional().orElse(List.of())));
+                .equals(newCommand.defaultPermission().toOptional().orElse(true))
+                || !oldCommand.options().toOptional().orElse(List.of())
+                .equals(newCommand.options().toOptional().orElse(List.of()));
     }
 
     private static <K, L extends InteractionListener> L findApplicationCommandListener(Map<K, L> listeners, K key) {
