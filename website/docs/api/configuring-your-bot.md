@@ -57,7 +57,7 @@ JSON structure for `presence`:
 
 | Field | Type | Description | Required? |
 |-------|------|-------------|-----------|
-| status | string | one of "online", "idle", "dnd", "invisible" | No, defaults to "online" |
+| status | string | one of "online", "idle", "do_not_disturb", "invisible" | No, defaults to "online" |
 | activity_type | string | one of "playing", "watching", "listening", "streaming" | No |
 | activity_text | string | the text to display in the presence activity of the bot | No |
 | streaming_url | string | the streaming URL, only applicable if "streaming" is set as `activity_text` | No, defaults to `http://127.0.0.1` |
