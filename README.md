@@ -206,7 +206,7 @@ public final class Main {
 }
 ```
 
-If you want to include the interaction library in your project, refer to [this page](interaction-library/overview.md#option-1-using-botrino-framework).
+If you want to include the interaction library in your project, refer to [this page](https://botrino.alex1304.com/docs/interaction-library/overview#option-1-using-botrino-framework).
 
 **A more complete guide to get started and to run the bot can be found on the [documentation website](https://botrino.alex1304.com/docs/getting-started).**
 
@@ -217,6 +217,7 @@ Find the table below for reference regarding version dependencies:
 
 Botrino version | Discord4J version | Reactor version | RDI version
 ----------------|-------------------|-----------------|-----------------
+v1.0.1          | v3.2.0            | v3.4.10         | v1.1.2
 v1.0.0          | v3.2.0            | v3.4.10         | v1.1.2
 v1.0.0-RC1      | v3.2.0-M3         | v3.4.4          | v1.1.2
 v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | v1.1.1

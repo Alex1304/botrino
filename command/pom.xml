@@ -48,6 +48,12 @@
                 <artifactId>maven-release-plugin</artifactId>
             </plugin>
             <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
         </plugins>
