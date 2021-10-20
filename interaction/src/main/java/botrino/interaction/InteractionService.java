@@ -141,12 +141,33 @@ public class InteractionService {
     }
 
     private static boolean hasCommandChanged(ApplicationCommandData oldCommand, ApplicationCommandRequest newCommand) {
-        return !oldCommand.type().toOptional().orElse(1).equals(newCommand.type().toOptional().orElse(1))
-                || !oldCommand.description().equals(newCommand.description().toOptional().orElse(""))
-                || !oldCommand.defaultPermission().toOptional().orElse(true)
-                .equals(newCommand.defaultPermission().toOptional().orElse(true)
-                        || !oldCommand.options().toOptional().orElse(List.of())
-                        .equals(newCommand.options().toOptional().orElse(List.of())));
+        return !oldCommand.type().toOptional().orElse(1).equals(newCommand.type().toOptional().orElse(1)) ||
+                !oldCommand.description().equals(newCommand.description().toOptional().orElse("")) ||
+                !oldCommand.defaultPermission().toOptional().orElse(true)
+                        .equals(newCommand.defaultPermission().toOptional().orElse(true)) ||
+                !optionsEqual(oldCommand.options().toOptional().orElse(List.of()),
+                        newCommand.options().toOptional().orElse(List.of()));
+    }
+
+    private static boolean optionsEqual(List<ApplicationCommandOptionData> l1, List<ApplicationCommandOptionData> l2) {
+        if (l1.size() != l2.size()) {
+            return false;
+        }
+        final var deque1 = new ArrayDeque<>(l1);
+        final var deque2 = new ArrayDeque<>(l2);
+        while (!deque1.isEmpty() && !deque2.isEmpty()) {
+            final var o1 = deque1.remove();
+            final var o2 = deque2.remove();
+            if (o1.type() != o2.type() || !o1.name().equals(o2.name()) || !o1.description().equals(o2.description())
+                    || o1.required().toOptional().orElse(false) != o2.required().toOptional().orElse(false)
+                    || !o1.choices().toOptional().orElse(List.of())
+                    .equals(o2.choices().toOptional().orElse(List.of()))) {
+                return false;
+            }
+            deque1.addAll(o1.options().toOptional().orElse(List.of()));
+            deque2.addAll(o2.options().toOptional().orElse(List.of()));
+        }
+        return deque1.isEmpty() && deque2.isEmpty();
     }
 
     private static <K, L extends InteractionListener> L findApplicationCommandListener(Map<K, L> listeners, K key) {
