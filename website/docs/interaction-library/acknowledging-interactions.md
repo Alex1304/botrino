@@ -60,3 +60,7 @@ public final class PingCommand implements ChatInputInteractionListener {
     }
 }
 ```
+
+:::warning
+If your command is made of subcommands or subcommand groups, the `@Acknowledge` annotation must be used on the listener implementation class of individual subcommands; putting it on the parent class alongside `@ChatInputCommand` will have no effect.
+:::

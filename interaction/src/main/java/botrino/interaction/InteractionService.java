@@ -348,7 +348,7 @@ public class InteractionService {
      * @return a Mono that completes when the event dispatcher terminates.
      */
     public Mono<Void> run() {
-        return uploadCommands().then(gateway
+        return deployCommands().then(gateway
                 .on(InteractionCreateEvent.class, event -> event.getInteraction().getChannel()
                         .flatMap(channel -> eventProcessor.filter(event)
                                 .filter(Boolean::booleanValue)
@@ -384,8 +384,8 @@ public class InteractionService {
                     componentInteractionsSingleUse.asMap().computeIfPresent(key, (k, v) -> v.isEmpty() ? null : v);
                 })
                 .<Tuple2<ComponentInteractionListener<?>, Boolean>>map(listener -> Tuples.of(listener, true))
-                .switchIfEmpty(Mono.defer(() ->
-                        Mono.justOrEmpty(Tuples.of(componentInteractions.get(event.getCustomId()), false))));
+                .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(componentInteractions.get(event.getCustomId()))
+                        .map(listener -> Tuples.of(listener, false))));
     }
 
     private Mono<Void> preCheck(InteractionContext ctx, InteractionListener listener) {
@@ -422,74 +422,50 @@ public class InteractionService {
                 .orElseGet(() -> errorHandler.handleDefault(t, ctx));
     }
 
-    private Mono<Void> uploadCommands() {
+    private Mono<Void> deployCommands() {
+        final var appService = gateway.rest().getApplicationService();
+        final var guildId = interactionConfig.applicationCommandsGuildId().orElse(null);
         return gateway.rest().getApplicationId()
-                .flatMapMany(applicationId -> getExistingCommands(applicationId)
-                        .collectMap(ApplicationCommandData::name)
-                        .flatMap(existingCommands -> {
-                            final var toAdd = applicationCommandRequests.values().stream()
-                                    .filter(r -> !existingCommands.containsKey(r.name()))
-                                    .collect(Collectors.toUnmodifiableList());
-                            final var toRemove = existingCommands.values().stream()
-                                    .filter(r -> !applicationCommandRequests.containsKey(r.name()))
-                                    .map(r -> Snowflake.asLong(r.id()))
-                                    .collect(Collectors.toUnmodifiableList());
-                            final var toUpdate = existingCommands.values().stream()
-                                    .filter(r -> applicationCommandRequests.containsKey(r.name())
-                                            && hasCommandChanged(r, applicationCommandRequests.get(r.name())))
-                                    .map(r -> Tuples.of(Snowflake.asLong(r.id()),
-                                            applicationCommandRequests.get(r.name())))
-                                    .collect(Collectors.toUnmodifiableList());
-                            final var publishers = new ArrayList<Publisher<?>>();
-                            if (!toAdd.isEmpty()) {
-                                publishers.add(Flux.fromIterable(toAdd)
-                                        .flatMap(request -> createCommand(applicationId, request)));
-                            }
-                            if (!toRemove.isEmpty()) {
-                                publishers.add(Flux.fromIterable(toRemove)
-                                        .flatMap(commandId -> removeCommand(applicationId, commandId)));
-                            }
-                            if (!toUpdate.isEmpty()) {
-                                publishers.add(Flux.fromIterable(toUpdate)
-                                        .flatMap(function((commandId, request) -> editCommand(applicationId,
-                                                commandId, request))));
-                            }
-                            return Mono.when(publishers);
-                        }))
+                .flatMapMany(applicationId -> {
+                    if (guildId != null) {
+                        return appService.bulkOverwriteGuildApplicationCommand(applicationId, guildId,
+                                List.copyOf(applicationCommandRequests.values()));
+                    }
+                    return appService.getGlobalApplicationCommands(applicationId)
+                            .collectMap(ApplicationCommandData::name)
+                            .flatMap(existingCommands -> {
+                                final var toAdd = applicationCommandRequests.values().stream()
+                                        .filter(r -> !existingCommands.containsKey(r.name()))
+                                        .collect(Collectors.toUnmodifiableList());
+                                final var toRemove = existingCommands.values().stream()
+                                        .filter(r -> !applicationCommandRequests.containsKey(r.name()))
+                                        .map(r -> Snowflake.asLong(r.id()))
+                                        .collect(Collectors.toUnmodifiableList());
+                                final var toUpdate = existingCommands.values().stream()
+                                        .filter(r -> applicationCommandRequests.containsKey(r.name())
+                                                && hasCommandChanged(r, applicationCommandRequests.get(r.name())))
+                                        .map(r -> Tuples.of(Snowflake.asLong(r.id()),
+                                                applicationCommandRequests.get(r.name())))
+                                        .collect(Collectors.toUnmodifiableList());
+                                final var publishers = new ArrayList<Publisher<?>>();
+                                if (!toAdd.isEmpty()) {
+                                    publishers.add(Flux.fromIterable(toAdd).flatMap(request -> appService
+                                            .createGlobalApplicationCommand(applicationId, request)));
+                                }
+                                if (!toRemove.isEmpty()) {
+                                    publishers.add(Flux.fromIterable(toRemove).flatMap(commandId -> appService
+                                            .deleteGlobalApplicationCommand(applicationId, commandId)));
+                                }
+                                if (!toUpdate.isEmpty()) {
+                                    publishers.add(Flux.fromIterable(toUpdate)
+                                            .flatMap(function((commandId, request) -> appService
+                                                    .modifyGlobalApplicationCommand(applicationId, commandId,
+                                                            request))));
+                                }
+                                return Mono.when(publishers);
+                            });
+                })
                 .then();
-    }
-
-    private Flux<ApplicationCommandData> getExistingCommands(long applicationId) {
-        return interactionConfig.applicationCommandsGuildId()
-                .map(guildId -> gateway.rest().getApplicationService()
-                        .getGuildApplicationCommands(applicationId, guildId))
-                .orElseGet(() -> gateway.rest().getApplicationService()
-                        .getGlobalApplicationCommands(applicationId));
-    }
-
-    private Mono<ApplicationCommandData> createCommand(long applicationId, ApplicationCommandRequest request) {
-        return interactionConfig.applicationCommandsGuildId()
-                .map(guildId -> gateway.rest().getApplicationService()
-                        .createGuildApplicationCommand(applicationId, guildId, request))
-                .orElseGet(() -> gateway.rest().getApplicationService()
-                        .createGlobalApplicationCommand(applicationId, request));
-    }
-
-    private Mono<Void> removeCommand(long applicationId, long commandId) {
-        return interactionConfig.applicationCommandsGuildId()
-                .map(guildId -> gateway.rest().getApplicationService()
-                        .deleteGuildApplicationCommand(applicationId, guildId, commandId))
-                .orElseGet(() -> gateway.rest().getApplicationService()
-                        .deleteGlobalApplicationCommand(applicationId, commandId));
-    }
-
-    private Mono<ApplicationCommandData> editCommand(long applicationId, long commandId,
-                                                     ApplicationCommandRequest request) {
-        return interactionConfig.applicationCommandsGuildId()
-                .map(guildId -> gateway.rest().getApplicationService()
-                        .modifyGuildApplicationCommand(applicationId, guildId, commandId, request))
-                .orElseGet(() -> gateway.rest().getApplicationService()
-                        .modifyGlobalApplicationCommand(applicationId, commandId, request));
     }
 
     private interface CommandRunner {
