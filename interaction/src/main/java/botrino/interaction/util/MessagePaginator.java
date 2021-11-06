@@ -92,7 +92,7 @@ public final class MessagePaginator {
         return Mono.defer(() -> {
             final var baseCustomId = Integer.toHexString(RANDOM.nextInt());
             LOGGER.debug("Starting paginator {}", baseCustomId);
-            final var currentPage = new AtomicInteger();
+            final var currentPage = new AtomicInteger(initialPage);
             final var active = new AtomicBoolean(true);
             final var previous = button(baseCustomId + PREVIOUS_ID, btnCtx -> {
                 if (!active.get()) {
