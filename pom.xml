@@ -28,7 +28,7 @@
     <groupId>com.alex1304.botrino</groupId>
     <artifactId>botrino</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.2</version>
 
     <modules>
         <module>api</module>
@@ -62,7 +62,7 @@
         <url>https://github.com/Alex1304/botrino/tree/master</url>
         <connection>scm:git:git://github.com/Alex1304/botrino.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Alex1304/botrino.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v1.0.2</tag>
     </scm>
 
     <distributionManagement>
