@@ -28,7 +28,7 @@ import botrino.interaction.InteractionService;
 import botrino.interaction.annotation.Acknowledge;
 import botrino.interaction.config.InteractionConfig;
 import botrino.interaction.listener.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
@@ -50,7 +50,7 @@ public interface InteractionContext extends Translator {
      *
      * @return the event
      */
-    InteractionCreateEvent event();
+    DeferrableInteractionEvent event();
 
     /**
      * The channel where the interaction took place.

@@ -217,11 +217,13 @@ Find the table below for reference regarding version dependencies:
 
 Botrino version | Discord4J version | Reactor version | RDI version
 ----------------|-------------------|-----------------|-----------------
-v1.0.1          | v3.2.0            | v3.4.10         | v1.1.2
-v1.0.0          | v3.2.0            | v3.4.10         | v1.1.2
-v1.0.0-RC1      | v3.2.0-M3         | v3.4.4          | v1.1.2
-v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | v1.1.1
-v1.0.0-M2       | v3.2.0-M1         | v3.4.1          | v1.1.1
+v1.0.3          | v3.2.1            | -               | -
+v1.0.2          | -                 | -               | v1.1.3
+v1.0.1          | -                 | -               | -
+v1.0.0          | v3.2.0            | v3.4.10         | -
+v1.0.0-RC1      | -                 | -               | v1.1.2
+v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | -
+v1.0.0-M2       | -                 | -               | v1.1.1
 v1.0.0-M1       | v3.2.0-M1         | v3.4.1          | v1.1.0
 
 ## Useful links

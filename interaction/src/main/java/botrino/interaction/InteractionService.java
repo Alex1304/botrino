@@ -51,6 +51,7 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -63,6 +64,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.function.TupleUtils.function;
 
 /**
@@ -85,6 +87,7 @@ public class InteractionService {
     private final Map<String, MessageInteractionListener> messageInteractionListeners = new ConcurrentHashMap<>();
     private final Map<String, ComponentInteractionListener<?>> componentInteractions = new ConcurrentHashMap<>();
     private final Cache<ContextKey, Map<String, ComponentInteractionListener<?>>> componentInteractionsSingleUse;
+    private final Sinks.Empty<Void> onCommandsDeployed = Sinks.empty();
 
     private final Map<InteractionListener, Cooldown> cooldownPerCommand = new ConcurrentHashMap<>();
     private InteractionErrorHandler errorHandler;
@@ -351,6 +354,10 @@ public class InteractionService {
         LOGGER.debug("Registered single use component interaction listener {}", listener);
     }
 
+    public Mono<Void> onCommandsDeployed() {
+        return onCommandsDeployed.asMono();
+    }
+
     /**
      * Gets the timeout value that is applied when calling
      * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}.
@@ -417,7 +424,7 @@ public class InteractionService {
                         .fire(ctx.user().getId().asLong())));
     }
 
-    private Mono<Void> ackIfConfigured(InteractionListener listener, InteractionCreateEvent event) {
+    private Mono<Void> ackIfConfigured(InteractionListener listener, DeferrableInteractionEvent event) {
         return Mono.defer(() -> {
             final var annot = listener.getClass().getAnnotation(Acknowledge.class);
             final var ackMode = annot != null && annot.value() != Acknowledge.Mode.DEFAULT ?
@@ -486,7 +493,9 @@ public class InteractionService {
                                 return Mono.when(publishers);
                             });
                 })
-                .then();
+                .doOnError(e -> onCommandsDeployed.emitError(new RuntimeException("Command deploy failed", e),
+                        FAIL_FAST))
+                .then(Mono.fromRunnable(() -> onCommandsDeployed.emitEmpty(FAIL_FAST)));
     }
 
     private interface CommandRunner {

@@ -27,7 +27,7 @@ import botrino.interaction.InteractionService;
 import botrino.interaction.RetryableInteractionException;
 import botrino.interaction.annotation.Acknowledge;
 import botrino.interaction.listener.ComponentInteractionListener;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import org.reactivestreams.Publisher;
@@ -38,7 +38,7 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.util.Locale;
 
-abstract class AbstractInteractionContext<E extends InteractionCreateEvent> implements InteractionContext {
+abstract class AbstractInteractionContext<E extends DeferrableInteractionEvent> implements InteractionContext {
 
     private final InteractionService interactionService;
     private final Locale locale;

@@ -30,6 +30,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import reactor.core.publisher.Mono;
@@ -162,13 +163,18 @@ public final class ChatInputCommandGrammar<T> {
             builder.name(optionAnnot.name());
             builder.description(optionAnnot.description());
             builder.required(optionAnnot.required());
+            if (optionAnnot.channelTypes().length > 0) {
+                builder.channelTypes(Arrays.stream(optionAnnot.channelTypes())
+                        .map(Channel.Type::getValue)
+                        .collect(Collectors.toUnmodifiableList()));
+            }
             if (optionAnnot.choices().length > 0) {
                 builder.choices(Arrays.stream(optionAnnot.choices())
                         .map(choice -> ApplicationCommandOptionChoiceData.builder()
                                 .name(choice.name())
                                 .value(selectValue(field.getType(), choice))
                                 .build())
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toUnmodifiableList()));
             }
             list.add(builder.build());
         }
@@ -225,9 +231,17 @@ public final class ChatInputCommandGrammar<T> {
         /**
          * The choices for this option, default empty.
          *
-         * @return an array of choices.
+         * @return an array of choices
          */
         Choice[] choices() default {};
+
+        /**
+         * The channel types accepted, if this option is of type {@link ApplicationCommandOption.Type#CHANNEL}. Default
+         * empty.
+         *
+         * @return an array of channel types
+         */
+        Channel.Type[] channelTypes() default {};
     }
 
     /**
