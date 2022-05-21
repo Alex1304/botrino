@@ -21,7 +21,6 @@ module botrino.api {
     requires transitive discord4j.discordjson.api;
     requires transitive discord4j.gateway;
     requires transitive discord4j.rest;
-    requires transitive discord4j.voice;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;

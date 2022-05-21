@@ -59,7 +59,9 @@ public @interface ChatInputCommand {
      * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
      *
      * @return a boolean
+     * @deprecated Discord API has revamped the permission system and this property has become obsolete.
      */
+    @Deprecated
     boolean defaultPermission() default true;
 
     /**

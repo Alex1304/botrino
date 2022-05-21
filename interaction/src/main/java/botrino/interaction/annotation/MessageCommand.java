@@ -32,8 +32,8 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Provides meta-information on a message context menu command. The annotated class is expected to implement {@link
- * MessageInteractionListener}. Otherwise, this annotation has no effect.
+ * Provides meta-information on a message context menu command. The annotated class is expected to implement
+ * {@link MessageInteractionListener}. Otherwise, this annotation has no effect.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
@@ -50,6 +50,8 @@ public @interface MessageCommand {
      * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
      *
      * @return a boolean
+     * @deprecated Discord API has revamped the permission system and this property has become obsolete.
      */
+    @Deprecated
     boolean defaultPermission() default true;
 }

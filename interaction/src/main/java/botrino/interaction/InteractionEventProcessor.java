@@ -23,8 +23,8 @@
  */
 package botrino.interaction;
 
-import botrino.api.config.object.I18nConfig;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.object.command.Interaction;
 import reactor.core.publisher.Mono;
 
 import java.util.Locale;
@@ -51,21 +51,21 @@ public interface InteractionEventProcessor {
      *
      * @param event the event to filter
      * @return a {@link Mono} emitting {@code true} if the event should be accepted, and either {@code false} or empty
-     * if the event should be dropped. If an error occurs, it will be logged then the context will be dropped.
+     * if the event should be dropped. If an error occurs, it will be logged then the event will be dropped.
      */
     default Mono<Boolean> filter(InteractionCreateEvent event) {
         return Mono.just(true);
     }
 
     /**
-     * Determines the locale to use for interactions following the given event. By default, it completes empty which
-     * indicates to use the default locale as defined by {@link I18nConfig#defaultLocale()}.
+     * Determines the locale to use for interactions following the given event. By default, it applies the locale of the
+     * user as returned by {@link Interaction#getUserLocale()}
      *
      * @param event the event to find the locale for
-     * @return a {@link Mono} emitting the locale appropriate for the event. Empty will use the default locale. If an
-     * error occurs, it will be logged then the event will be dropped.
+     * @return a {@link Mono} emitting the locale appropriate for the event. Empty will use the default locale as
+     * returned by {@link Locale#getDefault()}. If an error occurs, it will be logged then the event will be dropped.
      */
     default Mono<Locale> computeLocale(InteractionCreateEvent event) {
-        return Mono.empty();
+        return Mono.just(Locale.forLanguageTag(event.getInteraction().getUserLocale()));
     }
 }

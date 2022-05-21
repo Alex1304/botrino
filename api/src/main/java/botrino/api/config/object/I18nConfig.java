@@ -23,7 +23,6 @@
  */
 package botrino.api.config.object;
 
-import botrino.api.annotation.ConfigEntry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -32,12 +31,14 @@ import java.util.Set;
 
 @Value.Immutable
 @JsonDeserialize(as = ImmutableI18nConfig.class)
-@ConfigEntry("i18n")
+@Deprecated
 public interface I18nConfig {
 
+    @Deprecated
     @JsonProperty("default_locale")
     String defaultLocale();
 
+    @Deprecated
     @JsonProperty("supported_locales")
     Set<String> supportedLocales();
 }
