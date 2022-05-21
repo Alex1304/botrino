@@ -123,6 +123,7 @@
                             <additionalJOption>-Xdoclint:all</additionalJOption>
                             <additionalJOption>-Xdoclint:-missing</additionalJOption>
                         </additionalJOptions>
+                        <sourcepath>${basedir}/src/main/java</sourcepath>
                     </configuration>
                     <executions>
                         <execution>
