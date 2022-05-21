@@ -78,10 +78,6 @@ The bot is configured via a JSON configuration file with contents similar to thi
             "activity_text": "Hello world!"
         },
         "enabled_intents": 32509
-    },
-    "i18n": {
-        "default_locale": "en",
-        "supported_locales": ["en"]
     }
 }
 ```

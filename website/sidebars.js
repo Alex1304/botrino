@@ -42,19 +42,6 @@ module.exports = {
             'interaction-library/cooldowns',
             'interaction-library/handling-errors',
             'interaction-library/filtering-and-adapting-events',
-        ],
-        'Command extension [Deprecated]': [
-            'command-extension/overview',
-            'command-extension/configuration',
-            'command-extension/creating-commands',
-            'command-extension/input-tokenization',
-            'command-extension/subcommands',
-            'command-extension/privileges',
-            'command-extension/cooldowns',
-            'command-extension/handling-errors',
-            'command-extension/filtering-and-adapting-events',
-            'command-extension/documenting-commands',
-            'command-extension/interactive-menus'
         ]
     },
 };

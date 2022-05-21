@@ -5,7 +5,7 @@ title: Privileges
 Another common use case when making commands is to be able to restrict access to some commands that should not be used by everyone. The Privilege API provides a way to conveniently implement these kind of restrictions.
 
 :::info
-[The permission system proposed by Discord](https://discord.com/developers/docs/interactions/application-commands#permissions) is currently too limited for the library to support it. Until Discord offers something more flexible to handle them natively, the library will only support this homemade Privilege API.
+[The permission system proposed by Discord](https://discord.com/developers/docs/interactions/application-commands#permissions) is currently not yet supported by Discord4J. As such, using this Privilege API is the recommended approach until Discord native permissions are fully supported. There is no plan to deprecate this feature for now.
 :::
 
 ## The `Privilege` interface

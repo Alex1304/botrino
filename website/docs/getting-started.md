@@ -167,10 +167,6 @@ If you used the archetype, copy the contents of `app/src/main/external-resources
         },
         "enabled_intents": 32509
     },
-    "i18n": {
-        "default_locale": "en",
-        "supported_locales": ["en"]
-    },
     "interaction": {}
 }
 ```

@@ -19,7 +19,7 @@ Starting the development of a Discord bot follows most of the time the same patt
 
 This is how came the idea of this project: have something that can handle for you all the initial workflow of setting up a project with a solid structure, at the only cost of letting the framework choose some libraries for you, so that you can focus on what matters. Botrino is born.
 
-It also aims at providing a [command extension](https://botrino.alex1304.com/docs/command-extension/overview) that integrates well with the structure of Botrino, while still letting you the choice of using your own.
+It also aims at providing a [library for Discord's Interaction API](https://botrino.alex1304.com/docs/interaction-library/overview) that integrates well with the structure of Botrino, while still being decoupled from it.
 
 ## Overview
 
@@ -80,10 +80,6 @@ The bot is configured via a JSON configuration file with contents similar to thi
             "activity_text": "Hello world!"
         },
         "enabled_intents": 32509
-    },
-    "i18n": {
-        "default_locale": "en",
-        "supported_locales": ["en"]
     }
 }
 ```
@@ -215,16 +211,17 @@ If you want to include the interaction library in your project, refer to [this p
 Major and minor version numbers of Botrino will match with a minor and major version of Discord4J. Botrino **v1.0.x** supports Discord4J **v3.2.x**; **v1.1.x** will support **v3.3.x**, etc. The patch version number however will be independent of the patch version of Discord4J.
 Find the table below for reference regarding version dependencies:
 
-Botrino version | Discord4J version | Reactor version | RDI version
-----------------|-------------------|-----------------|-----------------
-v1.0.3          | v3.2.1            | -               | -
-v1.0.2          | -                 | -               | v1.1.3
-v1.0.1          | -                 | -               | -
-v1.0.0          | v3.2.0            | v3.4.10         | -
-v1.0.0-RC1      | -                 | -               | v1.1.2
-v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | -
-v1.0.0-M2       | -                 | -               | v1.1.1
-v1.0.0-M1       | v3.2.0-M1         | v3.4.1          | v1.1.0
+| Botrino version | Discord4J version | Reactor version | RDI version |
+|-----------------|-------------------|-----------------|-------------|
+| v1.0.4          | v3.2.2            | v3.4.13         | -           |
+| v1.0.3          | v3.2.1            | -               | -           |
+| v1.0.2          | -                 | -               | v1.1.3      |
+| v1.0.1          | -                 | -               | -           |
+| v1.0.0          | v3.2.0            | v3.4.10         | -           |
+| v1.0.0-RC1      | -                 | -               | v1.1.2      |
+| v1.0.0-M3       | v3.2.0-M3         | v3.4.4          | -           |
+| v1.0.0-M2       | -                 | -               | v1.1.1      |
+| v1.0.0-M1       | v3.2.0-M1         | v3.4.1          | v1.1.0      |
 
 ## Useful links
 

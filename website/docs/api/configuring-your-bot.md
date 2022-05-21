@@ -17,7 +17,6 @@ package com.example.myproject;
 
 import botrino.api.config.ConfigContainer;
 import botrino.api.config.object.BotConfig;
-import botrino.api.config.object.I18nConfig;
 import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 
@@ -25,12 +24,10 @@ import com.github.alex1304.rdi.finder.annotation.RdiService;
 public final class SomeService {
 
     private final BotConfig botConfig;
-    private final I18nConfig i18nConfig;
 
     @RdiFactory
     public SomeService(ConfigContainer configContainer) {
         this.botConfig = configContainer.get(BotConfig.class);
-        this.i18nConfig = configContainer.get(I18nConfig.class);
     }
 }
 ```
@@ -78,30 +75,6 @@ Example:
 ```
 
 The corresponding class in the Java code is `botrino.api.config.object.BotConfig`, accessed via `ConfigContainer.get(BotConfig.class)`.
-
-#### The `i18n` entry
-
-This entry is where you specify the localization settings (default locale and supported locales).
-
-JSON structure for `i18n`:
-
-
-| Field | Type | Description | Required? |
-|-------|------|-------------|-----------|
-| default_locale | string | a language tag with a format compatible with [`java.util.Locale#forLanguageTag`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html#forLanguageTag(java.lang.String)) | Yes
-| supported_locales | array of string | a list of language tags used as a hint to indicate the different languages supported | No |
-
-Example:
-```json
-{
-    "i18n": {
-        "default_locale": "en",
-        "supported_locales": ["en"]
-    }
-}
-```
-
-The corresponding class in the Java code is `botrino.api.config.object.I18nConfig`, accessed via `ConfigContainer.get(I18nConfig.class)`.
 
 ### Adding your own configuration entries
 
