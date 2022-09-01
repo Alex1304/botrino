@@ -24,7 +24,6 @@
 package botrino.interaction;
 
 import botrino.api.config.ConfigContainer;
-import botrino.api.config.object.I18nConfig;
 import botrino.api.util.MatcherFunction;
 import botrino.interaction.annotation.Acknowledge;
 import botrino.interaction.annotation.ChatInputCommand;
@@ -102,8 +101,7 @@ public class InteractionService {
     @Deprecated
     @RdiFactory
     public InteractionService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
-        this(configContainer.get(InteractionConfig.class), gateway,
-                Locale.forLanguageTag(configContainer.get(I18nConfig.class).defaultLocale()), null, null);
+        this(configContainer.get(InteractionConfig.class), gateway, Locale.ENGLISH, null, null);
     }
 
     private InteractionService(InteractionConfig interactionConfig, GatewayDiscordClient gateway,

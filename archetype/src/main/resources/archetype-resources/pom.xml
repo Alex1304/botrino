@@ -30,22 +30,22 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
+                    <version>3.10.1</version>
                     <configuration>
                         <release>\${symbol_dollar}{java.version}</release>
                     </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>3.0.0-M1</version>
+                    <version>3.0.1</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.0.0-M1</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jlink-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.0</version>
                     <extensions>true</extensions>
                     <configuration>
                         <launcher>\${symbol_dollar}{project.parent.artifactId}=\${package}.launcher/\${package}.Launcher</launcher>
@@ -85,7 +85,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.2</version>
+                    <version>3.3.0</version>
                     <executions>
                         <execution>
                             <id>copy-dependencies</id>
@@ -98,7 +98,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.0</version>
                     <executions>
                         <execution>
                             <id>antrun-archive</id>

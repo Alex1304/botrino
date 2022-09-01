@@ -31,7 +31,6 @@ import botrino.api.config.ConfigParser;
 import botrino.api.config.ConfigReader;
 import botrino.api.config.LoginHandler;
 import botrino.api.config.object.BotConfig;
-import botrino.api.config.object.I18nConfig;
 import botrino.api.extension.BotrinoExtension;
 import botrino.api.util.ConfigUtils;
 import com.github.alex1304.rdi.RdiServiceContainer;
@@ -89,20 +88,20 @@ public final class Botrino {
      */
     public static void run(String[] args) {
         try {
-            var botDir = Path.of(args.length == 0 ? "." : args[0]);
-            var classes = scanBotModules();
-            var configEntries = new HashSet<Class<?>>();
-            var configReaders = new ArrayList<Class<? extends ConfigReader>>();
-            var loginHandlers = new ArrayList<Class<? extends LoginHandler>>();
-            var serviceClasses = new HashSet<Class<?>>();
-            var extensions = ServiceLoader.load(BotrinoExtension.class)
+            final var botDir = Path.of(args.length == 0 ? "." : args[0]);
+            final var classes = scanBotModules();
+            final var configEntries = new HashSet<Class<?>>();
+            final var configReaders = new ArrayList<Class<? extends ConfigReader>>();
+            final var loginHandlers = new ArrayList<Class<? extends LoginHandler>>();
+            final var serviceClasses = new HashSet<Class<?>>();
+            final var extensions = ServiceLoader.load(BotrinoExtension.class)
                     .stream()
                     .map(ServiceLoader.Provider::get)
                     .collect(Collectors.toSet());
             classes.addAll(extensions.stream()
                     .flatMap(ext -> ext.provideExtraDiscoverableClasses().stream())
                     .collect(Collectors.toSet()));
-            for (var clazz : classes) {
+            for (final var clazz : classes) {
                 if (clazz.isAnonymousClass() || clazz.isAnnotationPresent(Exclude.class)) {
                     continue;
                 }
@@ -124,31 +123,30 @@ public final class Botrino {
                 }
                 extensions.forEach(ext -> ext.onClassDiscovered(clazz));
             }
-            var configReader = ConfigUtils.selectImplementationClass(ConfigReader.class, configReaders)
+            final var configReader = ConfigUtils.selectImplementationClass(ConfigReader.class, configReaders)
                     .<ConfigReader>map(ConfigUtils::instantiate)
                     .orElseGet(() -> new ConfigReader() {});
-            var loginHandler = ConfigUtils.selectImplementationClass(LoginHandler.class, loginHandlers)
+            final var loginHandler = ConfigUtils.selectImplementationClass(LoginHandler.class, loginHandlers)
                     .<LoginHandler>map(ConfigUtils::instantiate)
                     .orElseGet(() -> new LoginHandler() {});
             configEntries.add(BotConfig.class);
-            configEntries.add(I18nConfig.class);
 
-            var objectMapper = configReader.createConfigObjectMapper();
-            var configJson = configReader.loadConfigJson(botDir);
-            var configObjects = ConfigParser.create(objectMapper, configEntries).parse(configJson);
-            var configContainerDescriptor = ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
+            final var objectMapper = configReader.createConfigObjectMapper();
+            final var configJson = configReader.loadConfigJson(botDir);
+            final var configObjects = ConfigParser.create(objectMapper, configEntries).parse(configJson);
+            final var configContainerDescriptor = ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
                     .setFactoryMethod(staticFactory("of", ConfigContainer.class,
                             value(configObjects, Map.class)))
                     .build();
-            var gatewayRef = ServiceReference.ofType(GatewayDiscordClient.class);
-            var loginHandlerDescriptor = ServiceDescriptor.builder(gatewayRef)
+            final var gatewayRef = ServiceReference.ofType(GatewayDiscordClient.class);
+            final var loginHandlerDescriptor = ServiceDescriptor.builder(gatewayRef)
                     .setFactoryMethod(externalStaticFactory(LoginHandler.class, "login", Mono.class,
                             value(loginHandler, LoginHandler.class),
                             ref(configContainerDescriptor.getServiceReference())))
                     .build();
 
             // Init RDI service container
-            var serviceContainer = RdiServiceContainer.create(RdiConfig.builder()
+            final var serviceContainer = RdiServiceContainer.create(RdiConfig.builder()
                     .fromServiceFinder(AnnotationServiceFinder.create(serviceClasses))
                     .fromServiceFinder(() -> extensions.stream()
                             .flatMap(ext -> ext.provideExtraServices().stream())
@@ -177,19 +175,19 @@ public final class Botrino {
     }
 
     private static Set<Class<?>> scanBotModules() throws IOException {
-        var classes = new HashSet<Class<?>>();
-        var moduleNames = ModuleLayer.boot().modules()
+        final var classes = new HashSet<Class<?>>();
+        final var moduleNames = ModuleLayer.boot().modules()
                 .stream()
                 .filter(module -> module.isAnnotationPresent(BotModule.class))
                 .map(Module::getName)
                 .collect(toUnmodifiableSet());
-        var moduleConfig = ModuleLayer.boot().configuration();
-        for (var moduleName : moduleNames) {
-            try (var moduleReader = moduleConfig.findModule(moduleName)
+        final var moduleConfig = ModuleLayer.boot().configuration();
+        for (final var moduleName : moduleNames) {
+            try (final var moduleReader = moduleConfig.findModule(moduleName)
                     .orElseThrow()
                     .reference()
                     .open();
-                 var resources = moduleReader.list()) {
+                 final var resources = moduleReader.list()) {
                 classes.addAll(resources.filter(resource -> resource.endsWith(".class") && !resource.contains("-"))
                         .map(resource -> resource.substring(0, resource.length() - ".class".length())
                                 .replace("/", "."))
@@ -207,12 +205,12 @@ public final class Botrino {
     }
 
     private static String readApiVersion() {
-        try (var in = Botrino.class.getResourceAsStream(API_VERSION_TXT)) {
+        try (final var in = Botrino.class.getResourceAsStream(API_VERSION_TXT)) {
             if (in == null) {
                 throw new RuntimeException(API_VERSION_TXT + " not present in JAR");
             }
-            try (var reader = new InputStreamReader(in);
-                 var buffered = new BufferedReader(reader)) {
+            try (final var reader = new InputStreamReader(in);
+                 final var buffered = new BufferedReader(reader)) {
                 return buffered.lines().collect(joining(System.lineSeparator()));
             }
         } catch (IOException e) {
