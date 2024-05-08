@@ -53,8 +53,8 @@ public final class ConfigContainer {
     }
 
     /**
-     * Gets the configuration object of the given type. The class given in argument is expected to have a {@link
-     * ConfigEntry} annotation, otherwise {@link IllegalArgumentException} will be thrown.
+     * Gets the configuration object of the given type. The class given in argument is expected to have a
+     * {@link ConfigEntry} annotation, otherwise {@link IllegalArgumentException} will be thrown.
      *
      * @param type the type of configuration object to get
      * @param <C>  the actual type of the configuration object

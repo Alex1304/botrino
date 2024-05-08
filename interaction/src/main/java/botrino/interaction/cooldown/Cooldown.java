@@ -88,33 +88,10 @@ public interface Cooldown {
 
     /**
      * Data class containing info on the remaining permits and duration before reset.
+     *
+     * @param remainingPermits         The remaining number of permits.
+     * @param timeLeftBeforeNextPermit The amount of time left before the next increase of the number of permits. If the
+     *                                 number of permits is already at maximum, {@link Duration#ZERO} is returned.
      */
-    final class Remaining {
-        private final int remainingPermits;
-        private final Duration timeLeftBeforeNextPermit;
-
-        public Remaining(int remainingPermits, Duration timeLeftBeforeNextPermit) {
-            this.remainingPermits = remainingPermits;
-            this.timeLeftBeforeNextPermit = timeLeftBeforeNextPermit;
-        }
-
-        /**
-         * Gets the remaining number of permits.
-         *
-         * @return the remaining permits
-         */
-        public int getRemainingPermits() {
-            return remainingPermits;
-        }
-
-        /**
-         * Gets the amount of time left before the next increase of the number of permits. If the number of permits is
-         * already at maximum, {@link Duration#ZERO} is returned.
-         *
-         * @return the time left before next permit
-         */
-        public Duration getTimeLeftBeforeNextPermit() {
-            return timeLeftBeforeNextPermit;
-        }
-    }
+    record Remaining(int remainingPermits, Duration timeLeftBeforeNextPermit) {}
 }

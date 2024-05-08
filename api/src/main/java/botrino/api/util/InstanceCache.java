@@ -56,11 +56,11 @@ public final class InstanceCache {
      * @param type the class representing the type to get an instance for
      * @param <R>  the target type
      * @return the instance
-     * @throws RuntimeException if somethings goes wrong during the instantiation (for example, if the given type does
+     * @throws RuntimeException if something goes wrong during the instantiation (for example, if the given type does
      *                          not represent a concrete class with a no-arg constructor, or if the instantiation fails
-     *                          for any reason). In all such cases, the {@link RuntimeException} contains the {@code
-     *                          cause} which can be typically {@link InstantiationException}, {@link
-     *                          NoSuchMethodException} or {@link IllegalAccessException}.
+     *                          for any reason). In all such cases, the {@link RuntimeException} contains the
+     *                          {@code cause} which can be typically {@link InstantiationException},
+     *                          {@link NoSuchMethodException} or {@link IllegalAccessException}.
      */
     public <R> R getInstance(Class<R> type) {
         return type.cast(cache.get(type));

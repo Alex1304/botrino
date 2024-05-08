@@ -42,8 +42,8 @@ import java.util.function.Predicate;
  * written inline inside the implementation of your methods.
  *
  * <p>
- * This variant is suited for executing code that returns a value. If the code doesn't return a value, use {@link
- * MatcherConsumer} instead.
+ * This variant is suited for executing code that returns a value. If the code doesn't return a value, use
+ * {@link MatcherConsumer} instead.
  *
  * @param <R> the return type of the matcher
  */
@@ -112,8 +112,8 @@ public final class MatcherFunction<R> implements Function<Object, Optional<R>> {
 
     /**
      * Applies this matcher to the given object. It will check each match statement in the order they were declared, and
-     * will return the result of the first match. If no statement is matched, this method returns {@link
-     * Optional#empty()}.
+     * will return the result of the first match. If no statement is matched, this method returns
+     * {@link Optional#empty()}.
      *
      * @param obj the object to apply this matcher on
      * @return an {@link Optional} that returns the result of the first matched statement, or empty if no statement were
@@ -129,13 +129,6 @@ public final class MatcherFunction<R> implements Function<Object, Optional<R>> {
         return Optional.empty();
     }
 
-    private static final class MatchStatement<R> {
-        private final Predicate<Object> predicate;
-        private final Function<Object, ? extends R> function;
-
-        private MatchStatement(Predicate<Object> predicate, Function<Object, ? extends R> function) {
-            this.predicate = predicate;
-            this.function = function;
-        }
+    private record MatchStatement<R>(Predicate<Object> predicate, Function<Object, ? extends R> function) {
     }
 }

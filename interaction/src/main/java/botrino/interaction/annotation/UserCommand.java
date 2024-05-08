@@ -24,6 +24,7 @@
 package botrino.interaction.annotation;
 
 import botrino.interaction.listener.UserInteractionListener;
+import discord4j.rest.util.Permission;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -47,11 +48,16 @@ public @interface UserCommand {
     String value();
 
     /**
-     * Whether the command is allowed for use by everyone by default. Defaults to <code>true</code>.
+     * The default permissions guild members should have in order to use this command.
      *
-     * @return a boolean
-     * @deprecated Discord API has revamped the permission system and this property has become obsolete.
+     * @return the permissions
      */
-    @Deprecated
-    boolean defaultPermission() default true;
+    Permission[] defaultMemberPermissions() default {};
+
+    /**
+     * Whether to allow the use of this command in DMs. If false, the command can only be used in guilds.
+     *
+     * @return true if command is allowed in DMs
+     */
+    boolean allowInDMs() default true;
 }

@@ -23,7 +23,8 @@
   ~ SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alex1304.botrino</groupId>
     <artifactId>botrino</artifactId>
@@ -77,10 +78,19 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>11</java.version>
-        <immutables.version>2.9.1</immutables.version>
-        <jackson.version>2.12.2</jackson.version>
-        <discord4j.version>3.2.3</discord4j.version>
+        <plugin.enforcer.version>3.4.1</plugin.enforcer.version>
+        <plugin.compiler.version>3.13.0</plugin.compiler.version>
+        <plugin.gpg.version>3.2.4</plugin.gpg.version>
+        <plugin.javadoc.version>3.6.3</plugin.javadoc.version>
+        <plugin.release.version>3.0.1</plugin.release.version>
+        <plugin.resources.version>3.3.1</plugin.resources.version>
+        <plugin.source.version>3.3.1</plugin.source.version>
+        <plugin.surefire.version>3.2.5</plugin.surefire.version>
+        <plugin.nexus-staging.version>1.6.13</plugin.nexus-staging.version>
+        <java.version>17</java.version>
+        <immutables.version>2.10.1</immutables.version>
+        <jackson.version>2.17.1</jackson.version>
+        <discord4j.version>3.2.6</discord4j.version>
         <rdi.version>1.1.3</rdi.version>
     </properties>
 
@@ -98,8 +108,28 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${plugin.enforcer.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-maven</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>3.8.5</version>
+                                    </requireMavenVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.1</version>
+                    <version>${plugin.compiler.version}</version>
                     <configuration>
                         <release>${java.version}</release>
                         <annotationProcessorPaths>
@@ -113,11 +143,11 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${plugin.resources.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.4.1</version>
+                    <version>${plugin.javadoc.version}</version>
                     <configuration>
                         <additionalJOptions>
                             <additionalJOption>-Xdoclint:all</additionalJOption>
@@ -138,7 +168,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
+                    <version>${plugin.nexus-staging.version}</version>
                     <extensions>true</extensions>
                     <configuration>
                         <serverId>ossrh</serverId>
@@ -149,7 +179,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.0-M6</version>
+                    <version>${plugin.release.version}</version>
                     <configuration>
                         <tagNameFormat>v@{project.version}</tagNameFormat>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -160,15 +190,15 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>${plugin.surefire.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>${plugin.source.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>${plugin.gpg.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

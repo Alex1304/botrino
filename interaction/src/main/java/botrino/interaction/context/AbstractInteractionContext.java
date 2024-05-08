@@ -62,24 +62,16 @@ abstract class AbstractInteractionContext<E extends DeferrableInteractionEvent> 
     public final <R> Mono<R> awaitComponentInteraction(Acknowledge.Mode ack,
                                                        ComponentInteractionListener<R> componentInteraction) {
         return Mono.defer(() -> {
-            final var sink = Sinks.<R>one();
-            ComponentInteractionProxy<R> proxy;
-            switch (ack) {
-                case NONE:
-                    proxy = new NoAckComponentInteractionProxy<>(componentInteraction, sink);
-                    break;
-                case DEFER:
-                    proxy = new AckComponentInteractionProxy<>(componentInteraction, sink);
-                    break;
-                case DEFER_EPHEMERAL:
-                    proxy = new AckEphemeralComponentInteractionProxy<>(componentInteraction, sink);
-                    break;
-                default:
-                    proxy = new ComponentInteractionProxy<>(componentInteraction, sink);
-            }
-            interactionService.registerSingleUseComponentListener(proxy, this);
-            return sink.asMono();
-        }).retryWhen(Retry.indefinitely().filter(RetryableInteractionException.class::isInstance))
+                    final var sink = Sinks.<R>one();
+                    ComponentInteractionProxy<R> proxy = switch (ack) {
+                        case NONE -> new NoAckComponentInteractionProxy<>(componentInteraction, sink);
+                        case DEFER -> new AckComponentInteractionProxy<>(componentInteraction, sink);
+                        case DEFER_EPHEMERAL -> new AckEphemeralComponentInteractionProxy<>(componentInteraction, sink);
+                        default -> new ComponentInteractionProxy<>(componentInteraction, sink);
+                    };
+                    interactionService.registerSingleUseComponentListener(proxy, this);
+                    return sink.asMono();
+                }).retryWhen(Retry.indefinitely().filter(RetryableInteractionException.class::isInstance))
                 .timeout(interactionService.getAwaitComponentTimeout());
     }
 

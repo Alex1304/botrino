@@ -1,5 +1,6 @@
 import botrino.api.extension.BotrinoExtension;
 
+@SuppressWarnings("requires-transitive-automatic")
 module botrino.api {
 
     exports botrino.api;

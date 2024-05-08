@@ -12,7 +12,7 @@ const features = [
         imageUrl: 'img/undraw_building_blocks_n0nc.svg',
         description: (
             <>
-                Botrino is a JDK 11+ framework utilizing Java modules to organize and
+                Botrino is a modern JDK 17+ framework utilizing Java modules to organize and
                 encapsulate the components of the bot application.
             </>
         ),
@@ -70,10 +70,10 @@ const features = [
                 Want your bot to be available in multiple languages? Botrino supports
                 i18n out of the box, the framework incentivizes the externalization of
                 strings so they can be translated using services such as <Link
-                    to="https://crowdin.com/"
-                    target="_blank">
-                        Crowdin
-                </Link>.
+                to="https://crowdin.com/"
+                target="_blank">
+                Crowdin
+            </Link>.
             </>
         ),
     },
@@ -85,7 +85,7 @@ function Feature({imageUrl, title, description}) {
         <div className={clsx('col col--4', styles.feature)}>
             {imgUrl && (
                 <div className="text--center">
-                    <img className={styles.featureImage} src={imgUrl} alt={title} />
+                    <img className={styles.featureImage} src={imgUrl} alt={title}/>
                 </div>
             )}
             <h3>{title}</h3>
@@ -103,7 +103,7 @@ function Home() {
             description={siteConfig.tagline}>
             <header className={clsx('hero hero--primary', styles.heroBanner)}>
                 <div className="container">
-                    <img src={useBaseUrl('img/logo.svg')} alt="logo" width="150" />
+                    <img src={useBaseUrl('img/logo.svg')} alt="logo" width="150"/>
                     <h1 className="hero__title">{siteConfig.title}</h1>
                     <p className="hero__subtitle">{siteConfig.tagline}</p>
                     <div className={styles.buttons}>

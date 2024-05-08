@@ -69,30 +69,30 @@ public class EmojiManager {
      *
      * <p>
      * Since indexing is done by emoji name, an error will occur if several emojis with the same name are found in the
-     * guilds specified.
+     * guilds specified. The detection of duplicate names is case-insensitive.
      *
      * @param gateway the gateway client to use to load emojis
      * @return a Mono completing when the load is successful. It will error with {@link IllegalStateException} if
      * several emojis with the same name are found. Any other error will be forwarded as-is through the mono.
      */
     public Mono<Void> loadFromGateway(GatewayDiscordClient gateway) {
+        Objects.requireNonNull(gateway);
         return Flux.fromIterable(guildIds)
                 .flatMap(gateway::getGuildEmojis)
-                .collect(toUnmodifiableMap(GuildEmoji::getName, Function.identity()))
+                .collect(toUnmodifiableMap(emoji -> emoji.getName().toLowerCase(), Function.identity()))
                 .doOnNext(emojiCache::set)
                 .then();
     }
 
     /**
-     * Gets the emoji with the given name. If more than one emoji with this name existed in the specified guilds, the
-     * result is undefined.
+     * Gets the emoji with the given name.
      *
      * @param emojiName the name of the emoji to get
      * @return the emoji
-     * @throws NoSuchElementException if the emoji does not exist or hasn't be loaded in this manager
      */
     public GuildEmoji get(String emojiName) {
-        var emoji = emojiCache.get().get(emojiName);
+        Objects.requireNonNull(emojiName);
+        var emoji = emojiCache.get().get(emojiName.toLowerCase());
         if (emoji == null) {
             throw new NoSuchElementException("No emoji found with name " + emojiName + ". If it exists, make sure it " +
                     "has been correctly loaded via loadFromGateway(...)");

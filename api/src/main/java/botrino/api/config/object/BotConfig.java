@@ -72,37 +72,24 @@ public interface BotConfig {
             var url = streamingUrl().orElse("http://127.0.0.1");
             ClientActivity clientActivity = null;
             if (text != null) {
-                switch (activity) {
-                    case PLAYING:
-                        clientActivity = ClientActivity.playing(text);
-                        break;
-                    case COMPETING:
-                        clientActivity = ClientActivity.competing(text);
-                        break;
-                    case LISTENING:
-                        clientActivity = ClientActivity.listening(text);
-                        break;
-                    case STREAMING:
-                        clientActivity = ClientActivity.streaming(text, url);
-                        break;
-                    case WATCHING:
-                        clientActivity = ClientActivity.watching(text);
-                        break;
-                }
+                clientActivity = switch (activity) {
+                    case PLAYING -> ClientActivity.playing(text);
+                    case COMPETING -> ClientActivity.competing(text);
+                    case LISTENING -> ClientActivity.listening(text);
+                    case STREAMING -> ClientActivity.streaming(text, url);
+                    case WATCHING -> ClientActivity.watching(text);
+                    default -> clientActivity;
+                };
             }
-            switch (status) {
-                case IDLE:
-                    return clientActivity == null ? ClientPresence.idle() :
-                            ClientPresence.idle(clientActivity);
-                case DO_NOT_DISTURB:
-                    return clientActivity == null ? ClientPresence.doNotDisturb() :
-                            ClientPresence.doNotDisturb(clientActivity);
-                case INVISIBLE:
-                    return ClientPresence.invisible();
-                default:
-                    return clientActivity == null ? ClientPresence.online() :
-                            ClientPresence.online(clientActivity);
-            }
+            return switch (status) {
+                case IDLE -> clientActivity == null ? ClientPresence.idle() :
+                        ClientPresence.idle(clientActivity);
+                case DO_NOT_DISTURB -> clientActivity == null ? ClientPresence.doNotDisturb() :
+                        ClientPresence.doNotDisturb(clientActivity);
+                case INVISIBLE -> ClientPresence.invisible();
+                default -> clientActivity == null ? ClientPresence.online() :
+                        ClientPresence.online(clientActivity);
+            };
         }
     }
 }

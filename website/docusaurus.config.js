@@ -75,14 +75,8 @@ module.exports = {
             copyright: `Copyright © ${new Date().getFullYear()} Alexandre Miranda (Alex1304). Built with Docusaurus.`,
         },
         prism: {
-            theme: require('prism-react-renderer/themes/vsDark'),
+            theme: require('prism-react-renderer').themes.vsDark,
             additionalLanguages: ['java', 'groovy', 'properties']
-        },
-        googleAnalytics: {
-            trackingID: 'G-45YBPVQ8K9'
-        },
-        gtag: {
-            trackingID: 'G-45YBPVQ8K9'
         }
     },
     presets: [
@@ -93,14 +87,14 @@ module.exports = {
                     sidebarPath: require.resolve('./sidebars.js'),
                     // Please change this to your repo.
                     editUrl:
-                    'https://github.com/Alex1304/botrino/edit/main/website/',
+                        'https://github.com/Alex1304/botrino/edit/main/website/',
                 },
-                /*blog: {
-                    showReadingTime: true,
-                    // Please change this to your repo.
-                    editUrl:
-                    'https://github.com/facebook/docusaurus/edit/master/website/blog/',
-                },*/
+                googleAnalytics: {
+                    trackingID: 'G-45YBPVQ8K9'
+                },
+                gtag: {
+                    trackingID: 'G-45YBPVQ8K9'
+                },
                 theme: {
                     customCss: require.resolve('./src/css/custom.css'),
                 },

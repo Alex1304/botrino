@@ -68,11 +68,11 @@ public interface InteractionContext extends Translator {
 
     /**
      * Registers a {@link ComponentInteractionListener} via
-     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener,
-     * InteractionContext)} and waits for the listener to be executed once. When an interaction is received on the
-     * target component, the listener is executed and may return a value, which can be used downstream for further
-     * processing. It is recommended to use one of the static factories of {@link ComponentInteractionListener} in order
-     * to get an instance to pass to this method.
+     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener, InteractionContext)}
+     * and waits for the listener to be executed once. When an interaction is received on the target component, the
+     * listener is executed and may return a value, which can be used downstream for further processing. It is
+     * recommended to use one of the static factories of {@link ComponentInteractionListener} in order to get an
+     * instance to pass to this method.
      * <p>
      * The returned Mono will error with {@link TimeoutException} if the user has not interacted with the target
      * component after a certain time, configurable via {@link InteractionConfig#awaitComponentTimeoutSeconds()}.
@@ -91,11 +91,11 @@ public interface InteractionContext extends Translator {
 
     /**
      * Registers a {@link ComponentInteractionListener} via
-     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener,
-     * InteractionContext)} and waits for the listener to be executed once. The interaction must happen in the same
-     * channel by the same user. When an interaction is received on the target component, the listener is executed and
-     * may return a value, which can be used downstream for further processing. It is recommended to use one of the
-     * static factories of {@link ComponentInteractionListener} in order to get an instance to pass to this method.
+     * {@link InteractionService#registerSingleUseComponentListener(ComponentInteractionListener, InteractionContext)}
+     * and waits for the listener to be executed once. The interaction must happen in the same channel by the same user.
+     * When an interaction is received on the target component, the listener is executed and may return a value, which
+     * can be used downstream for further processing. It is recommended to use one of the static factories of
+     * {@link ComponentInteractionListener} in order to get an instance to pass to this method.
      * <p>
      * The returned Mono will error with {@link TimeoutException} if the user has not interacted with the target
      * component after a certain time, configurable via {@link InteractionConfig#awaitComponentTimeoutSeconds()}.
@@ -125,8 +125,8 @@ public interface InteractionContext extends Translator {
     }
 
     /**
-     * Waits until items are selected from the select menu which customId is given, by the same user in the same
-     * channel as this context's event. This is a shorthand for:
+     * Waits until items are selected from the select menu which customId is given, by the same user in the same channel
+     * as this context's event. This is a shorthand for:
      * <pre>
      *     awaitComponentInteraction(button(customId, btnCtx -> Mono.just(customId)));
      * </pre>

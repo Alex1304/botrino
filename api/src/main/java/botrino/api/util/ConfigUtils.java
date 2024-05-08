@@ -27,7 +27,9 @@ import botrino.api.annotation.Primary;
 import botrino.api.config.ConfigException;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -112,15 +114,15 @@ public final class ConfigUtils {
      * @param type the type to instantiate
      * @param <T>  the actual type
      * @return the instance
-     * @throws RuntimeException if somethings goes wrong during the instantiation (for example, if the given type does
+     * @throws RuntimeException if something goes wrong during the instantiation (for example, if the given type does
      *                          not represent a concrete class with a no-arg constructor, or if the instantiation fails
-     *                          for any reason). In all such cases, the {@link RuntimeException} contains the {@code
-     *                          cause} which can be typically {@link InstantiationException}, {@link
-     *                          NoSuchMethodException} or {@link IllegalAccessException}.
+     *                          for any reason). In all such cases, the {@link RuntimeException} contains the
+     *                          {@code cause} which can be typically {@link InstantiationException},
+     *                          {@link NoSuchMethodException} or {@link IllegalAccessException}.
      */
     public static <T> T instantiate(Class<T> type) {
         try {
-            var constr = type.getDeclaredConstructor();
+            final var constr = type.getDeclaredConstructor();
             constr.setAccessible(true);
             return constr.newInstance();
         } catch (InvocationTargetException e) {
@@ -129,8 +131,26 @@ public final class ConfigUtils {
             if (cause instanceof Error) throw (Error) cause;
             throw new UndeclaredThrowableException(cause);
         } catch (InstantiationException
-                | NoSuchMethodException
-                | IllegalAccessException e) {
+                 | NoSuchMethodException
+                 | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T extends Record> T instantiateRecord(Class<T> type, Object... params) {
+        try {
+            final var paramTypes = Arrays.stream(type.getRecordComponents())
+                    .map(RecordComponent::getType)
+                    .toArray(Class<?>[]::new);
+            final var constr = type.getDeclaredConstructor(paramTypes);
+            constr.setAccessible(true);
+            return constr.newInstance(params);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) throw (RuntimeException) cause;
+            if (cause instanceof Error) throw (Error) cause;
+            throw new UndeclaredThrowableException(cause);
+        } catch (InstantiationException | NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

@@ -39,8 +39,8 @@ import java.util.function.Function;
 
 /**
  * Interface to implement in order to listen for interactions on message components. It is also possible to create
- * instances using the static factories of this interface, which is generally useful when using {@link
- * InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}.
+ * instances using the static factories of this interface, which is generally useful when using
+ * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}.
  */
 public interface ComponentInteractionListener<R> extends InteractionListener {
 
@@ -87,8 +87,8 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
     }
 
     /**
-     * The custom ID of the component that will trigger this listener. By default, reads the value of the {@link
-     * ComponentCommand} annotation and throws an exception if the annotation is missing.
+     * The custom ID of the component that will trigger this listener. By default, reads the value of the
+     * {@link ComponentCommand} annotation and throws an exception if the annotation is missing.
      *
      * @return the custom ID
      */

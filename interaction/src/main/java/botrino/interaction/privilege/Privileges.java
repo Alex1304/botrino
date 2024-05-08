@@ -99,8 +99,8 @@ public final class Privileges {
 
     /**
      * Builds a {@link Privilege} that performs a check against the user's effective permissions in the current channel.
-     * If the permission check fails, a generic {@link PrivilegeException} will be emitted. To customize the {@link
-     * PrivilegeException} instance, use {@link #checkPermissions(Function, Predicate)} instead.
+     * If the permission check fails, a generic {@link PrivilegeException} will be emitted. To customize the
+     * {@link PrivilegeException} instance, use {@link #checkPermissions(Function, Predicate)} instead.
      *
      * @param permissionPredicate the predicate that checks for permissions
      * @return a {@link Privilege}
@@ -146,8 +146,8 @@ public final class Privileges {
     /**
      * Builds a {@link Privilege} that checks if the author is the owner of the current guild. If the check fails, the
      * specified function will determine the {@link PrivilegeException} to emit. If the failure is due to the privilege
-     * being checked outside of a guild or due to the inability to retrieve the guild, a generic {@link
-     * PrivilegeException} will be emitted instead.
+     * being checked outside of a guild or due to the inability to retrieve the guild, a generic
+     * {@link PrivilegeException} will be emitted instead.
      *
      * @param exception a function specifying the {@link PrivilegeException} instance to emit in case of failure
      * @return a {@link Privilege}

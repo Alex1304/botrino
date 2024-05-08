@@ -16,8 +16,15 @@
     </modules>
 
     <properties>
-        <java.version>11</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>17</java.version>
+        <plugin.compiler.version>3.13.0</plugin.compiler.version>
+        <plugin.install.version>3.1.1</plugin.install.version>
+        <plugin.deploy.version>3.1.1</plugin.deploy.version>
+        <plugin.jlink.version>3.2.0</plugin.jlink.version>
+        <plugin.dependency.version>3.6.1</plugin.dependency.version>
+        <plugin.resources.version>3.3.1</plugin.resources.version>
+        <plugin.antrun.version>3.1.0</plugin.antrun.version>
         <botrino.version>${project.version}</botrino.version>
         <delivery.name>\${symbol_dollar}{project.parent.artifactId}-\${symbol_dollar}{project.version}</delivery.name>
         <delivery.directory>\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{delivery.name}</delivery.directory>
@@ -30,22 +37,22 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.1</version>
+                    <version>\${symbol_dollar}{plugin.compiler.version}</version>
                     <configuration>
                         <release>\${symbol_dollar}{java.version}</release>
                     </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>\${symbol_dollar}{plugin.install.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>\${symbol_dollar}{plugin.deploy.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jlink-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>\${symbol_dollar}{plugin.jlink.version}</version>
                     <extensions>true</extensions>
                     <configuration>
                         <launcher>\${symbol_dollar}{project.parent.artifactId}=\${package}.launcher/\${package}.Launcher</launcher>
@@ -62,7 +69,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>\${symbol_dollar}{plugin.resources.version}</version>
                     <executions>
                         <execution>
                             <id>copy-resources</id>
@@ -85,7 +92,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>\${symbol_dollar}{plugin.dependency.version}</version>
                     <executions>
                         <execution>
                             <id>copy-dependencies</id>
@@ -98,7 +105,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>\${symbol_dollar}{plugin.antrun.version}</version>
                     <executions>
                         <execution>
                             <id>antrun-archive</id>
@@ -143,7 +150,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.2.3</version>
+                <version>\${symbol_dollar}{logback.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

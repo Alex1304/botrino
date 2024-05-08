@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Allows to define a grammar for a chat input command. It is done by specifying a value class which fields correspond
@@ -94,6 +93,10 @@ public final class ChatInputCommandGrammar<T> {
      * @return a {@link Mono} emitting the instance of the value class with the actual option values
      */
     public Mono<T> resolve(ChatInputInteractionEvent event) {
+        return valueClass.isRecord() ? resolveRecordClass(event) : resolveValueClass(event);
+    }
+
+    private Mono<T> resolveValueClass(ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
             final var instance = ConfigUtils.instantiate(valueClass);
             final var publishers = new ArrayList<Mono<?>>();
@@ -120,29 +123,40 @@ public final class ChatInputCommandGrammar<T> {
         });
     }
 
+    @SuppressWarnings("unchecked")
+    private Mono<T> resolveRecordClass(ChatInputInteractionEvent event) {
+        return Mono.defer(() -> {
+            final var publishers = new ArrayList<Mono<?>>();
+            for (final var component : valueClass.getRecordComponents()) {
+                final var optionAnnot = component.getAnnotation(Option.class);
+                if (optionAnnot == null) {
+                    continue;
+                }
+                publishers.add(Mono.justOrEmpty(getOptionByName(event, optionAnnot.name()))
+                        .flatMap(option -> Mono.justOrEmpty(option.getValue())
+                                .flatMap(value -> extractOptionValue(option.getType(), value,
+                                        event.getInteraction().getGuildId().orElse(null)))));
+            }
+            return Mono.zip(publishers,
+                    params -> (T) ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class), params));
+        });
+    }
+
     private Mono<?> extractOptionValue(ApplicationCommandOption.Type type,
                                        ApplicationCommandInteractionOptionValue option, @Nullable Snowflake guildId) {
-        switch (type) {
-            case STRING:
-                return Mono.just(option.asString());
-            case INTEGER:
-                return Mono.just(option.asLong());
-            case NUMBER:
-                return Mono.just(option.asDouble());
-            case BOOLEAN:
-                return Mono.just(option.asBoolean());
-            case USER:
-                return guildId == null ? option.asUser() : option.getClient()
-                        .getMemberById(guildId, option.asSnowflake());
-            case CHANNEL:
-                return option.asChannel();
-            case ROLE:
-                return option.asRole();
-            case MENTIONABLE:
-                return Mono.just(option.asSnowflake());
-            default:
-                throw new IllegalArgumentException("Unknown type");
-        }
+        return switch (type) {
+            case STRING -> Mono.just(option.asString());
+            case INTEGER -> Mono.just(option.asLong());
+            case NUMBER -> Mono.just(option.asDouble());
+            case BOOLEAN -> Mono.just(option.asBoolean());
+            case USER -> guildId == null ? option.asUser() : option.getClient()
+                    .getMemberById(guildId, option.asSnowflake());
+            case CHANNEL -> option.asChannel();
+            case ROLE -> option.asRole();
+            case MENTIONABLE -> Mono.just(option.asSnowflake());
+            case ATTACHMENT -> Mono.just(option.asAttachment());
+            default -> throw new IllegalArgumentException("Unknown type");
+        };
     }
 
     /**
@@ -166,15 +180,15 @@ public final class ChatInputCommandGrammar<T> {
             if (optionAnnot.channelTypes().length > 0) {
                 builder.channelTypes(Arrays.stream(optionAnnot.channelTypes())
                         .map(Channel.Type::getValue)
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
             }
             if (optionAnnot.choices().length > 0) {
                 builder.choices(Arrays.stream(optionAnnot.choices())
-                        .map(choice -> ApplicationCommandOptionChoiceData.builder()
+                        .<ApplicationCommandOptionChoiceData>map(choice -> ApplicationCommandOptionChoiceData.builder()
                                 .name(choice.name())
                                 .value(selectValue(field.getType(), choice))
                                 .build())
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
             }
             list.add(builder.build());
         }
@@ -197,7 +211,7 @@ public final class ChatInputCommandGrammar<T> {
     /**
      * Defines metadata for a command option.
      */
-    @Target(ElementType.FIELD)
+    @Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Option {
         /**
@@ -259,24 +273,24 @@ public final class ChatInputCommandGrammar<T> {
         String name();
 
         /**
-         * The string value for the option choice. Only applicable if the option is of type {@link
-         * ApplicationCommandOption.Type#STRING}.
+         * The string value for the option choice. Only applicable if the option is of type
+         * {@link ApplicationCommandOption.Type#STRING}.
          *
          * @return the string value
          */
         String stringValue() default "";
 
         /**
-         * The long value for the option choice. Only applicable if the option is of type {@link
-         * ApplicationCommandOption.Type#INTEGER}.
+         * The long value for the option choice. Only applicable if the option is of type
+         * {@link ApplicationCommandOption.Type#INTEGER}.
          *
          * @return the long value
          */
         long longValue() default 0L;
 
         /**
-         * The double value for the option choice. Only applicable if the option is of type {@link
-         * ApplicationCommandOption.Type#NUMBER}.
+         * The double value for the option choice. Only applicable if the option is of type
+         * {@link ApplicationCommandOption.Type#NUMBER}.
          *
          * @return the double value
          */

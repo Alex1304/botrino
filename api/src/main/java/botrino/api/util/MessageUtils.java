@@ -27,7 +27,6 @@ import discord4j.core.spec.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class MessageUtils {
 
@@ -48,7 +47,7 @@ public final class MessageUtils {
         var chunks = new ArrayList<String>();
         var currentChunk = new StringBuilder();
         var inCodeblock = false;
-        for (var line : superLongMessage.lines().collect(Collectors.toList())) {
+        for (var line : superLongMessage.lines().toList()) {
             inCodeblock = (line.startsWith("```") && !line.substring(3).contains("```")) != inCodeblock;
             if (currentChunk.length() + line.length() + 1 >= maxCharacters) {
                 if (inCodeblock) {
@@ -57,7 +56,7 @@ public final class MessageUtils {
                 chunks.add(currentChunk.substring(0, Math.min(currentChunk.length(), maxCharacters)));
                 currentChunk.delete(0, currentChunk.length());
             } else {
-                if (!chunks.isEmpty() && currentChunk.length() == 0) {
+                if (!chunks.isEmpty() && currentChunk.isEmpty()) {
                     if (inCodeblock) {
                         currentChunk.append("```\n");
                     }

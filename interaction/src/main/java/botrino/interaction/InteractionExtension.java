@@ -28,8 +28,8 @@ import botrino.api.util.ConfigUtils;
 import botrino.api.util.InstanceCache;
 import botrino.api.util.MatcherConsumer;
 import botrino.interaction.annotation.ChatInputCommand;
-import botrino.interaction.annotation.MessageCommand;
 import botrino.interaction.annotation.ComponentCommand;
+import botrino.interaction.annotation.MessageCommand;
 import botrino.interaction.annotation.UserCommand;
 import botrino.interaction.config.InteractionConfig;
 import botrino.interaction.listener.ChatInputInteractionListener;
@@ -47,13 +47,12 @@ public final class InteractionExtension implements BotrinoExtension {
     private final InstanceCache instanceCache = InstanceCache.create();
     private final List<InteractionErrorHandler> errorHandlers = new ArrayList<>();
     private final List<InteractionEventProcessor> eventProcessors = new ArrayList<>();
-    private InteractionService interactionService;
-
     private final Set<Object> chatInputCommands = new HashSet<>();
     private final Set<ChatInputInteractionListener> chatInputInteractionListeners = new HashSet<>();
     private final Set<UserInteractionListener> userInteractionListeners = new HashSet<>();
     private final Set<MessageInteractionListener> messageInteractionListeners = new HashSet<>();
     private final Set<ComponentInteractionListener<?>> componentInteractionListeners = new HashSet<>();
+    private InteractionService interactionService;
 
     @Override
     public void onClassDiscovered(Class<?> clazz) {
@@ -121,7 +120,8 @@ public final class InteractionExtension implements BotrinoExtension {
     public Mono<Void> finishAndJoin() {
         return Mono.defer(() -> {
             Objects.requireNonNull(interactionService);
-            chatInputCommands.forEach(c -> interactionService.registerChatInputCommand(c, chatInputInteractionListeners));
+            chatInputCommands.forEach(c -> interactionService.registerChatInputCommand(c,
+                    chatInputInteractionListeners));
             userInteractionListeners.forEach(interactionService::registerUserCommand);
             messageInteractionListeners.forEach(interactionService::registerMessageCommand);
             componentInteractionListeners.forEach(interactionService::registerComponentCommand);

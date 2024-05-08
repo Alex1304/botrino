@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <excludeFromCompile>
+      <directory url="file://$PROJECT_DIR$/archetype/src/main/resources/archetype-resources" includeSubdirectories="true" />
+    </excludeFromCompile>
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="botrino-archetype" />
+        <module name="archetype" />
+      </profile>
+      <profile name="Annotation profile for Botrino" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.8.9-ea-1/value-2.8.9-ea-1.jar" />
+        </processorPath>
+        <module name="command" />
+        <module name="api" />
+      </profile>
+      <profile name="Annotation profile for botrino-api" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
+        </processorPath>
+        <module name="botrino-api" />
+      </profile>
+      <profile name="Annotation profile for botrino-interaction" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
+        </processorPath>
+        <module name="botrino-interaction" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="botrino-command" target="11" />
+      <module name="botrino-delivery" target="11" />
+      <module name="botrino-framework" target="11" />
+      <module name="botrino-launcher" target="11" />
+      <module name="botrino-runtime" target="11" />
+      <module name="launcher" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="api" options="" />
+      <module name="command" options="" />
+    </option>
+  </component>
+</project>

@@ -39,16 +39,15 @@ import com.github.alex1304.rdi.finder.annotation.RdiFactory;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.*;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.rest.util.Permission;
+import discord4j.rest.util.PermissionSet;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.Logger;
@@ -129,9 +128,9 @@ public class InteractionService {
     }
 
     /**
-     * Creates a new {@link InteractionService} without error handler or event processor, and with {@link
-     * Locale#getDefault()} as default locale. To customize them, see {@link #builder(InteractionConfig,
-     * GatewayDiscordClient)}.
+     * Creates a new {@link InteractionService} without error handler or event processor, and with
+     * {@link Locale#getDefault()} as default locale. To customize them, see
+     * {@link #builder(InteractionConfig, GatewayDiscordClient)}.
      *
      * @param config  the configuration for the service
      * @param gateway the gateway discord client
@@ -141,42 +140,17 @@ public class InteractionService {
         return builder(config, gateway).build();
     }
 
-    private static boolean hasCommandChanged(ApplicationCommandData oldCommand, ApplicationCommandRequest newCommand) {
-        return !oldCommand.type().toOptional().orElse(1).equals(newCommand.type().toOptional().orElse(1)) ||
-                !oldCommand.description().equals(newCommand.description().toOptional().orElse("")) ||
-                !oldCommand.defaultPermission().toOptional().orElse(true)
-                        .equals(newCommand.defaultPermission().toOptional().orElse(true)) ||
-                !optionsEqual(oldCommand.options().toOptional().orElse(List.of()),
-                        newCommand.options().toOptional().orElse(List.of()));
-    }
-
-    private static boolean optionsEqual(List<ApplicationCommandOptionData> l1, List<ApplicationCommandOptionData> l2) {
-        if (l1.size() != l2.size()) {
-            return false;
-        }
-        final var deque1 = new ArrayDeque<>(l1);
-        final var deque2 = new ArrayDeque<>(l2);
-        while (!deque1.isEmpty() && !deque2.isEmpty()) {
-            final var o1 = deque1.remove();
-            final var o2 = deque2.remove();
-            if (o1.type() != o2.type() || !o1.name().equals(o2.name()) || !o1.description().equals(o2.description())
-                    || o1.required().toOptional().orElse(false) != o2.required().toOptional().orElse(false)
-                    || !o1.choices().toOptional().orElse(List.of())
-                    .equals(o2.choices().toOptional().orElse(List.of()))) {
-                return false;
-            }
-            deque1.addAll(o1.options().toOptional().orElse(List.of()));
-            deque2.addAll(o2.options().toOptional().orElse(List.of()));
-        }
-        return deque1.isEmpty() && deque2.isEmpty();
-    }
-
     private static <K, L extends InteractionListener> L findApplicationCommandListener(Map<K, L> listeners, K key) {
         final var listener = listeners.get(key);
         if (listener == null) {
             throw new AssertionError(key + " does not match any listener");
         }
         return listener;
+    }
+
+    private static String toPermissionString(Permission[] permissionArray) {
+        final var permSet = permissionArray.length == 0 ? PermissionSet.all() : PermissionSet.of(permissionArray);
+        return permSet.getRawValue() + "";
     }
 
     void setErrorHandler(InteractionErrorHandler errorHandler) {
@@ -205,17 +179,16 @@ public class InteractionService {
      * Registers a new chat input command. This variant is suited for commands that have subcommands or subcommand
      * groups, which define separate listeners for each. To register chat input commands without subcommands/subcommand
      * groups, it may be more straightforward to use the overload
-     * {@link #registerChatInputCommand(ChatInputInteractionListener)}
-     * instead.
+     * {@link #registerChatInputCommand(ChatInputInteractionListener)} instead.
      *
      * @param annotatedObject the object which class is annotated with @{@link ChatInputCommand}
      * @param listeners       if the command defines subcommands, this list is expected to contain the instances of the
      *                        listeners for each subcommand. It may contain at most one instance per concrete type.
      * @throws IllegalArgumentException if the given object does not have a @{@link ChatInputCommand} annotation
-     * @throws IllegalStateException    if the given object doesn't have subcommands AND doesn't implement {@link
-     *                                  ChatInputInteractionListener}. Also thrown if more than one instance with the
-     *                                  same concrete type is given in the listeners list, or if an instance is missing
-     *                                  from that list.
+     * @throws IllegalStateException    if the given object doesn't have subcommands AND doesn't implement
+     *                                  {@link ChatInputInteractionListener}. Also thrown if more than one instance with
+     *                                  the same concrete type is given in the listeners list, or if an instance is
+     *                                  missing from that list.
      */
     public void registerChatInputCommand(Object annotatedObject,
                                          Collection<? extends ChatInputInteractionListener> listeners) {
@@ -226,15 +199,15 @@ public class InteractionService {
         }
         builder.name(annot.name());
         builder.description(annot.description());
-        builder.defaultPermission(annot.defaultPermission());
+        builder.defaultMemberPermissions(toPermissionString(annot.defaultMemberPermissions()));
+        builder.dmPermission(annot.allowInDMs());
         builder.type(ApplicationCommand.Type.CHAT_INPUT.getValue());
         if (annot.subcommandGroups().length == 0 && annot.subcommands().length == 0) {
-            if (!(annotatedObject instanceof ChatInputInteractionListener)) {
+            if (!(annotatedObject instanceof ChatInputInteractionListener listener)) {
                 throw new IllegalStateException(annotatedObject.getClass().getName() + " is annotated with " +
                         "@ChatInputCommand and does not declare subcommands, but doesn't implement " +
                         "ChatInputInteractionListener.");
             }
-            final var listener = (ChatInputInteractionListener) annotatedObject;
             final var key = new ChatInputCommandKey(annot.name(), null, null);
             chatInputCommandListeners.put(key, listener);
             LOGGER.debug("Registered chat input command listener {}", key);
@@ -265,7 +238,7 @@ public class InteractionService {
                                     .options(listener.options())
                                     .build();
                         })
-                        .collect(Collectors.toUnmodifiableList());
+                        .toList();
                 if (subcommandGroup != null) {
                     builder.addOption(ApplicationCommandOptionData.builder()
                             .name(subcommandGroup.name())
@@ -297,7 +270,8 @@ public class InteractionService {
         applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
                 .type(ApplicationCommand.Type.USER.getValue())
-                .defaultPermission(annot.defaultPermission())
+                .defaultMemberPermissions(toPermissionString(annot.defaultMemberPermissions()))
+                .dmPermission(annot.allowInDMs())
                 .build());
         LOGGER.debug("Registered user interaction listener {}", listener);
     }
@@ -318,7 +292,8 @@ public class InteractionService {
         applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
                 .type(ApplicationCommand.Type.MESSAGE.getValue())
-                .defaultPermission(annot.defaultPermission())
+                .defaultMemberPermissions(toPermissionString(annot.defaultMemberPermissions()))
+                .dmPermission(annot.allowInDMs())
                 .build());
         LOGGER.debug("Registered message interaction listener {}", listener);
     }
@@ -371,7 +346,7 @@ public class InteractionService {
      * specific guild according to the config, then it will start listening to the interaction events coming from
      * gateway. It never completes until the underlying {@link GatewayDiscordClient#getEventDispatcher()} terminates.
      *
-     * @return a Mono that completes when the event dispatcher terminates.
+     * @return a Mono that never completes unless the event dispatcher terminates.
      */
     public Mono<Void> run() {
         return deployCommands().then(gateway
@@ -402,7 +377,8 @@ public class InteractionService {
     }
 
     private Mono<Tuple2<ComponentInteractionListener<?>, Boolean>>
-    findComponentListener(ContextKey key, ComponentInteractionEvent event) {
+    findComponentListener(ContextKey key,
+                          ComponentInteractionEvent event) {
         return Mono.justOrEmpty(componentInteractionsSingleUse.asMap().getOrDefault(key, new ConcurrentHashMap<>())
                         .remove(event.getCustomId()))
                 .doOnNext(listener -> {
@@ -457,39 +433,8 @@ public class InteractionService {
                         return appService.bulkOverwriteGuildApplicationCommand(applicationId, guildId,
                                 List.copyOf(applicationCommandRequests.values()));
                     }
-                    return appService.getGlobalApplicationCommands(applicationId)
-                            .collectMap(ApplicationCommandData::name)
-                            .flatMap(existingCommands -> {
-                                final var toAdd = applicationCommandRequests.values().stream()
-                                        .filter(r -> !existingCommands.containsKey(r.name()))
-                                        .collect(Collectors.toUnmodifiableList());
-                                final var toRemove = existingCommands.values().stream()
-                                        .filter(r -> !applicationCommandRequests.containsKey(r.name()))
-                                        .map(r -> Snowflake.asLong(r.id()))
-                                        .collect(Collectors.toUnmodifiableList());
-                                final var toUpdate = existingCommands.values().stream()
-                                        .filter(r -> applicationCommandRequests.containsKey(r.name())
-                                                && hasCommandChanged(r, applicationCommandRequests.get(r.name())))
-                                        .map(r -> Tuples.of(Snowflake.asLong(r.id()),
-                                                applicationCommandRequests.get(r.name())))
-                                        .collect(Collectors.toUnmodifiableList());
-                                final var publishers = new ArrayList<Publisher<?>>();
-                                if (!toAdd.isEmpty()) {
-                                    publishers.add(Flux.fromIterable(toAdd).flatMap(request -> appService
-                                            .createGlobalApplicationCommand(applicationId, request)));
-                                }
-                                if (!toRemove.isEmpty()) {
-                                    publishers.add(Flux.fromIterable(toRemove).flatMap(commandId -> appService
-                                            .deleteGlobalApplicationCommand(applicationId, commandId)));
-                                }
-                                if (!toUpdate.isEmpty()) {
-                                    publishers.add(Flux.fromIterable(toUpdate)
-                                            .flatMap(function((commandId, request) -> appService
-                                                    .modifyGlobalApplicationCommand(applicationId, commandId,
-                                                            request))));
-                                }
-                                return Mono.when(publishers);
-                            });
+                    return appService.bulkOverwriteGlobalApplicationCommand(applicationId,
+                            List.copyOf(applicationCommandRequests.values()));
                 })
                 .doOnError(e -> onCommandsDeployed.emitError(new RuntimeException("Command deploy failed", e),
                         FAIL_FAST))
@@ -562,9 +507,7 @@ public class InteractionService {
         }
     }
 
-    private final static class ChatInputCommandKey {
-
-        private final String name, subcommandGroup, subcommand;
+    private record ChatInputCommandKey(String name, String subcommandGroup, String subcommand) {
 
         private ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
             this.name = name;
@@ -582,43 +525,18 @@ public class InteractionService {
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(name, subcommandGroup, subcommand);
-        }
-
-        @Override
         public String toString() {
             return '/' + name + (subcommandGroup != null ? ' ' + subcommandGroup : "") +
                     (subcommand != null ? ' ' + subcommand : "");
         }
     }
 
-    private static final class ContextKey {
-
-        private final long channelId;
-        private final long userId;
-
-        private ContextKey(long channelId, long userId) {
-            this.channelId = channelId;
-            this.userId = userId;
-        }
+    private record ContextKey(long channelId, long userId) {
 
         private static ContextKey from(InteractionContext ctx) {
             return new ContextKey(ctx.channel().getId().asLong(), ctx.user().getId().asLong());
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ContextKey that = (ContextKey) o;
-            return channelId == that.channelId && userId == that.userId;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(channelId, userId);
-        }
     }
 
     private final class ChatInputCommandRunner implements CommandRunner {

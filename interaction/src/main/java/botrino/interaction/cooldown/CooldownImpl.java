@@ -96,8 +96,8 @@ final class CooldownImpl implements Cooldown {
         private void fire() {
             synchronized (lock) {
                 var remaining = remaining();
-                if (remaining.getRemainingPermits() == 0) {
-                    throw new CooldownException(totalPermits, resetInterval, remaining.getTimeLeftBeforeNextPermit());
+                if (remaining.remainingPermits() == 0) {
+                    throw new CooldownException(totalPermits, resetInterval, remaining.timeLeftBeforeNextPermit());
                 }
                 permitHistory[head] = System.nanoTime();
                 head = (head + 1) % permitHistory.length;

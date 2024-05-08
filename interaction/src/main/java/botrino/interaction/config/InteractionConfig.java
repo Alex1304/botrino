@@ -42,8 +42,8 @@ import java.util.Optional;
 public interface InteractionConfig {
 
     /**
-     * Represents the acknowledgment mode used when "default" is selected. It currently corresponds to {@link
-     * Acknowledge.Mode#DEFER}.
+     * Represents the acknowledgment mode used when "default" is selected. It currently corresponds to
+     * {@link Acknowledge.Mode#DEFER}.
      */
     Acknowledge.Mode DEFAULT_ACK_MODE = Acknowledge.Mode.DEFER;
 
@@ -98,9 +98,8 @@ public interface InteractionConfig {
 
     /**
      * The default timeout in seconds to apply on the
-     * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)}
-     * method. Since an interaction token is only valid for 15 minutes, it is not recommended to set this value beyond
-     * 900. Default value is 600.
+     * {@link InteractionContext#awaitComponentInteraction(ComponentInteractionListener)} method. Since an interaction
+     * token is only valid for 15 minutes, it is not recommended to set this value beyond 900. Default value is 600.
      *
      * @return the timeout in seconds
      */

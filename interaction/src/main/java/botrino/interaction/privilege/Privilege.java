@@ -52,8 +52,8 @@ public interface Privilege {
 
     /**
      * Checks if this privilege is granted according to the given context. Emits a boolean indicating whether the
-     * privilege is granted or not. Use {@link #checkGranted(InteractionContext)} if you need to access the details carried
-     * by {@link PrivilegeException} about the missing privilege in case it is not granted.
+     * privilege is granted or not. Use {@link #checkGranted(InteractionContext)} if you need to access the details
+     * carried by {@link PrivilegeException} about the missing privilege in case it is not granted.
      *
      * @param ctx the context to evaluate the privilege on
      * @return a {@link Mono} emitting true if granted, false if not. Any error occurring during the evaluation of the
@@ -79,8 +79,8 @@ public interface Privilege {
 
     /**
      * Returns a {@link Privilege} that evaluates as granted if at least one of this privilege or the other one is
-     * granted. If this privilege is granted, the other one is not tested. If both privileges fail, the resulting {@link
-     * PrivilegeException} will be determined by the given aggregator function.
+     * granted. If this privilege is granted, the other one is not tested. If both privileges fail, the resulting
+     * {@link PrivilegeException} will be determined by the given aggregator function.
      *
      * @param other               the other privilege
      * @param exceptionAggregator a function that determines the {@link PrivilegeException} to emit if both evaluations

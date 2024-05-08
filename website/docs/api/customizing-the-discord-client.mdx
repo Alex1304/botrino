@@ -2,11 +2,16 @@
 title: Customizing the Discord client
 ---
 
-When you start a project with Botrino, the Discord client is constructed for you, so you don't have anything to do in order to run the bot. However, in most cases, you will want to take full control on how the Discord client is created. This section will show you how to fully customize the Discord client and the gateway login process.
+When you start a project with Botrino, the Discord client is constructed for you, so you don't have anything to do in
+order to run the bot. However, in most cases, you will want to take full control on how the Discord client is created.
+This section will show you how to fully customize the Discord client and the gateway login process.
 
 ## The `LoginHandler` interface
 
-All you need to do is to provide one implementation of the `LoginHandler` interface. It defines one method, `Mono<GatewayDiscordClient> login(ConfigContainer configContainer)`, that you can override to define yourself how your bot connects to the Discord gateway. The default implementation of this method builds the Discord client with default settings, using the token, presence status, and intents from the configuration. It can be recreated like this:
+All you need to do is to provide one implementation of the `LoginHandler` interface. It defines one
+method, `Mono<GatewayDiscordClient> login(ConfigContainer configContainer)`, that you can override to define yourself
+how your bot connects to the Discord gateway. The default implementation of this method builds the Discord client with
+default settings, using the token, presence status, and intents from the configuration. It can be recreated like this:
 
 ```java
 package com.example.myproject;
@@ -41,6 +46,10 @@ public final class DefaultLoginHandler implements LoginHandler {
 ```
 
 :::caution
+
 * The implementation class must have a no-arg constructor.
-* If more than one implementation of `LoginHandler` are found, it will result in an error as it is impossible to determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with the `@Primary` annotation to lift the ambiguity. You may alternatively use the `@Exclude` annotation if you don't want one implementation to be picked up by Botrino.
-:::
+* If more than one implementation of `LoginHandler` are found, it will result in an error as it is impossible to
+  determine which one to use. If you don't want to remove the extra implementation(s), you can mark one of them with
+  the `@Primary` annotation to lift the ambiguity. You may alternatively use the `@Exclude` annotation if you don't want
+  one implementation to be picked up by Botrino.
+  :::

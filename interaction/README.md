@@ -1,20 +1,30 @@
 # Botrino Interaction
 
-Botrino comes with a library that allows to easily create application commands and listeners for Discord interactions. Discord recently added [Application Commands](https://discord.com/developers/docs/interactions/application-commands) as a native way to implement commands within Discord, as well as [Message Components](https://discord.com/developers/docs/interactions/message-components) to allow for more specific and intuitive interactions with the bot.
+Botrino comes with a library that allows to easily create application commands and listeners for Discord interactions.
+Discord recently added [Application Commands](https://discord.com/developers/docs/interactions/application-commands) as
+a native way to implement commands within Discord, as well
+as [Message Components](https://discord.com/developers/docs/interactions/message-components) to allow for more specific
+and intuitive interactions with the bot.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
 [![javadoc](https://javadoc.io/badge2/com.alex1304.botrino/botrino-interaction/javadoc.svg)](https://javadoc.io/doc/com.alex1304.botrino/botrino-interaction)
 
 ## Preamble
 
-Although it is designed to be an extension of the Botrino framework, this library is completely decoupled from the framework itself. As such, it is possible to add this library to your project even if you aren't using the framework. The only difference is that you won't benefit from the automatic registration of commands, but you will be able to use all features.
+Although it is designed to be an extension of the Botrino framework, this library is completely decoupled from the
+framework itself. As such, it is possible to add this library to your project even if you aren't using the framework.
+The only difference is that you won't benefit from the automatic registration of commands, but you will be able to use
+all features.
 
 ## Features
 
-* Straightforward annotation-based command declaration, with full support for slash commands with subcommands/subcommand groups and context menu commands
-* Automatic deployment of commands into the Discord application, with ability to choose whether to deploy them globally or in a specific guild during development
+* Straightforward annotation-based command declaration, with full support for slash commands with subcommands/subcommand
+  groups and context menu commands
+* Automatic deployment of commands into the Discord application, with ability to choose whether to deploy them globally
+  or in a specific guild during development
 * Inject command options into fields using annotations to conveniently access the values
-* Handle component interactions either by treating them as regular commands or by awaiting them in order to continue the execution of a parent command
+* Handle component interactions either by treating them as regular commands or by awaiting them in order to continue the
+  execution of a parent command
 * Automatic ACK of interaction events, configurable on a per-command basis
 * Define privileges for each command with your own rules
 * Cooldown per user
@@ -24,15 +34,20 @@ Although it is designed to be an extension of the Botrino framework, this librar
 
 ## Quick start
 
-**JDK 11 or newer is required.** You can download the OpenJDK [here](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot).
+**JDK 17 or newer is required.** You can download the
+OpenJDK [here](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot).
 
 You have two ways to start a project. **Choose only one of the two options.**
 
 ### Option 1: Using Botrino framework
 
-1. Initialize your project by following the steps in the [Getting Started page](https://botrino.alex1304.com/docs/getting-started). **If you decide to use the Maven archetype, the library will be already added, so you won't need to follow the next steps!** Otherwise, continue reading.
+1. Initialize your project by following the steps in
+   the [Getting Started page](https://botrino.alex1304.com/docs/getting-started). **If you decide to use the Maven
+   archetype, the library will be already added, so you won't need to follow the next steps!** Otherwise, continue
+   reading.
 
-2. Add the following dependency in your project. Replace [VERSION] with the latest version as shown here: [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
+2. Add the following dependency in your project. Replace [VERSION] with the latest version as shown
+   here: [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
 
    **Maven:**
 
@@ -44,7 +59,7 @@ You have two ways to start a project. **Choose only one of the two options.**
     </dependency>
     ```
 
-    **Gradle**
+   **Gradle**
 
     ```groovy
     repositories {
@@ -56,7 +71,8 @@ You have two ways to start a project. **Choose only one of the two options.**
     }
     ```
 
-3. Add `requires botrino.interaction` in your `module-info.java`. You can actually remove `requires botrino.api` since `botrino.interaction` is already requiring it transitively.
+3. Add `requires botrino.interaction` in your `module-info.java`. You can actually remove `requires botrino.api`
+   since `botrino.interaction` is already requiring it transitively.
     ```java
     import botrino.api.annotation.BotModule;
 
@@ -74,11 +90,13 @@ You have two ways to start a project. **Choose only one of the two options.**
         }
     ```
 
-You are now ready to add commands to your application, they will be registered automatically! You can jump directly to the [Creating your first commands](#creating-your-first-commands) section.
+You are now ready to add commands to your application, they will be registered automatically! You can jump directly to
+the [Creating your first commands](#creating-your-first-commands) section.
 
 ### Option 2: Using the library alone
 
-1. Add the following dependency in your project. Replace [VERSION] with the latest version as shown here: [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
+1. Add the following dependency in your project. Replace [VERSION] with the latest version as shown
+   here: [![Maven Central](https://img.shields.io/maven-central/v/com.alex1304.botrino/botrino-interaction)](https://search.maven.org/artifact/com.alex1304.botrino/botrino-interaction)
 
    **Maven:**
 
@@ -317,4 +335,5 @@ public final class PaginateCommand implements ChatInputInteractionListener {
 
 <img src="https://botrino.alex1304.com/img/paginate.png" alt="" />
 
-**All of these features (and more !) are fully documented here:** https://botrino.alex1304.com/docs/interaction-library/overview
+**All of these features (and more !) are fully documented here:
+** https://botrino.alex1304.com/docs/interaction-library/overview

@@ -37,8 +37,8 @@ import java.util.Set;
  * in order to add it in the command tree.
  * <p>
  * When dealing with classes that are services (with {@link RdiService} annotation), it is recommended not to
- * instantiate them manually and instead use the existing instance that can be collected via {@link
- * #onServiceCreated(Object)}.
+ * instantiate them manually and instead use the existing instance that can be collected via
+ * {@link #onServiceCreated(Object)}.
  * <p>
  * Implementations of this interface must be added via a {@code provides} directive in {@code module-info.java} so that
  * Botrino can load it on startup.

@@ -1,0 +1,151 @@
+---
+title: Working with services
+---
+
+Services are certainly what contribute the most in making Botrino a so concise and easy to use framework. You will
+hopefully understand why after reading this page introducing services and showing how to use their power to their
+fullest extent.
+
+## What is a service?
+
+Services are more or less the same thing
+as [beans in Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans). They are Java
+objects that are instantiated once at the start of your application, and that you can inject everywhere in your app. A
+service can define dependencies to other services, which are resolved when the service is created.
+
+As such, the concept of dependency injection (DI) is also used in Botrino. Under the hood, it utilizes
+the [RDI library](https://alex1304.github.io/rdi/docs/intro) which supports factories returning reactive types.
+
+## How to use services?
+
+Botrino will be able to find your services automatically in your app module, as long as your module is `open` and is
+annotated with `@BotModule`, as explained in the [Getting Started guide](getting-started.mdx).
+
+### Declaring a service
+
+For a class to be recognized as a service, you need to annotate it with `@RdiService`:
+
+```java
+@RdiService
+public class A {
+
+}
+```
+
+With only this code, an instance of `A` will be created on startup. By default it assumes that a public no-arg
+constructor exists, which is the case in the code above. But there are many ways to construct a service, and that's what
+makes them interesting.
+
+### Injecting a service in a constructor
+
+Let's create another service `B`, which injects `A` in its constructor:
+
+```java
+@RdiService
+public class B {
+
+    @RdiFactory
+    public B(A a) {
+        // you can use A here
+    }
+}
+```
+
+The `@RdiFactory` annotation is what indicates the method to create the service, with the possibility to inject other
+services in the arguments. In this scenario, the following will happen on startup:
+
+* Botrino will find `A` and `B` in your module, and register them as services
+* It will see that `B` injects `A` in constructor, so `A` needs to be created first before `B` can be created
+* Services are created following the dependency tree.
+
+### Injecting a service in a static factory
+
+The method annotated with `@RdiFactory` can as well be a static factory method instead of a constructor:
+
+```java
+@RdiService
+public class B {
+
+    private final A a;
+
+    private B(A a) {
+        this.a = a;
+    }
+
+    @RdiFactory
+    public static B create(A a) {
+        return new B(a);
+    }
+}
+```
+
+:::caution
+The return type of the static factory must be `B` or a subtype of `B`.
+:::
+
+### Injecting a service in a reactive static factory
+
+If you need to perform some reactive tasks in order to create your object, Botrino (in fact, RDI) allows you to return
+a `Publisher` of the service instead of the service itself:
+
+```java
+@RdiService
+public class B {
+
+    private final A a;
+
+    private B(A a) {
+        this.a = a;
+    }
+
+    @RdiFactory
+    public static Mono<B> create(A a) {
+        return Mono.fromCallable(() -> new B(a));
+    }
+}
+```
+
+In this case, if `B` is injected somewhere else, it will first subscribe to the publisher returned by the static
+factory, and create the service only after the instance of `B` is emitted.
+
+:::info
+Check out the [RDI documentation](https://alex1304.github.io/rdi/docs/intro) for more examples and details on how
+dependency injection works.
+:::
+
+## Built-in services
+
+### `GatewayDiscordClient`
+
+Maybe you've been wondering how to access the instance of the Discord client of your bot? Well, now you have the
+answer: `GatewayDiscordClient` is registered as a service, which means you can inject it in your own services!
+
+```java
+@RdiService
+public class A {
+
+    @RdiFactory
+    public A(GatewayDiscordClient gateway) {
+        // you can use GatewayDiscordClient here
+    }
+}
+```
+
+### `ConfigContainer`
+
+To access the values of the configuration file, the service `ConfigContainer` is registered and you can inject it in
+your own services. For example, to get the bot token:
+
+```java
+@RdiService
+public class A {
+
+    @RdiFactory
+    public A(ConfigContainer configContainer) {
+        var botConfig = configContainer.get(BotConfig.class);
+        var token = botConfig.token();
+    }
+}
+```
+
+We will see the `ConfigContainer` more in depth in the next section, [Configuring your bot](configuring-your-bot.mdx).

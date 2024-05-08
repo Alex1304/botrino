@@ -42,8 +42,8 @@ import java.util.function.Predicate;
  * written inline inside the implementation of your methods.
  *
  * <p>
- * This variant is suited for executing code that doesn't return a value. If the code returns a value, use {@link
- * MatcherFunction} instead.
+ * This variant is suited for executing code that doesn't return a value. If the code returns a value, use
+ * {@link MatcherFunction} instead.
  */
 public final class MatcherConsumer implements Consumer<Object> {
 
@@ -157,13 +157,6 @@ public final class MatcherConsumer implements Consumer<Object> {
         }
     }
 
-    private static final class MatchStatement {
-        private final Predicate<Object> predicate;
-        private final Consumer<Object> consumer;
-
-        private MatchStatement(Predicate<Object> predicate, Consumer<Object> consumer) {
-            this.predicate = predicate;
-            this.consumer = consumer;
-        }
+    private record MatchStatement(Predicate<Object> predicate, Consumer<Object> consumer) {
     }
 }

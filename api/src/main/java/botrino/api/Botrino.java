@@ -134,7 +134,8 @@ public final class Botrino {
             final var objectMapper = configReader.createConfigObjectMapper();
             final var configJson = configReader.loadConfigJson(botDir);
             final var configObjects = ConfigParser.create(objectMapper, configEntries).parse(configJson);
-            final var configContainerDescriptor = ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
+            final var configContainerDescriptor =
+                    ServiceDescriptor.builder(ServiceReference.ofType(ConfigContainer.class))
                     .setFactoryMethod(staticFactory("of", ConfigContainer.class,
                             value(configObjects, Map.class)))
                     .build();
@@ -162,8 +163,8 @@ public final class Botrino {
                     .then(serviceContainer.getService(gatewayRef))
                     .flatMap(gateway -> gateway.onDisconnect()
                             .and(Mono.when(extensions.stream()
-                                    .map(BotrinoExtension::finishAndJoin)
-                                    .collect(Collectors.toList()))
+                                            .map(BotrinoExtension::finishAndJoin)
+                                            .toList())
                                     .takeUntilOther(gateway.onDisconnect())))
                     .block();
         } catch (Exception e) {
