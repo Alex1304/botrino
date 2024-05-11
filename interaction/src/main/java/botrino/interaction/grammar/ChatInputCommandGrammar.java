@@ -135,10 +135,13 @@ public final class ChatInputCommandGrammar<T> {
                 publishers.add(Mono.justOrEmpty(getOptionByName(event, optionAnnot.name()))
                         .flatMap(option -> Mono.justOrEmpty(option.getValue())
                                 .flatMap(value -> extractOptionValue(option.getType(), value,
-                                        event.getInteraction().getGuildId().orElse(null)))));
+                                        event.getInteraction().getGuildId().orElse(null)))
+                                .map(Optional::of))
+                        .switchIfEmpty(Mono.just(Optional.empty())));
             }
             return Mono.zip(publishers,
-                    params -> (T) ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class), params));
+                    params -> (T) ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class),
+                            Arrays.stream(params).map(opt -> ((Optional<?>) opt).orElse(null)).toArray()));
         });
     }
 
