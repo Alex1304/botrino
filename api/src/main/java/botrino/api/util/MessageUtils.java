@@ -93,6 +93,7 @@ public final class MessageUtils {
                 .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
                 .files(spec.files())
                 .fileSpoilers(spec.fileSpoilers())
+                .attachments(List.of())
                 .build();
     }
 
@@ -144,6 +145,7 @@ public final class MessageUtils {
                 .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
                 .files(spec.files())
                 .fileSpoilers(spec.fileSpoilers())
+                .attachments(List.of())
                 .build();
     }
 

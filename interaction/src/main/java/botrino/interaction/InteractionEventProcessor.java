@@ -24,7 +24,6 @@
 package botrino.interaction;
 
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
-import discord4j.core.object.command.Interaction;
 import reactor.core.publisher.Mono;
 
 import java.util.Locale;
@@ -59,13 +58,14 @@ public interface InteractionEventProcessor {
 
     /**
      * Determines the locale to use for interactions following the given event. By default, it applies the locale of the
-     * user as returned by {@link Interaction#getUserLocale()}
+     * guild if the command is run in a guild, else it uses the locale of the user's Discord client.
      *
      * @param event the event to find the locale for
      * @return a {@link Mono} emitting the locale appropriate for the event. Empty will use the default locale as
      * returned by {@link Locale#getDefault()}. If an error occurs, it will be logged then the event will be dropped.
      */
     default Mono<Locale> computeLocale(InteractionCreateEvent event) {
-        return Mono.just(Locale.forLanguageTag(event.getInteraction().getUserLocale()));
+        return Mono.just(Locale.forLanguageTag(event.getInteraction().getGuildLocale()
+                .orElse(event.getInteraction().getUserLocale())));
     }
 }

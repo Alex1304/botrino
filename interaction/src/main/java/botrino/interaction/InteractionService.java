@@ -25,10 +25,7 @@ package botrino.interaction;
 
 import botrino.api.config.ConfigContainer;
 import botrino.api.util.MatcherFunction;
-import botrino.interaction.annotation.Acknowledge;
-import botrino.interaction.annotation.ChatInputCommand;
-import botrino.interaction.annotation.MessageCommand;
-import botrino.interaction.annotation.UserCommand;
+import botrino.interaction.annotation.*;
 import botrino.interaction.config.InteractionConfig;
 import botrino.interaction.context.*;
 import botrino.interaction.cooldown.Cooldown;
@@ -48,6 +45,7 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.Logger;
@@ -61,6 +59,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.function.TupleUtils.function;
@@ -79,6 +78,7 @@ public class InteractionService {
     private final Locale defaultLocale;
 
     private final Map<String, ApplicationCommandRequest> applicationCommandRequests = new HashMap<>();
+    private final Map<String, ApplicationCommandRequest> privateCommandRequests = new HashMap<>();
     private final Map<ChatInputCommandKey, ChatInputInteractionListener> chatInputCommandListeners =
             new ConcurrentHashMap<>();
     private final Map<String, UserInteractionListener> userInteractionListeners = new ConcurrentHashMap<>();
@@ -100,7 +100,7 @@ public class InteractionService {
     @Deprecated
     @RdiFactory
     public InteractionService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
-        this(configContainer.get(InteractionConfig.class), gateway, Locale.ENGLISH, null, null);
+        this(configContainer.get(InteractionConfig.class), gateway, Locale.getDefault(), null, null);
     }
 
     private InteractionService(InteractionConfig interactionConfig, GatewayDiscordClient gateway,
@@ -148,9 +148,9 @@ public class InteractionService {
         return listener;
     }
 
-    private static String toPermissionString(Permission[] permissionArray) {
-        final var permSet = permissionArray.length == 0 ? PermissionSet.all() : PermissionSet.of(permissionArray);
-        return permSet.getRawValue() + "";
+    private static Optional<String> toPermissionString(Permission[] permissionArray) {
+        return permissionArray.length == 0 ? Optional.empty() :
+                Optional.of(PermissionSet.of(permissionArray).getRawValue() + "");
     }
 
     void setErrorHandler(InteractionErrorHandler errorHandler) {
@@ -251,7 +251,16 @@ public class InteractionService {
                 }
             }
         }
-        applicationCommandRequests.put(annot.name(), builder.build());
+        putCommandRequest(annot.name(), builder.build(), annotatedObject.getClass()
+                .isAnnotationPresent(PrivateCommand.class));
+    }
+
+    private void putCommandRequest(String name, ApplicationCommandRequest request, boolean isPrivate) {
+        if (isPrivate) {
+            privateCommandRequests.put(name, request);
+        } else {
+            applicationCommandRequests.put(name, request);
+        }
     }
 
     /**
@@ -267,12 +276,12 @@ public class InteractionService {
             throw new IllegalArgumentException("Missing @UserCommand annotation");
         }
         userInteractionListeners.put(annot.value(), listener);
-        applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
+        putCommandRequest(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
                 .type(ApplicationCommand.Type.USER.getValue())
                 .defaultMemberPermissions(toPermissionString(annot.defaultMemberPermissions()))
                 .dmPermission(annot.allowInDMs())
-                .build());
+                .build(), listener.getClass().isAnnotationPresent(PrivateCommand.class));
         LOGGER.debug("Registered user interaction listener {}", listener);
     }
 
@@ -289,12 +298,12 @@ public class InteractionService {
             throw new IllegalArgumentException("Missing @MessageCommand annotation");
         }
         messageInteractionListeners.put(annot.value(), listener);
-        applicationCommandRequests.put(annot.value(), ApplicationCommandRequest.builder()
+        putCommandRequest(annot.value(), ApplicationCommandRequest.builder()
                 .name(annot.value())
                 .type(ApplicationCommand.Type.MESSAGE.getValue())
                 .defaultMemberPermissions(toPermissionString(annot.defaultMemberPermissions()))
                 .dmPermission(annot.allowInDMs())
-                .build());
+                .build(), listener.getClass().isAnnotationPresent(PrivateCommand.class));
         LOGGER.debug("Registered message interaction listener {}", listener);
     }
 
@@ -427,14 +436,28 @@ public class InteractionService {
     private Mono<Void> deployCommands() {
         final var appService = gateway.rest().getApplicationService();
         final var guildId = interactionConfig.applicationCommandsGuildId().orElse(null);
+        final var privateGuildId = interactionConfig.privateCommandsGuildId().orElse(null);
         return gateway.rest().getApplicationId()
                 .flatMapMany(applicationId -> {
-                    if (guildId != null) {
-                        return appService.bulkOverwriteGuildApplicationCommand(applicationId, guildId,
-                                List.copyOf(applicationCommandRequests.values()));
+                    final var removeAllGlobal = guildId != null ?
+                            appService.bulkOverwriteGlobalApplicationCommand(applicationId, List.of()) :
+                            Flux.empty();
+                    if (guildId != null && guildId.equals(privateGuildId)) {
+                        final var requests = Stream.concat(
+                                applicationCommandRequests.values().stream(),
+                                privateCommandRequests.values().stream()).toList();
+                        return Flux.merge(removeAllGlobal,
+                                appService.bulkOverwriteGuildApplicationCommand(applicationId, guildId, requests));
                     }
-                    return appService.bulkOverwriteGlobalApplicationCommand(applicationId,
-                            List.copyOf(applicationCommandRequests.values()));
+                    final var nonPrivateCommands = guildId == null ?
+                            appService.bulkOverwriteGlobalApplicationCommand(applicationId,
+                                    List.copyOf(applicationCommandRequests.values())) :
+                            appService.bulkOverwriteGuildApplicationCommand(applicationId, guildId,
+                                    List.copyOf(applicationCommandRequests.values()));
+                    final var privateCommands = privateGuildId == null ? Flux.empty() :
+                            appService.bulkOverwriteGuildApplicationCommand(applicationId, privateGuildId,
+                                    List.copyOf(privateCommandRequests.values()));
+                    return Flux.merge(removeAllGlobal, nonPrivateCommands, privateCommands);
                 })
                 .doOnError(e -> onCommandsDeployed.emitError(new RuntimeException("Command deploy failed", e),
                         FAIL_FAST))

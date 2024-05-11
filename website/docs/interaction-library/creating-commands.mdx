@@ -33,15 +33,15 @@ public final class PingCommand implements ChatInputInteractionListener {
 ```
 
 * A chat input command must have a `@ChatInputCommand` annotation that contains the meta-information required by
-  Discord (name of the command, description, defaultPermission, etc), and must implement
-  the `ChatInputInteractionListener` interface.
+Discord (name of the command, description, defaultPermission, etc), and must implement
+the `ChatInputInteractionListener` interface.
 * The `run` method accepts a `ChatInputInteractionContext` that holds contextual information on the command being
-  executed, such as the original `ChatInputInteractionEvent`, the `MessageChannel` where the interaction happened,
-  the `User` who initiated the interaction, and a `Locale` that may have been adapted to the target user (
-  see [Filtering and adapting events](filtering-and-adapting-events.mdx)).
+executed, such as the original `ChatInputInteractionEvent`, the `MessageChannel` where the interaction happened,
+the `User` who initiated the interaction, and a `Locale` that may have been adapted to the target user (
+see [Filtering and adapting events](filtering-and-adapting-events.mdx)).
 * Events are automatically acknowledged by default, so you can directly call `createFollowup()` without
-  using `deferReply()` first (`reply()` will not work unless you disable automatic acknowledgment,
-  see [Acknowledging Interactions](acknowledging-interactions.mdx))
+using `deferReply()` first (`reply()` will not work unless you disable automatic acknowledgment,
+see [Acknowledging Interactions](acknowledging-interactions.mdx))
 
 :::info
 If you are using the Botrino framework, you have nothing else to do, the command will be automatically recognized and
@@ -105,18 +105,18 @@ public class OptionsCommand implements ChatInputInteractionListener {
 ```
 
 1. Create a record class that declares the fields in which you want to inject the option values. It is recommended to
-   use
-   an internal private record for better code readability, unless you are re-using the same record for several commands.
+use
+an internal private record for better code readability, unless you are re-using the same record for several commands.
 2. Use the annotation `@ChatInputCommandGrammar.Option` on each record parameter to declare the properties of the
-   option (the type,
-   the name, the description, whether they are required or not, and the array of value choices, if any).
+option (the type,
+the name, the description, whether they are required or not, and the array of value choices, if any).
 3. Create a new `ChatInputCommandGrammar` and pass the class to the `.of()` method. You only need to instantiate once,
-   rather than on each command execution.
+rather than on each command execution.
 4. In the `run(ChatInputInteractionContext)` method, call the `resolve(ChatInputInteractionEvent)` method which will
-   read the options, instantiate the record and inject the values in the annotated fields. You can then use the record
-   object to conveniently access the values, as shown in the example above.
+read the options, instantiate the record and inject the values in the annotated fields. You can then use the record
+object to conveniently access the values, as shown in the example above.
 5. Override the `options()` method from `ChatInputInteractionListener` and make it
-   return `ChatInputCommandGrammar#toOptions()`.
+return `ChatInputCommandGrammar#toOptions()`.
 
 For reference, here is a table associating each `ApplicationCommandOption.Type` with the type of the field carrying the
 annotation:
@@ -195,27 +195,21 @@ public final class NestCommand {
 Here are the notable differences:
 
 * The class carrying the `@ChatInputCommand` annotation no longer implements `ChatInputInteractionListener`. Indeed, as
-  per Discord's documentation a base command becomes unusable if subcommands are present.
+per Discord's documentation a base command becomes unusable if subcommands are present.
 * The `@ChatInputCommand` specifies an array of `@Subcommand` and `@SubcommandGroup` with their own name and
-  description.
+description.
 * Subcommands specify the class implementing `ChatInputInteractionListener` that is going to handle them. In this
-  example they are internal classes, but they can as well be external.
+example they are internal classes, but they can as well be external.
 
 :::info
 Here is how you manually register a command containing subcommands when you control the instance
 of `InteractionService`:
 
 ```java
-interactionService.registerChatInputCommand(new NestCommand(),List.
-
-of(
+interactionService.registerChatInputCommand(new NestCommand(), List.of(
         new NestCommand.Sub1(),
-        new NestCommand.
-
-Sub2(),
-        new NestCommand.
-
-G1Sub()
+        new NestCommand.Sub2(),
+        new NestCommand.G1Sub()
 ));
 ```
 
@@ -264,6 +258,32 @@ interactionService.registerUserCommand(new FightCommand());
 ```
 
 :::
+
+## Private commands
+
+A command may be marked "private" so it won't be deployed globally, but in a specific server instead. This is particularly useful when creating commands that are not intended to the public but for the bot owner or the team managing it.
+
+All you have to do is to add `@PrivateCommand` on top of `@ChatInputCommand`, `@MessageCommand` or `@UserCommand`. The guild where the private command will be deployed can be defined in the [config](interaction-library/configuration.mdx).
+
+```java
+package testbot1;
+
+import botrino.interaction.annotation.UserCommand;
+import botrino.interaction.annotation.PrivateCommand;
+import botrino.interaction.context.UserInteractionContext;
+import botrino.interaction.listener.UserInteractionListener;
+import org.reactivestreams.Publisher;
+
+@PrivateCommand
+@UserCommand("Blacklist")
+public final class BlacklistCommand implements UserInteractionListener {
+
+    @Override
+    public Publisher<?> run(UserInteractionContext ctx) {
+        return ctx.event().createFollowup("User has been blacklisted.");
+    }
+}
+```
 
 ## Commands as a service
 

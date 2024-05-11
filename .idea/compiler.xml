@@ -29,7 +29,6 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
         </processorPath>
         <module name="botrino-api" />
       </profile>
@@ -38,7 +37,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
         </processorPath>
         <module name="botrino-interaction" />

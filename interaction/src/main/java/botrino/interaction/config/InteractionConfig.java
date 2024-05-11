@@ -75,6 +75,15 @@ public interface InteractionConfig {
     Optional<Long> applicationCommandsGuildId();
 
     /**
+     * Specifies the guild ID in which application commands marked as private should be deployed.
+     * Leaving empty or setting to <code>null</code> will not deploy commands marked as private.
+     *
+     * @return the application commands guild ID, if present
+     */
+    @JsonProperty("private_commands_guild_id")
+    Optional<Long> privateCommandsGuildId();
+
+    /**
      * Specifies the way interactions should be acknowledged by default. Possible values are:
      * <ul>
      *     <li>DEFAULT: equivalent to DEFER.</li>
