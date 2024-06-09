@@ -30,9 +30,11 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.rest.http.client.ClientException;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
@@ -123,7 +125,6 @@ public final class ChatInputCommandGrammar<T> {
         });
     }
 
-    @SuppressWarnings("unchecked")
     private Mono<T> resolveRecordClass(ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
             final var publishers = new ArrayList<Mono<?>>();
@@ -139,9 +140,13 @@ public final class ChatInputCommandGrammar<T> {
                                 .map(Optional::of))
                         .switchIfEmpty(Mono.just(Optional.empty())));
             }
+            if (publishers.isEmpty()) {
+                return Mono.just(ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class))).cast(valueClass);
+            }
             return Mono.zip(publishers,
-                    params -> (T) ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class),
-                            Arrays.stream(params).map(opt -> ((Optional<?>) opt).orElse(null)).toArray()));
+                    params -> ConfigUtils.instantiateRecord(valueClass.asSubclass(Record.class),
+                            Arrays.stream(params).map(opt -> ((Optional<?>) opt).orElse(null)).toArray()))
+                    .cast(valueClass);
         });
     }
 
@@ -153,7 +158,9 @@ public final class ChatInputCommandGrammar<T> {
             case NUMBER -> Mono.just(option.asDouble());
             case BOOLEAN -> Mono.just(option.asBoolean());
             case USER -> guildId == null ? option.asUser() : option.getClient()
-                    .getMemberById(guildId, option.asSnowflake());
+                    .getMemberById(guildId, option.asSnowflake())
+                    .cast(User.class)
+                    .onErrorResume(ClientException.isStatusCode(404), e -> option.asUser());
             case CHANNEL -> option.asChannel();
             case ROLE -> option.asRole();
             case MENTIONABLE -> Mono.just(option.asSnowflake());

@@ -11,12 +11,6 @@
         },
         "enabled_intents": 32509
     },
-    "i18n": {
-        "default_locale": "en",
-        "supported_locales": [
-            "en"
-        ]
-    },
     "interaction": {
         "application_commands_guild_id": null,
         "default_ack_mode": "default"

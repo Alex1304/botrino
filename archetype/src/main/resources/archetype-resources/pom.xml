@@ -26,6 +26,8 @@
         <plugin.resources.version>3.3.1</plugin.resources.version>
         <plugin.antrun.version>3.1.0</plugin.antrun.version>
         <botrino.version>${project.version}</botrino.version>
+        <reactor.version>2020.0.33</reactor.version>
+        <logback.version>1.5.6</logback.version>
         <delivery.name>\${symbol_dollar}{project.parent.artifactId}-\${symbol_dollar}{project.version}</delivery.name>
         <delivery.directory>\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{delivery.name}</delivery.directory>
         <app.build.directory>\${symbol_dollar}{project.basedir}/../app/target</app.build.directory>
@@ -137,6 +139,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-bom</artifactId>
+                <version>\${symbol_dollar}{reactor.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.alex1304.botrino</groupId>
                 <artifactId>botrino-api</artifactId>

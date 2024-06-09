@@ -38,6 +38,8 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.util.Locale;
 
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
+
 abstract class AbstractInteractionContext<E extends DeferrableInteractionEvent> implements InteractionContext {
 
     private final InteractionService interactionService;
@@ -115,12 +117,12 @@ abstract class AbstractInteractionContext<E extends DeferrableInteractionEvent> 
             return Mono.from(delegate.run(ctx))
                     .doOnSuccess(value -> {
                         if (value == null) {
-                            sink.emitEmpty(Sinks.EmitFailureHandler.FAIL_FAST);
+                            sink.emitEmpty(FAIL_FAST);
                         } else {
-                            sink.emitValue(value, Sinks.EmitFailureHandler.FAIL_FAST);
+                            sink.emitValue(value, FAIL_FAST);
                         }
                     })
-                    .doOnError(t -> sink.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST));
+                    .doOnError(t -> sink.emitError(t, FAIL_FAST));
         }
 
         @Override

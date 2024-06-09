@@ -24,10 +24,7 @@
 package botrino.interaction.listener;
 
 import botrino.interaction.annotation.ComponentCommand;
-import botrino.interaction.context.ButtonInteractionContext;
-import botrino.interaction.context.ComponentInteractionContext;
-import botrino.interaction.context.InteractionContext;
-import botrino.interaction.context.SelectMenuInteractionContext;
+import botrino.interaction.context.*;
 import botrino.interaction.cooldown.Cooldown;
 import botrino.interaction.privilege.Privilege;
 import org.reactivestreams.Publisher;
@@ -76,6 +73,22 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
     }
 
     /**
+     * Creates an instance of {@link ComponentInteractionListener} that will listen for modal submit interactions with
+     * the specified customId and will execute the code in the provided run function.
+     *
+     * @param customId the custom ID of the modal submit to listen to
+     * @param run      the code to execute when the interaction is received, may return a value
+     * @param <R>      the type of value the run function may return
+     * @return a new {@link ComponentInteractionListener}
+     */
+    static <R>
+    ComponentInteractionListener<R> modalSubmit(String customId,
+                                               Function<? super ModalSubmitInteractionContext,
+                                                       ? extends Publisher<R>> run) {
+        return ComponentInteractionListener.<R>builder(customId).setRunModalSubmit(run).build();
+    }
+
+    /**
      * Initializes a builder to create a new {@link ComponentInteractionListener} instance.
      *
      * @param customId the custom ID of the component to listen to
@@ -110,11 +123,14 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
      * @return a Publisher completing when the code has finished running, possibly emitting a value.
      */
     default Publisher<R> run(ComponentInteractionContext ctx) {
-        if (ctx instanceof ButtonInteractionContext) {
-            return run((ButtonInteractionContext) ctx);
+        if (ctx instanceof ButtonInteractionContext buttonCtx) {
+            return run(buttonCtx);
         }
-        if (ctx instanceof SelectMenuInteractionContext) {
-            return run((SelectMenuInteractionContext) ctx);
+        if (ctx instanceof SelectMenuInteractionContext selectMenuCtx) {
+            return run(selectMenuCtx);
+        }
+        if (ctx instanceof ModalSubmitInteractionContext modalSubmitCtx) {
+            return run(modalSubmitCtx);
         }
         return Mono.empty();
     }
@@ -139,11 +155,22 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
         return Mono.empty();
     }
 
+    /**
+     * The code to execute when an interaction on a modal submit with the specified custom ID is received.
+     *
+     * @param ctx the interaction context
+     * @return a Publisher completing when the code has finished running, possibly emitting a value.
+     */
+    default Publisher<R> run(ModalSubmitInteractionContext ctx) {
+        return Mono.empty();
+    }
+
     final class Builder<R> {
 
         private final String customId;
         private Function<? super ButtonInteractionContext, ? extends Publisher<R>> runButton;
         private Function<? super SelectMenuInteractionContext, ? extends Publisher<R>> runSelectMenu;
+        private Function<? super ModalSubmitInteractionContext, ? extends Publisher<R>> runModalSubmit;
         private Privilege privilege;
         private Cooldown cooldown;
 
@@ -174,6 +201,20 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
         public Builder<R> setRunSelectMenu(@Nullable Function<? super SelectMenuInteractionContext,
                 ? extends Publisher<R>> runSelectMenu) {
             this.runSelectMenu = runSelectMenu;
+            return this;
+        }
+
+        /**
+         * The run function that is going to be executed if the component involved in the interaction is a modal
+         * submit.
+         *
+         * @param runModalSubmit a function accepting an interaction context and returning a Publisher completing when
+         *                       the code has finished running, possibly emitting a value.
+         * @return this builder
+         */
+        public Builder<R> setRunModalSubmit(@Nullable Function<? super ModalSubmitInteractionContext,
+                ? extends Publisher<R>> runModalSubmit) {
+            this.runModalSubmit = runModalSubmit;
             return this;
         }
 
@@ -220,6 +261,12 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
                 public Publisher<R> run(SelectMenuInteractionContext ctx) {
                     return runSelectMenu == null ? ComponentInteractionListener.super.run(ctx) :
                             runSelectMenu.apply(ctx);
+                }
+
+                @Override
+                public Publisher<R> run(ModalSubmitInteractionContext ctx) {
+                    return runModalSubmit == null ? ComponentInteractionListener.super.run(ctx) :
+                            runModalSubmit.apply(ctx);
                 }
 
                 @Override

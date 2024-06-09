@@ -134,14 +134,14 @@ annotation:
 | `ATTACHMENT`  | `discord4j.core.object.entity.Attachment`                                                    |
 
 :::caution
-Optional options will be filled with `null` if not specified by the user, which means you cannot use primitive types
+Non-required options will be filled with `null` if not specified by the user, which means you cannot use primitive types
 for `INTEGER`, `NUMBER` and `BOOLEAN` if `required = false`, otherwise you will get `NullPointerException`s.
 :::
 
 :::info
 For legacy purposes, you can use a normal class instead of a record. In that case, the class must have a no-arg
 constructor, and the `@ChatInputCommandGrammar.Option` annotations should be on fields declared in the class. Using
-records is preferred as it allows for immutability.
+records is preferred as they are immutable.
 :::
 
 ### Subcommands and subcommand groups

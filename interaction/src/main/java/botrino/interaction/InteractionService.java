@@ -374,6 +374,8 @@ public class InteractionService {
                                                 new ButtonInteractionContext(this, locale, ev, channel)))
                                         .matchType(SelectMenuInteractionEvent.class, ev -> new ComponentCommandRunner(
                                                 new SelectMenuInteractionContext(this, locale, ev, channel)))
+                                        .matchType(ModalSubmitInteractionEvent.class, ev -> new ComponentCommandRunner(
+                                                new ModalSubmitInteractionContext(this, locale, ev, channel)))
                                         .apply(event))
                                 .flatMap(Mono::justOrEmpty)
                                 .flatMap(runner -> runner.run()
