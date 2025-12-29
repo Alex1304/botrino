@@ -58,18 +58,16 @@ public final class ConfigParser {
 
     public Map<String, Object> parse(String rawJson) {
         try {
-            var configObjects = new HashMap<String, Object>();
-            var notFound = new HashSet<>(expectedEntries.keySet());
-            var object = objectMapper.readTree(rawJson);
-            var fields = object.fields();
-            while (fields.hasNext()) {
-                var field = fields.next();
-                var name = field.getKey();
-                var element = field.getValue();
-                var targetType = expectedEntries.get(name);
+            final var configObjects = new HashMap<String, Object>();
+            final var notFound = new HashSet<>(expectedEntries.keySet());
+            final var object = objectMapper.readTree(rawJson);
+            for (final var field : object.properties()) {
+                final var name = field.getKey();
+                final var element = field.getValue();
+                final var targetType = expectedEntries.get(name);
                 if (targetType != null) {
                     notFound.remove(name);
-                    var configObject = objectMapper.treeToValue(element, targetType);
+                    final var configObject = objectMapper.treeToValue(element, targetType);
                     configObjects.put(name, configObject);
                 }
             }

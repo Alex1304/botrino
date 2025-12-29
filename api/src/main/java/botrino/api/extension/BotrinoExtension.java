@@ -84,7 +84,7 @@ public interface BotrinoExtension {
      * This is the very last method invoked by Botrino before finishing startup. It allows to provide a reactive chain
      * that will be subscribed to by the {@code main} thread before blocking indefinitely and awaiting logout. It can
      * consist of installing event listeners, initializing some process, perform a post-startup cleanup task, etc. For
-     * example this is used by the command extension to begin the subscription to message create events.
+     * example this is used by the interaction extension to begin the subscription to interaction events.
      * <p>
      * Since the returned chain is subscribed to directly on the {@code main} thread, it means that any error signal
      * emitted by the chain will terminate the JVM.

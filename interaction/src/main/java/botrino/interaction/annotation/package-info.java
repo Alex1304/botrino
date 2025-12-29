@@ -25,7 +25,7 @@
 /**
  * Contains annotations to describe and configure application commands.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.annotation;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

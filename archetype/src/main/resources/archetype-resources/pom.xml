@@ -19,15 +19,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>17</java.version>
         <plugin.compiler.version>3.13.0</plugin.compiler.version>
-        <plugin.install.version>3.1.1</plugin.install.version>
-        <plugin.deploy.version>3.1.1</plugin.deploy.version>
+        <plugin.install.version>4.0.0-beta-2</plugin.install.version>
+        <plugin.deploy.version>4.0.0-beta-2</plugin.deploy.version>
         <plugin.jlink.version>3.2.0</plugin.jlink.version>
         <plugin.dependency.version>3.6.1</plugin.dependency.version>
         <plugin.resources.version>3.3.1</plugin.resources.version>
         <plugin.antrun.version>3.1.0</plugin.antrun.version>
         <botrino.version>${project.version}</botrino.version>
-        <reactor.version>2020.0.33</reactor.version>
-        <logback.version>1.5.6</logback.version>
+        <reactor.version>2025.0.1</reactor.version>
+        <logback.version>1.5.23</logback.version>
         <delivery.name>\${symbol_dollar}{project.parent.artifactId}-\${symbol_dollar}{project.version}</delivery.name>
         <delivery.directory>\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{delivery.name}</delivery.directory>
         <app.build.directory>\${symbol_dollar}{project.basedir}/../app/target</app.build.directory>
@@ -67,6 +67,9 @@
                             <addModule>jdk.crypto.ec</addModule>
                         </addModules>
                         <sourceJdkModules>\${symbol_dollar}{jlink.jdk}</sourceJdkModules>
+                        <stripDebug>true</stripDebug>
+                        <noHeaderFiles>true</noHeaderFiles>
+                        <noManPages>true</noManPages>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -119,7 +122,8 @@
                                 <target>
                                     <delete dir="\${symbol_dollar}{delivery.directory}" />
                                     <delete file="\${symbol_dollar}{project.build.directory}/\${symbol_dollar}{project.build.finalName}.zip" />
-                                    <move file="\${symbol_dollar}{project.build.directory}/maven-jlink" tofile="\${symbol_dollar}{delivery.directory}" force="true" />
+                                    <move file="\${symbol_dollar}{project.build.directory}/maven-jlink/default"
+                                          tofile="\${symbol_dollar}{delivery.directory}" force="true" />
                                     <copy todir="\${symbol_dollar}{delivery.directory}/modules">
                                         <fileset dir="\${symbol_dollar}{app.build.directory}/dependency" />
                                         <fileset file="\${symbol_dollar}{app.build.directory}/*.jar" />

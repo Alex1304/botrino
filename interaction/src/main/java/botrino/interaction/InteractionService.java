@@ -44,13 +44,13 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -100,12 +100,13 @@ public class InteractionService {
     @Deprecated
     @RdiFactory
     public InteractionService(ConfigContainer configContainer, GatewayDiscordClient gateway) {
-        this(configContainer.get(InteractionConfig.class), gateway, Locale.getDefault(), null, null);
+        this(configContainer.get(InteractionConfig.class), gateway, Locale.getDefault(),
+                InteractionErrorHandler.NO_OP, InteractionEventProcessor.NO_OP);
     }
 
     private InteractionService(InteractionConfig interactionConfig, GatewayDiscordClient gateway,
-                               Locale defaultLocale, @Nullable InteractionErrorHandler errorHandler,
-                               @Nullable InteractionEventProcessor eventProcessor) {
+                               Locale defaultLocale, InteractionErrorHandler errorHandler,
+                               InteractionEventProcessor eventProcessor) {
         this.interactionConfig = interactionConfig;
         this.gateway = gateway;
         this.defaultLocale = defaultLocale;
@@ -477,9 +478,9 @@ public class InteractionService {
 
         private final InteractionConfig config;
         private final GatewayDiscordClient gateway;
-        private Locale defaultLocale;
-        private InteractionErrorHandler errorHandler;
-        private InteractionEventProcessor eventProcessor;
+        private @Nullable Locale defaultLocale;
+        private @Nullable InteractionErrorHandler errorHandler;
+        private @Nullable InteractionEventProcessor eventProcessor;
 
         private Builder(InteractionConfig config, GatewayDiscordClient gateway) {
             this.config = config;
@@ -532,23 +533,7 @@ public class InteractionService {
         }
     }
 
-    private record ChatInputCommandKey(String name, String subcommandGroup, String subcommand) {
-
-        private ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
-            this.name = name;
-            this.subcommandGroup = subcommandGroup;
-            this.subcommand = subcommand;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ChatInputCommandKey that = (ChatInputCommandKey) o;
-            return name.equals(that.name) && Objects.equals(subcommandGroup, that.subcommandGroup) &&
-                    Objects.equals(subcommand, that.subcommand);
-        }
-
+    private record ChatInputCommandKey(String name, @Nullable String subcommandGroup, @Nullable String subcommand) {
         @Override
         public String toString() {
             return '/' + name + (subcommandGroup != null ? ' ' + subcommandGroup : "") +

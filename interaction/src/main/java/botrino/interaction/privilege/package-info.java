@@ -25,7 +25,7 @@
 /**
  * Contains classes to define privileges to execute an interaction.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.privilege;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

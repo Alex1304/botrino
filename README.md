@@ -250,19 +250,21 @@ the [documentation website](https://botrino.alex1304.com/docs/getting-started).*
 The semver policy of Botrino is the following:
 
 - The **major** version of Botrino will be bumped if:
-    - The minor or major version of Discord4J or Reactor is bumped,
-    - Major breaking changes (API or behavior) are introduced.
+    - The version of notable dependencies (Discord4J, Reactor...) is bumped and introduce significant breaking changes,
+    - Major breaking changes (API or behavior) are introduced, such as the removal of deprecated methods
 - The **minor** version of Botrino will be bumped if:
-    - The patch version of Discord4J or Reactor is bumped,
-    - If the minimum JDK version is bumped,
-    - Minor breaking changes (API or behavior) are introduced.
+    - The version of notable dependencies (Discord4J, Reactor...) is bumped and doesn't introduce significant
+      breaking changes,
+    - The minimum JDK version is bumped,
+    - Minor behavioral breaking changes are introduced, such as updated default values (but no API breaking change).
 - The **patch** version of Botrino is bumped for other non-breaking changes and bugfixes.
 
-Find the table below for reference regarding version dependencies:
+Find the table below for reference regarding version dependencies (a dash means "same as previous"):
 
 | Botrino version | JDK    | Discord4J version | Reactor version | RDI version |
 |-----------------|--------|-------------------|-----------------|-------------|
-| **v1.1.0**      | **17** | v3.2.6            | 3.4.28          | -           |
+| **v1.2.0**      | -      | v3.3.0            | v3.8.1          | v1.2.0      |
+| **v1.1.0**      | **17** | v3.2.6            | v3.4.28         | -           |
 | v1.0.5          | -      | v3.2.3            | -               | -           |
 | v1.0.4          | -      | v3.2.2            | v3.4.13         | -           |
 | v1.0.3          | -      | v3.2.1            | -               | -           |

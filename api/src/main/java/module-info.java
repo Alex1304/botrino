@@ -27,6 +27,7 @@ module botrino.api {
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.fasterxml.jackson.datatype.jdk8;
     requires transitive java.logging;
+    requires transitive org.jspecify;
     requires transitive org.reactivestreams;
     requires transitive rdi;
     requires transitive reactor.core;

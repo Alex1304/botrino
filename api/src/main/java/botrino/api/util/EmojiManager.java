@@ -40,7 +40,12 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 
 /**
  * Allows to conveniently load and retrieve emojis by name in the scope of specific guilds.
+ *
+ * @deprecated Use {@link ApplicationEmojiManager} instead, which uses
+ * <a href="https://discord.com/developers/docs/resources/emoji#emoji-object-applicationowned-emoji">emojis uploaded
+ * directly in the application</a> via the API or the Developer Portal.
  */
+@Deprecated
 public class EmojiManager {
 
     private final Set<Snowflake> guildIds;

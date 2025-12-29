@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/botrino.iml" filepath="$PROJECT_DIR$/botrino.iml" />
+      <module fileurl="file://$PROJECT_DIR$/api/botrino-api.iml" filepath="$PROJECT_DIR$/api/botrino-api.iml" />
       <module fileurl="file://$PROJECT_DIR$/launcher/launcher.iml" filepath="$PROJECT_DIR$/launcher/launcher.iml" />
     </modules>
   </component>

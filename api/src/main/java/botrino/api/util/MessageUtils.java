@@ -24,9 +24,11 @@
 package botrino.api.util;
 
 import discord4j.core.spec.*;
+import discord4j.discordjson.possible.Possible;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class MessageUtils {
 
@@ -93,7 +95,7 @@ public final class MessageUtils {
                 .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
                 .files(spec.files())
                 .fileSpoilers(spec.fileSpoilers())
-                .attachments(List.of())
+                .attachments(Possible.of(Optional.of(List.of())))
                 .build();
     }
 
@@ -145,7 +147,7 @@ public final class MessageUtils {
                 .allowedMentionsOrNull(spec.allowedMentions().toOptional().orElse(null))
                 .files(spec.files())
                 .fileSpoilers(spec.fileSpoilers())
-                .attachments(List.of())
+                .attachments(Possible.of(Optional.of(List.of())))
                 .build();
     }
 

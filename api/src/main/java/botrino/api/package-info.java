@@ -25,7 +25,7 @@
 /**
  * Root package for the Botrino API, containing the class to start a bot application.
  */
-@NonNullApi
+@NullMarked
 package botrino.api;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

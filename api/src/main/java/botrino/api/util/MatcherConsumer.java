@@ -24,7 +24,7 @@
 package botrino.api.util;
 
 import botrino.api.extension.BotrinoExtension;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +48,7 @@ import java.util.function.Predicate;
 public final class MatcherConsumer implements Consumer<Object> {
 
     private final List<MatchStatement> matchStatements = new ArrayList<>();
-    private Consumer<Object> fallback;
+    private @Nullable Consumer<Object> fallback;
     private boolean allowMultipleMatches;
 
     private MatcherConsumer() {

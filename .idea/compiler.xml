@@ -18,28 +18,10 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.8.9-ea-1/value-2.8.9-ea-1.jar" />
-        </processorPath>
-        <module name="command" />
-        <module name="api" />
-      </profile>
-      <profile name="Annotation profile for botrino-api" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.12.0/value-2.12.0.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.12.0/value-2.12.0.jar" />
         </processorPath>
         <module name="botrino-api" />
-      </profile>
-      <profile name="Annotation profile for botrino-interaction" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/immutables/value/2.10.1/value-2.10.1.jar" />
-        </processorPath>
         <module name="botrino-interaction" />
       </profile>
     </annotationProcessing>

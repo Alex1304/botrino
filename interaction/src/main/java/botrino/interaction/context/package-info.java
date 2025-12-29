@@ -24,7 +24,7 @@
 /**
  * Contains the classes providing contextual information to the different interactions.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.context;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

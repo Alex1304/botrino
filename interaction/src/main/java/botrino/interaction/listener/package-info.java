@@ -25,7 +25,7 @@
 /**
  * Contains listener interfaces to handle interactions
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.listener;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

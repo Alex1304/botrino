@@ -1,7 +1,7 @@
 #set( $symbol_pound = '#' )
 #set( $symbol_dollar = '$' )
 #set( $symbol_escape = '\' )
-@NonNullApi
+@NullMarked
 package ${package};
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

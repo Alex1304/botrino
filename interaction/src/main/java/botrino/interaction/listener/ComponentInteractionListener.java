@@ -29,7 +29,7 @@ import botrino.interaction.cooldown.Cooldown;
 import botrino.interaction.privilege.Privilege;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -168,11 +168,11 @@ public interface ComponentInteractionListener<R> extends InteractionListener {
     final class Builder<R> {
 
         private final String customId;
-        private Function<? super ButtonInteractionContext, ? extends Publisher<R>> runButton;
-        private Function<? super SelectMenuInteractionContext, ? extends Publisher<R>> runSelectMenu;
-        private Function<? super ModalSubmitInteractionContext, ? extends Publisher<R>> runModalSubmit;
-        private Privilege privilege;
-        private Cooldown cooldown;
+        private @Nullable Function<? super ButtonInteractionContext, ? extends Publisher<R>> runButton;
+        private @Nullable Function<? super SelectMenuInteractionContext, ? extends Publisher<R>> runSelectMenu;
+        private @Nullable Function<? super ModalSubmitInteractionContext, ? extends Publisher<R>> runModalSubmit;
+        private @Nullable Privilege privilege;
+        private @Nullable Cooldown cooldown;
 
         private Builder(String customId) {
             this.customId = customId;

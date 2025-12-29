@@ -25,6 +25,7 @@ package botrino.api.util;
 
 import botrino.api.annotation.Primary;
 import botrino.api.config.ConfigException;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
@@ -137,7 +138,7 @@ public final class ConfigUtils {
         }
     }
 
-    public static <T extends Record> T instantiateRecord(Class<T> type, Object... params) {
+    public static <T extends Record> T instantiateRecord(Class<T> type, @Nullable Object... params) {
         try {
             final var paramTypes = Arrays.stream(type.getRecordComponents())
                     .map(RecordComponent::getType)

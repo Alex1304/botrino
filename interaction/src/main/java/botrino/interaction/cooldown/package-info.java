@@ -25,7 +25,7 @@
 /**
  * Contains classes to define cooldowns for interactions.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.cooldown;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

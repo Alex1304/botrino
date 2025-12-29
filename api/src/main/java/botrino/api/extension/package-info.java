@@ -25,7 +25,7 @@
 /**
  * Contains the interface to create extensions to Botrino.
  */
-@NonNullApi
+@NullMarked
 package botrino.api.extension;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

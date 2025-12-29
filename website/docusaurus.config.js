@@ -4,7 +4,7 @@ module.exports = {
     url: 'https://botrino.alex1304.com',
     baseUrl: '/',
     onBrokenLinks: 'throw',
-    onBrokenMarkdownLinks: 'warn',
+    markdown: { hooks: { onBrokenMarkdownLinks: 'warn' } },
     favicon: 'img/favicon.ico',
     organizationName: 'Alex1304', // Usually your GitHub org/user name.
     projectName: 'botrino', // Usually your repo name.

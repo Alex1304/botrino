@@ -38,6 +38,7 @@ import botrino.interaction.listener.MessageInteractionListener;
 import botrino.interaction.listener.UserInteractionListener;
 import com.github.alex1304.rdi.config.ServiceDescriptor;
 import com.github.alex1304.rdi.finder.annotation.RdiService;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -52,7 +53,7 @@ public final class InteractionExtension implements BotrinoExtension {
     private final Set<UserInteractionListener> userInteractionListeners = new HashSet<>();
     private final Set<MessageInteractionListener> messageInteractionListeners = new HashSet<>();
     private final Set<ComponentInteractionListener<?>> componentInteractionListeners = new HashSet<>();
-    private InteractionService interactionService;
+    private @Nullable InteractionService interactionService;
 
     @Override
     public void onClassDiscovered(Class<?> clazz) {

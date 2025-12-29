@@ -25,7 +25,7 @@
 /**
  * Contains type annotations that are processed when scanning bot modules to discover services, configuration, etc.
  */
-@NonNullApi
+@NullMarked
 package botrino.api.annotation;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

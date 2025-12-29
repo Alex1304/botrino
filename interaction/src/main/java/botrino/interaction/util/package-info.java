@@ -1,7 +1,7 @@
 /*
  * This file is part of the Botrino project and is licensed under the MIT license.
  *
- * Copyright (c) 2020 Alexandre Miranda
+ * Copyright (c) 2025 Alexandre Miranda
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package botrino.api.config.object;
+@NullMarked
+package botrino.interaction.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.immutables.value.Value;
-
-import java.util.Set;
-
-@Value.Immutable
-@JsonDeserialize(as = ImmutableI18nConfig.class)
-@Deprecated
-public interface I18nConfig {
-
-    @Deprecated
-    @JsonProperty("default_locale")
-    String defaultLocale();
-
-    @Deprecated
-    @JsonProperty("supported_locales")
-    Set<String> supportedLocales();
-}
+import org.jspecify.annotations.NullMarked;

@@ -25,7 +25,7 @@
 /**
  * Contains classes to read and store the bot configuration.
  */
-@NonNullApi
+@NullMarked
 package botrino.api.config;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

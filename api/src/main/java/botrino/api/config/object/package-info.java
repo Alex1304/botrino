@@ -23,9 +23,11 @@
  */
 
 /**
- * Contains some predefined configuration objects for global bot settings and internationalization (i18n).
+ * Contains predefined configuration objects such as global bot settings.
  */
-@NonNullApi
+@NullMarked
+@Value.Style(jdkOnly = true, allowedClasspathAnnotations = Override.class)
 package botrino.api.config.object;
 
-import reactor.util.annotation.NonNullApi;
+import org.immutables.value.Value;
+import org.jspecify.annotations.NullMarked;

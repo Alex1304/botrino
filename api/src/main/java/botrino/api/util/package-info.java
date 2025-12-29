@@ -25,7 +25,7 @@
 /**
  * Contains utility classes commonly useful when developing bots using the Botrino API.
  */
-@NonNullApi
+@NullMarked
 package botrino.api.util;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

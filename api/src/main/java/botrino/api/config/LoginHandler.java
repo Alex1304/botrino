@@ -55,8 +55,8 @@ public interface LoginHandler {
      * @return a Mono that connects to Discord upon subscription and emits the resulting {@link GatewayDiscordClient}
      */
     default Mono<GatewayDiscordClient> login(ConfigContainer configContainer) {
-        var config = configContainer.get(BotConfig.class);
-        var discordClient = DiscordClient.create(config.token());
+        final var config = configContainer.get(BotConfig.class);
+        final var discordClient = DiscordClient.create(config.token());
         return discordClient.gateway()
                 .setInitialPresence(shard -> config.presence()
                         .map(BotConfig.StatusConfig::toPresence)

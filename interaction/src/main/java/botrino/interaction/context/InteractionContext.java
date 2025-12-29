@@ -110,7 +110,7 @@ public interface InteractionContext extends Translator {
     /**
      * Waits until the button which customId is given is clicked, by the same user in the same channel as this context's
      * event. Use this method if you only need to know when the button is clicked. Prefer
-     * {@link #awaitButtonClick(String)} if you need the whole {@link ButtonInteractionContext} object.
+     * {@link #awaitButtonInteraction(String)} if you need the whole {@link ButtonInteractionContext} object.
      * <p>
      * This is a shorthand for:
      * <pre>

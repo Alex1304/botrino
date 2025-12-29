@@ -25,7 +25,7 @@
 /**
  * Essential tools to deal with Discord interactions.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

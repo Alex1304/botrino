@@ -25,7 +25,7 @@
 /**
  * Contains helper classes to deal with command options.
  */
-@NonNullApi
+@NullMarked
 package botrino.interaction.grammar;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

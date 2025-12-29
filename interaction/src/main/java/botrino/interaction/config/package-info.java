@@ -25,7 +25,9 @@
 /**
  * Contains the configuration class for the interaction module.
  */
-@NonNullApi
+@NullMarked
+@Value.Style(jdkOnly = true, allowedClasspathAnnotations = Override.class)
 package botrino.interaction.config;
 
-import reactor.util.annotation.NonNullApi;
+import org.immutables.value.Value;
+import org.jspecify.annotations.NullMarked;
